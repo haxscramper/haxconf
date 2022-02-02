@@ -1,0 +1,8 @@
+# Dotbot configuration installation
+
+- defaults:
+    link:
+      relink: true
+
+- link:
+    ~/.elvish/rc.elv: shell/elvish.elv
