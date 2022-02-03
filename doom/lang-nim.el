@@ -21,12 +21,14 @@
    ("let" "^let \\(.*\\)" 1)
    ("var" "^var \\(.*\\)" 1)))
 
-
-
 (add-hook!
  nim-mode
- (nimsuggest-mode -1)
- (flycheck-mode -1)
+ ;: Disable completion from nimsuggest, it is mostly useless
+ (nimsuggest-mode 0)
+ ;; Flycheck relies on nimsuggest, so disable it as well
+ (flycheck-mode 0)
+ (electric-indent-mode 0)
+ (company-mode t)
+ (setq company-backends '(company-capf :with company-etags))
  (setq imenu-generic-expression nim-imenu-generic-expression)
  )
-

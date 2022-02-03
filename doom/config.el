@@ -31,10 +31,6 @@
 ;; change `org-directory'. It must be set before org loads!
 (setq org-directory "~/org/")
 
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type 'relative)
-
 
 ;; Here are some additional functions/macros that could help you configure Doom:
 ;;
@@ -57,11 +53,13 @@
 (load! "evil-edit.el")
 (load! "lang-nim.el")
 
+(load! "config-editing.el")
+
 (setq confirm-kill-emacs nil)
 
-(after!
- evil
- (evil-ex-define-cmd "W" #'evil-write))
+
+
+(after! xref
+  (setq-default xref-backend-functions '(etags--xref-backend t)))
 
 (winum-mode t)
-

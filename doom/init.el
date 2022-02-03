@@ -18,10 +18,7 @@
 
        :completion
        company           ; the ultimate code completion backend
-       ;;helm              ; the *other* search engine for love and life
-       ;;ido               ; the other *other* search engine...
-       ;;ivy               ; a search engine for love and life
-       vertico           ; the search engine of the future
+       (ivy +prescient -childframe +fuzzy +icons)
 
        :ui
        ;;deft              ; notational velocity for Emacs
@@ -40,7 +37,7 @@
        vc-gutter         ; vcs diff in the fringe
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        workspaces        ; tab emulation, persistence & separate workspaces
-
+       zen               ; distraction-free coding or writing
        :editor
        (evil +everywhere); come to the dark side, we have cookies
        file-templates    ; auto-snippets for empty files
@@ -49,7 +46,6 @@
        ;;objed             ; text object editing for the innocent
        ;;parinfer          ; turn lisp into python, sort of
        ;;rotate-text       ; cycle region at point between text candidates
-       snippets          ; my elves. They type so I don't have to
        word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
@@ -63,12 +59,13 @@
        eshell            ; the elisp shell that works everywhere
 
        :checkers
-       syntax              ; tasing you for every semicolon you forget
-       (spell +flyspell) ; tasing you for misspelling mispelling
-       grammar           ; tasing grammar mistake every you make
+       syntax
+       ;; Use hunspell and check for spelling and grammar mistakes in the
+       ;; code comments as well
+       (spell +flyspell)
+       (grammar -writegood)
 
        :tools
-       ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;;docker
        ;;editorconfig      ; let someone else argue about tabs vs spaces
@@ -77,7 +74,6 @@
        lookup              ; navigate your code and its documentation
        magit             ; a git porcelain for Emacs
        pdf               ; pdf enhancements
-       ;;rgb               ; creating color strings
 
        :os
        tty
@@ -89,7 +85,6 @@
        latex             ; writing papers in Emacs has never been so fun
        lua               ; one-based indices? one-based indices
        markdown          ; writing docs for people to ignore
-       nim               ; python + lisp at the speed of c
        org               ; organize your plain life in plain text
        python            ; beautiful is better than ugly
        qt                ; the 'cutest' gui framework ever

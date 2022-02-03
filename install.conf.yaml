@@ -2,7 +2,12 @@
 
 - defaults:
     link:
+      # Remove old target symlink if it exists
       relink: true
+      # Create parent directories for link targets as needed
+      create: true
+
+- clean: ['~']
 
 - link:
     # Shell configuration
@@ -13,3 +18,17 @@
 
     # Doom emacs configuration
     ~/.doom.d: doom
+
+    # music player settings
+    ~/.ncmpcpp/config: cli/ncmpcpp.conf
+
+    # TAGS file construction configuration
+    ~/.config/ctags/default.ctags: cli/default.ctags
+
+- create:
+    - ~/defaultdirs
+    - ~/defaultdirs/input
+    - ~/defaultdirs/documents
+    - ~/defaultdirs/images
+    - ~/defaultdirs/notes
+    - ~/defaultdirs/pdf

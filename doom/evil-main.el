@@ -1,5 +1,7 @@
 ;; Key mapping for the evil mode movements
 
+(setq evil-want-fine-undo t)
+
 (map!
  ;; Use to move around ';lkj'
  :nv "j" 'evil-next-line
@@ -38,3 +40,10 @@
  :nvi "<f5>" 'winum-select-window-5
  :nvi "<f6>" 'winum-select-window-6
  )
+
+(defun save-all-buffers() (interactive) (save-some-buffers t))
+
+(after!
+ evil
+ (evil-ex-define-cmd "W" #'save-all-buffers)
+ (evil-ex-define-cmd "w" #'save-all-buffers))
