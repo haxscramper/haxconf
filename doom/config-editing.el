@@ -24,3 +24,11 @@
 
 ;; Disable prompts from the file-local variables by default.
 (setq enable-local-variables :all)
+
+(map!
+ ;; M-> or M-< to indent code blocks in all modes
+ :nv "M->" (lambda () (interactive)
+             (code-indent-shift-right (get-selected-region-start) (get-selected-region-end) 2))
+ :nv "M-<" (lambda () (interactive)
+             (code-indent-shift-left (get-selected-region-start) (get-selected-region-end) 2))
+ )

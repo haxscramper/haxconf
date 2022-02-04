@@ -51,6 +51,13 @@
 
 (load! "evil-main.el")
 (load! "evil-edit.el")
+
+;; Load helper functions for working with selections, indentation and other
+;; elements. They are used later on in different keybindings for various modes.
+(load! "lib/selections.el")
+(load! "lib/indentation.el")
+(load! "lib/fontlock.el")
+
 (load! "lang-nim.el")
 
 (load! "config-editing.el")

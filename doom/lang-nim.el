@@ -21,6 +21,17 @@
    ("let" "^let \\(.*\\)" 1)
    ("var" "^var \\(.*\\)" 1)))
 
+
+(font-lock-replace-keywords
+ 'nim-mode
+ `(
+   ("notNil" . 'font-lock-builtin-face)
+   ;; Highlight function calls as well
+   (,(rx
+      (| " " "." "]" ")" "(") (group (in lower) (+ word)) "(") .
+      (1 font-lock-function-name-face))
+   ))
+
 (add-hook!
  nim-mode
  ;: Disable completion from nimsuggest, it is mostly useless
@@ -31,4 +42,5 @@
  (company-mode t)
  (setq company-backends '(company-capf :with company-etags))
  (setq imenu-generic-expression nim-imenu-generic-expression)
+
  )
