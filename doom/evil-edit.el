@@ -113,3 +113,66 @@
  :v "x" 'kill-region
  :v "d" 'delete-region
  )
+
+;; Additional functionality for the multicursor editing
+
+(defun hax/mc-any-cursors-at-pos? (pos)
+  "Check if ther is any cursors located at position `pos'"
+  (some
+   (lambda (cursor) (equal pos (evil-mc-get-cursor-start cursor)))
+   evil-mc-cursor-list))
+
+(defun hax/mc-ensure-cursor-here ()
+  "If there is a cursor at `pos' do nothing, otherwise create new
+  evil-mc-cursor"
+  (unless (hax/mc-any-cursors-at-pos? (point)) (evil-mc-make-cursor-here)))
+
+(defun hax/mc-ensure-single-cursor-here ()
+  "Ensure that there is either mc-cursor or real one at given
+  position, and not two at the same time. If there is two
+  cursors, remove evil-mc one"
+  (if (hax/mc-any-cursors-at-pos? (point)) (evil-mc-undo-cursor-at-pos (point))))
+
+
+;; TODO Add version that not only ignores lines that don't have enough
+;; characters but also lines that have whitespace character
+
+(defun hax/mc-make-cursors-precise-move-line (num &optional dir)
+  "Create evil-mc cursor at current position and move precisely
+above. If line does not contain enough characters search for
+matching line until found. If called with `num' equal to nil
+search for line until found and place cursor there. If num is not
+nil perform exactly `num' attempts to create cursor. dir can
+either be 1, -1 or nil. Nil defaults to 1 (below)"
+  (interactive "P")
+  (if (equal dir nil) (setq dir 1))
+  (if (equal num nil)
+      (progn
+        (let ((above-pos (exhaustive-search-char-vertically dir 100)))
+          (if (equal above-pos nil) (message "Cannot create cursor above")
+            (progn
+              (hax/mc-ensure-cursor-here)
+              (goto-char above-pos)
+              (hax/mc-ensure-single-cursor-here)))))
+    (progn
+      (dotimes (i (+ num 1))
+        (let ((above-pos (point-has-character-next-vertically (* i dir))))
+          (unless (equal above-pos nil)
+            (progn
+              (save-excursion (goto-char above-pos) (hax/mc-ensure-cursor-here))
+              (hax/mc-ensure-single-cursor-here))))))))
+
+(defun hax/mc-make-cursor-above-move-next-line (count)
+  "Make cursor precisely above current position of the cursor."
+  (interactive "P")
+  (hax/mc-make-cursors-precise-move-line count -1))
+
+(defun hax/mc-make-cursor-below-move-prev-line (count)
+  (interactive "P")
+  (hax/mc-make-cursors-precise-move-line count 1))
+
+
+
+(map!
+ :n "C-S-k" 'hax/mc-make-cursor-above-move-next-line
+ :n "C-S-j" 'hax/mc-make-cursor-below-move-prev-line)

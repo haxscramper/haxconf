@@ -57,6 +57,7 @@
 (load! "lib/selections.el")
 (load! "lib/indentation.el")
 (load! "lib/fontlock.el")
+(load! "lib/searches.el")
 
 (load! "lang-nim.el")
 (load! "lang-elvish.el")
