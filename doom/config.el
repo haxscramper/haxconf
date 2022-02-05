@@ -59,6 +59,7 @@
 (load! "lib/fontlock.el")
 
 (load! "lang-nim.el")
+(load! "lang-elvish.el")
 
 (load! "config-editing.el")
 

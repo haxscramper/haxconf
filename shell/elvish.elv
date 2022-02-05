@@ -125,11 +125,15 @@ set edit:abbr['xcp '] = 'xclip -sel cli '
 set edit:abbr['xcpi '] = 'xclip -sel cli -t image/png -i '
 set edit:abbr['xco '] = 'xclip -out '
 set edit:abbr['xcoi '] = 'xclip -sel cli -t image/png -o '
-fn xcpp {
-  e:find -maxdepth 2 -type f -print0 |
-    e:fzf --read0 --multi --print0 |
-    e:xargs -r0 realpath |
-    e:xclip -sel cli
+
+edit:add-var xcpp~ {
+  try {
+   find -maxdepth 2 -type f -print0 |
+    fzf --read0 --multi --print0 |
+    xargs -r0 realpath |
+    xclip -sel cli
+  } except {
+  }
 }
 
 fn gic {

@@ -109,4 +109,7 @@
  :n  "P"  #'evil-paste-before-without-register
  :n  "x"  #'evil-delete-char-without-register
  :n  "X"  #'evil-delete-backward-char-without-register
- :n  "d"  #'evil-delete-without-register)
+ :n  "d"  #'evil-delete-without-register
+ :v "x" 'kill-region
+ :v "d" 'delete-region
+ )
