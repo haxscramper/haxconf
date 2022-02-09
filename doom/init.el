@@ -36,7 +36,6 @@
        unicode           ; extended unicode support for various languages
        vc-gutter         ; vcs diff in the fringe
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
-       workspaces        ; tab emulation, persistence & separate workspaces
        zen               ; distraction-free coding or writing
        :editor
        (evil +everywhere); come to the dark side, we have cookies

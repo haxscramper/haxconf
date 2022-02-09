@@ -71,4 +71,20 @@
 (after! xref
   (setq-default xref-backend-functions '(etags--xref-backend t)))
 
+(after! keycast
+  (define-minor-mode keycast-mode
+    "Show current command and its key binding in the mode line."
+    :global t
+    (if keycast-mode
+        (add-hook 'pre-command-hook 'keycast--update t)
+      (remove-hook 'pre-command-hook 'keycast-mode-line-update)))
+  (setq keycast-substitute-alist '((evil-next-line nil nil)
+                                   (evil-previous-line nil nil)
+                                   (evil-forward-char nil nil)
+                                   (evil-backward-char nil nil)
+                                   (ivy-done nil nil)
+                                   (self-insert-command nil nil)))
+  (add-to-list 'global-mode-string '("" keycast-mode-line)))
+
+
 (winum-mode t)

@@ -15,7 +15,6 @@
   (setq company-idle-delay 0
         company-minimum-prefix-length 2)
   (setq company-show-numbers t)
-  (company-ctags-auto-setup)
   (add-hook 'evil-normal-state-entry-hook #'company-abort))
 
 
@@ -60,3 +59,5 @@
       (string-inflection-all-cycle)
       (setq evil-repeat-info '([?g ?~])))
     (define-key evil-normal-state-map (kbd "g~") 'evil-operator-string-inflection)))
+
+(map! :nv ",hs" 'highlight-symbol)
