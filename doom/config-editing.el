@@ -32,6 +32,8 @@
              (code-indent-shift-left (get-selected-region-start) (get-selected-region-end) 2))
  )
 
+;; Text case conversion
+
 (use-package! string-inflection
   :commands (string-inflection-all-cycle
              string-inflection-toggle
@@ -60,4 +62,73 @@
       (setq evil-repeat-info '([?g ?~])))
     (define-key evil-normal-state-map (kbd "g~") 'evil-operator-string-inflection)))
 
+;; Highlight symbol under cursor using saner keybinding
 (map! :nv ",hs" 'highlight-symbol)
+
+(defun spacemacs/align-repeat (start end regexp &optional justify-right after)
+  "Repeat alignment with respect to the given regular expression.
+If JUSTIFY-RIGHT is non nil justify to the right instead of the
+left. If AFTER is non-nil, add whitespace to the left instead of
+the right."
+  (interactive "r\nsAlign regexp: ")
+  (let* ((ws-regexp (if (string-empty-p regexp)
+                        "\\(\\s-+\\)"
+                      "\\(\\s-*\\)"))
+         (complete-regexp (if after
+                              (concat regexp ws-regexp)
+                            (concat ws-regexp regexp)))
+         (group (if justify-right -1 1)))
+
+    (unless (use-region-p)
+      (save-excursion
+        (while (and
+                (string-match-p complete-regexp (thing-at-point 'line))
+                (= 0 (forward-line -1)))
+          (setq start (point-at-bol))))
+      (save-excursion
+        (while (and
+                (string-match-p complete-regexp (thing-at-point 'line))
+                (= 0 (forward-line 1)))
+          (setq end (point-at-eol)))))
+
+    (align-regexp start end complete-regexp group 1 t)))
+
+;; Modified answer from http://emacs.stackexchange.com/questions/47/align-vertical-columns-of-numbers-on-the-decimal-point
+(defun align-repeat-decimal (start end)
+  "Align a table of numbers on decimal points and dollar signs (both optional)"
+  (interactive "r")
+  (require 'align)
+  (align-region start end nil
+                '((nil (regexp . "\\([\t ]*\\)\\$?\\([\t ]+[0-9]+\\)\\.?")
+                       (repeat . t)
+                       (group 1 2)
+                       (spacing 1 1)
+                       (justify nil t)))
+                nil))
+
+(defmacro create-align-repeat-x (name regexp &optional justify-right default-after)
+  "Helper macro to declare alignment functions for different regex patterns"
+  (let* ((new-func (intern (concat "align-repeat-" name)))
+         (new-func-defn
+          `(defun ,new-func (start end switch)
+             (interactive "r\nP")
+             (let ((after (not (eq (if switch t nil) (if ,default-after t nil)))))
+               (/align-repeat start end ,regexp ,justify-right after)))))
+    (put new-func 'function-documentation "Created by `create-align-repeat-x'.")
+    new-func-defn))
+
+(create-align-repeat-x "comma" "," nil t)
+(create-align-repeat-x "semicolon" ";" nil t)
+(create-align-repeat-x "colon" ":" nil t)
+(create-align-repeat-x "equal" "=")
+(create-align-repeat-x "math-oper" "[+\\-*/]")
+(create-align-repeat-x "percent" "%")
+(create-align-repeat-x "ampersand" "&")
+(create-align-repeat-x "bar" "|")
+(create-align-repeat-x "left-paren" "(")
+(create-align-repeat-x "right-paren" ")" t)
+(create-align-repeat-x "left-curly-brace" "{")
+(create-align-repeat-x "right-curly-brace" "}" t)
+(create-align-repeat-x "left-square-brace" "\\[")
+(create-align-repeat-x "right-square-brace" "\\]" t)
+(create-align-repeat-x "backslash" "\\\\")

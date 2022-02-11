@@ -110,9 +110,16 @@
  :n  "x"  #'evil-delete-char-without-register
  :n  "X"  #'evil-delete-backward-char-without-register
  :n  "d"  #'evil-delete-without-register
+ ;; Cut cut things
  :v "x" 'kill-region
+ ;; Delete deletes things
  :v "d" 'delete-region
- )
+ ;; Backspace should **DELETE** text - why in world someone could even
+ ;; thing this is not how it should functino.
+ :nvi "<C-backspace>" 'backward-delete-word-no-push
+)
+
+
 
 ;; Additional functionality for the multicursor editing
 
@@ -171,7 +178,30 @@ either be 1, -1 or nil. Nil defaults to 1 (below)"
   (interactive "P")
   (hax/mc-make-cursors-precise-move-line count 1))
 
-
+(after! evil-mc
+  (dolist
+    ;; Configure multicursor editor to use proper keybindings. Taken from
+    ;; https://github.com/gilbertw1/bmacs/blob/master/bmacs.org#evil-mc
+    (commands '(
+      (evil-change-without-register
+       . ((:default . evil-mc-execute-default-evil-change)))
+      (evil-change-line-without-register
+       . ((:default . evil-mc-execute-default-evil-change-line)))
+      (evil-delete-without-register
+       . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-without-register-if-whitespace
+       . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-char-without-register
+       . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-backward-char-without-register
+       . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-delete-line-without-register
+       . ((:default . evil-mc-execute-default-evil-delete)))
+      (evil-paste-after-without-register
+       . ((:default . evil-mc-execute-default-evil-paste)))
+      (evil-paste-before-without-register
+       . ((:default . evil-mc-execute-default-evil-paste)))))
+    (push commands evil-mc-custom-known-commands)))
 
 (map!
  :n "C-S-k" 'hax/mc-make-cursor-above-move-next-line

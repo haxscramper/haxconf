@@ -25,10 +25,14 @@
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
 
+    # My user scripts
+    ~/hax-scripts: scripts
+
 - create:
     - ~/defaultdirs
     - ~/defaultdirs/input
     - ~/defaultdirs/documents
     - ~/defaultdirs/images
+    - ~/defaultdirs/images/wallpapers
     - ~/defaultdirs/notes
     - ~/defaultdirs/pdf
