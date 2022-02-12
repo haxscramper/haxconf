@@ -14,5 +14,6 @@ function gdb_cmd {
         --args $@
 }
 
+nim c daily_note.nim
 nim c -o=haxloader.so haxloader.nim
 emacs -Q --batch --directory "$PWD" -l main.el

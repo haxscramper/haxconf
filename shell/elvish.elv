@@ -403,7 +403,7 @@ fn e {
       &key=rebase-devel
       &val="Rebase current branch to devel"
       &cmd=[
-        [var tmp = "'"(git branch --show-current)"'"]
+        [var tmp = { put (git branch --show-current) }]
         [git checkout devel]
         [git pull upstream devel]
         [git checkout '$tmp']
@@ -415,7 +415,7 @@ fn e {
       &key=squash-and-push
       &val="Create new branch for squashed version and then push it"
       &cmd=[
-        [var now = "'"(git branch --show-current)"'"]
+        [var now = { put (git branch --show-current) }]
         [git checkout devel]
         [git checkout -b '$now"-squashed"']
         [git merge --squash '$now']
@@ -433,7 +433,7 @@ fn e {
         "Extend last commiet"
         [git commit --amend --no-edit]
         "Remember current active branch"
-        [var now = "'"(str:trim-suffix (git branch --show-current) "-squashed")"'"]
+        [var now = { put (str:trim-suffix (git branch --show-current) "-squashed") }]
         "Push the changes to it"
         [git push --force origin 'HEAD:$now']
       ]

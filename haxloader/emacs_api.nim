@@ -261,6 +261,9 @@ func emTypePredicate[T](expect: typedesc[T]): string =
 func getValidationCall[I: SomeInteger](expect: typedesc[I]): string =
   emTypePredicate(EmNumber)
 
+func getValidationCall[E: enum](expect: typedesc[E]): string =
+  emTypePredicate(EmSymbol)
+
 func getValidationCall(expect: typedesc[string]): string =
   emTypePredicate(EmString)
 
@@ -280,7 +283,7 @@ proc mismatch[T](env: EmEnv, value: EmValue, expect: T):
   if not env.boolVal(env.funcall(callname, @[value])):
     result = some (callname, env.getTypeName(value))
 
-proc expectValid[T](
+proc expectValid*[T](
     env: EmEnv, value: EmValue, expect: T,
     desc: string = ""
   ): bool =
@@ -299,6 +302,10 @@ proc expectValid[T](
   else:
     return true
 
+proc fromEmacs*[E: enum](
+    env: EmEnv, target: var E, value: EmValue, check: bool = true) =
+  if not check or expectValid(env, value, target):
+    target = parseEnum[E](env.symName(value))
 
 proc fromEmacs*[B: EmBuiltinType](
   env: EmEnv, target: var B, value: EmValue, check: bool = true) =
@@ -342,244 +349,18 @@ proc toEmacs*(env: EmEnv, value: bool): EmValue =
 proc fromEmacs*[T](env: EmEnv, value: EmValue, check: bool = true): T =
   fromEmacs(env, result, value, check)
 
-proc funcall*[Args](
-    env: EmEnv, name: string, args: Args,
-    checkErr: bool = true
-  ): EmValue {.discardable.} =
+template instPath(depth = -2): string =
+  let (f, l, c) = instantiationInfo(fullpaths = false)
+  "$#($#, $#)" % [f, $l, $c]
 
-  var emArgs: seq[EmValue]
-  for name, value in fieldPairs(args):
-    emArgs.add env.toEmacs(value)
+template emError*(env: EmEnv, text: varargs[string, `$`]) =
+  env.funcall("error", @[
+    env.emVal(
+      "[ERROR]: $#\t$#" % [instPath(), text.join("")]
+    )])
 
-  return env.funcall(name, emArgs, checkErr = checkErr)
+proc emMessage*(env: EmEnv, text: varargs[string, `$`]) =
+  env.funcall("message", @[env.emVal(text.join(""))])
 
-type
-  EmProcData* = object
-    minArity*: int
-    maxArity*: int
-    name*: string
-    docstring*: string
-    impl*: EmProc
-    data*: pointer
-
-proc defun*(env: EmEnv, impl: EmProcData) =
-  discard env.funcall("defalias", @[
-    env.intern(impl.name),
-    env.makeFunction(
-      env,
-      impl.minArity.uint,
-      impl.maxArity.uint,
-      impl.impl,
-      impl.docstring.cstring,
-      impl.data
-    )
-  ])
-
-template defun*(
-    nowEnv: EmEnv,
-    procName: string,
-    argLen: Slice[int],
-    doc: string,
-    body: untyped
-  ): untyped =
-
-  block:
-    proc implProc(
-        env {.inject.}: EmEnv,
-        nargs {.inject.}: uint,
-        args {.inject.}: ptr EmValue
-      ): EmValue {.closure.} =
-
-      body
-
-    let impl = EmProcData(
-      name: procName,
-      docstring: doc,
-      minArity: argLen.a,
-      maxArity: argLen.b,
-      impl: cast[EmProc](rawProc(implProc)),
-      data: rawEnv(implProc)
-    )
-
-    nowEnv.defun(impl)
-
-const
-  emcallNamespace {.strdefine.}: string = ""
-
-template emError*(env: EmEnv): untyped =
-  {.line: instantiationInfo(fullPaths = true).}:
-    let ex = getCurrentException()
-    let trace = ex.getStackTrace()
-    let msg = getCurrentExceptionMsg()
-    discard env.funcallRaw(
-      env.intern("error"), @[env.emVal(
-        "Nim exception: $# - $#\n$#" % [$ex.name, $ex.msg, trace]
-      )])
-
-const emcallNames = CacheSeq"emcallNames"
-
-proc emcallImpl*(bindpatt: string, impl: NimNode): NimNode =
-
-  let
-    wrapName = genSym(ident = impl.name().strVal() & "Emcall")
-    wrapImpl = ident(impl.name().strVal() & "Emprox")
-    nargs = ident("nargs")
-    args = ident("args")
-    env = ident("env")
-
-  emcallNames.add wrapName
-
-  var data: EmProcData
-  if 0 < len(emcallNamespace):
-    data.name = emcallNamespace & ":"
-
-  data.name.add bindpatt % [impl.name().strVal()]
-
-  data.maxArity = impl.params().len() - 1
-  let implName = impl.name().toStrLit()
-
-  var
-    implRepack = newStmtList()
-    recall = newCall(impl.name())
-    count = 0
-
-  let info = newLit(impl.lineInfoObj())
-
-  if impl.params()[1][1].eqIdent("EmEnv"):
-    count = -1
-
-  for arg in impl.params()[1..^1]:
-    let typ = arg[^2]
-    for name in arg[0..^3]:
-      var pass = ident(name.strVal())
-      let argname = name.toStrLit()
-      var init = newCall("default", typ)
-      if arg[^1].kind != nnkEmpty:
-        init = arg[^1]
-
-      if typ.eqIdent("EmEnv"):
-        discard
-
-      else:
-        implRepack.add quote do:
-          var `pass`: `typ` = `init`
-          if `count` < `nargs`:
-            if expectValid(
-              `env`,
-              `args`[`count`],
-              `pass`,
-              desc = (
-                "Argument '" & `argname` & "' for proc '" & `implName` & "' " &
-                  "defined in " & $`info`
-              )
-            ):
-              fromEmacs(`env`, `pass`, `args`[`count`], check = false)
-
-      recall.add pass
-      inc count
-
-  result = quote do:
-    `impl`
-
-    let `wrapImpl` = proc(
-      `env`: EmEnv,
-      `nargs`: uint,
-      `args`: ptr UncheckedArray[EmValue]
-    ): EmValue {.closure.} =
-      `implRepack`
-      try:
-        result = toEmacs(`env`, `recall`)
-
-      except:
-        emError(`env`)
-
-    let `wrapName` =
-      block:
-        var base = `data`
-        base.impl = cast[EmProc](rawProc(`wrapImpl`))
-        base.data = rawEnv(`wrapImpl`)
-
-        base
-
-macro emcallp*(bindname: static[string], impl: untyped): untyped =
-  result = emcallImpl(bindname, impl)
-
-macro emcall*(body: untyped): untyped =
-  result = emcallImpl("$1", body)
-
-macro embind*(name: static[string], body: untyped): untyped =
-  let env = body.params()[1][0]
-  if body.params()[1][1].strVal() != "EmEnv":
-    error(
-      "Expected `EmEnv` as a first argument for embind target proc",
-      body)
-
-  var pass = nnkTupleConstr.newTree()
-  for arg in body.params()[2..^1]:
-    for name in arg[0..^3]:
-      pass.add name
-
-  result = body
-  let fcall =
-    if len(pass) == 0:
-      newCall("funcall", env, newLit(name))
-
-    else:
-      newCall("funcall", env, newLit(name), pass)
-
-  result.body = newCall(nnkBracketExpr.newTree(
-    ident"fromEmacs",
-    body.params()[0],
-  ), env, fcall)
-
-type
-  EmDefun*[Args, Ret] = object
-    name*: string
-
-  EmVar*[T] = object
-    name*: string
-
-func getvar*[T](name: string): EmVar[T] = EmVar[T](name: name)
-
-func getfun*[Args, Ret](
-    name: string, args: typedesc[Args], ret: typedesc[Ret]
-  ): EmDefun[Args, Ret] =
-
-  result.name = name
-
-
-proc funcall*[Args, Ret](
-    env: EmEnv, fun: EmDefun[Args, Ret],
-    args: Args,
-    checkErr: bool = true): Ret =
-  env.fromEmacs(result, env.funcall(fun.name, args, checkErr = checkErr))
-
-
-proc funcall*[Args, Ret](
-    env: EmEnv, fun: EmDefun[Args, Ret],
-    checkErr: bool = true): Ret =
-  env.fromEmacs(result, env.funcall(fun.name, @[], checkErr = checkErr))
-
-macro bindAllEmcall(env: EmEnv): untyped =
-  result = newStmtList()
-  for name in emcallNames:
-    result.add newCall("defun", env, name)
-
-template emInit*(body: untyped): untyped =
-  proc init(runtime {.inject.}: ptr EmRuntime): cint {.
-    exportc: "emacs_module_init", cdecl, dynlib.} =
-    var env {.inject.}: EmEnv = runtime.getEnvironment(runtime)
-
-    assert not isNil(env)
-    bindAllEmcall(env)
-
-    try:
-      body
-      discard env.funcall("provide", @[
-        env.intern(querySetting(projectName))])
-
-    except:
-      env.emError()
-
-    return 0
-
+template emLog*(env: EmEnv, text: varargs[string, `$`]) =
+  env.emMessage("[LOG]: $#\t$#" % [instPath(), join(text, "")])

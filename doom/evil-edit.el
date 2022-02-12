@@ -102,6 +102,40 @@
                   (nth 4 evil-last-paste)
                   t)))))
 
+(defun backward-delete-word-no-push (arg)
+  "Delete characters backward until encountering the beginning of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (delete-region (point)
+                 (progn (forward-word -1)
+                        (point))))
+
+
+(defun forward-delete-word-no-push (arg)
+  "Delete characters backward until encountering the beginning of a word.
+With argument, do this that many times.
+This command does not push text to `kill-ring'."
+  (interactive "p")
+  (delete-region (point)
+                 (progn (forward-word)
+                        (point))))
+
+;;;#== Range deletion
+(defun delete-range-to-symbol-including-no-push (arg)
+  "Delete all symbols between current point position and first
+occurrence of symbol"
+  (interactive "P")
+  (if  (equal arg nil)
+       (setq arg 1))
+  (let ((range-start (point))
+        (range-end   (evil-find-char)))
+    (unless (equal range-end range-start)
+            (progn
+              (internal/push-text-to-delete-ring
+               (buffer-substring range-start range-end))))))
+
+
 (map!
  :n  "c"  #'evil-change-without-register
  :n  "C"  #'evil-change-line-without-register

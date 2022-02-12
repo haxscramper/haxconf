@@ -65,33 +65,21 @@
 ;; Highlight symbol under cursor using saner keybinding
 (map! :nv ",hs" 'highlight-symbol)
 
-(defun spacemacs/align-repeat (start end regexp &optional justify-right after)
-  "Repeat alignment with respect to the given regular expression.
-If JUSTIFY-RIGHT is non nil justify to the right instead of the
-left. If AFTER is non-nil, add whitespace to the left instead of
-the right."
-  (interactive "r\nsAlign regexp: ")
-  (let* ((ws-regexp (if (string-empty-p regexp)
-                        "\\(\\s-+\\)"
-                      "\\(\\s-*\\)"))
-         (complete-regexp (if after
-                              (concat regexp ws-regexp)
-                            (concat ws-regexp regexp)))
-         (group (if justify-right -1 1)))
+(cl-defun newline-and-indent-same-level (&optional
+                                         (indent-addition nil)
+                                         (goto-eol nil))
+  "Insert a newline, then indent to the same column as the current line."
+  (interactive)
+  (when goto-eol (goto-char (line-end-position)))
+  (let ((col (save-excursion
+               (back-to-indentation)
+               (current-column))))
+    (newline)
+    (indent-to-column (if indent-addition
+                          (+ indent-addition col)
+                        col))))
 
-    (unless (use-region-p)
-      (save-excursion
-        (while (and
-                (string-match-p complete-regexp (thing-at-point 'line))
-                (= 0 (forward-line -1)))
-          (setq start (point-at-bol))))
-      (save-excursion
-        (while (and
-                (string-match-p complete-regexp (thing-at-point 'line))
-                (= 0 (forward-line 1)))
-          (setq end (point-at-eol)))))
-
-    (align-regexp start end complete-regexp group 1 t)))
+(map! :i "<C-return>" 'newline-and-indent-same-level)
 
 ;; Modified answer from http://emacs.stackexchange.com/questions/47/align-vertical-columns-of-numbers-on-the-decimal-point
 (defun align-repeat-decimal (start end)
@@ -113,7 +101,7 @@ the right."
           `(defun ,new-func (start end switch)
              (interactive "r\nP")
              (let ((after (not (eq (if switch t nil) (if ,default-after t nil)))))
-               (/align-repeat start end ,regexp ,justify-right after)))))
+               (align-repeat start end ,regexp ,justify-right after)))))
     (put new-func 'function-documentation "Created by `create-align-repeat-x'.")
     new-func-defn))
 

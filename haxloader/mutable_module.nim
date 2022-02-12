@@ -1,0 +1,4 @@
+import ./emacs
+
+emInit():
+  discard

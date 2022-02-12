@@ -1,15 +1,16 @@
-import ./emacs_api
+import ./emacs
 
-proc returnValue(val: int, other: int = 12): int {.emcallp: "bind".} =
+proc returnValue(val: int, other: int = 12): int {.emcall: "bind".} =
   result = val + other
 
-proc returnValue1(val: int): int {.emcall.} =
+proc returnValue1(val: int): int {.emcalln.} =
   result = 123
 
 proc pointMax(env: EmEnv): int {.embind: "point-max".}
 proc pointMin(env: EmEnv): int {.embind: "point-min".}
 proc makeMarker(env: EmEnv): EmMarker {.embind: "make-marker".}
-proc markerPosition(env: EmEnv, marker: EmMarker): OrNil[int] {.embind: "marker-position".}
+proc markerPosition(env: EmEnv, marker: EmMarker): OrNil[int] {.
+  embind: "marker-position".}
 
 emInit():
   echo "initalized emacs"

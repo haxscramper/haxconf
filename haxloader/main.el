@@ -12,10 +12,16 @@
 
 (require 'haxloader)
 ;; (setq haxloader-dirs '(buffer-file-name))
+(hax:load-file "daily_note.nim")
+
 (hax:load-file "module.nim")
 (message "hello")
 (message "[%s]" (test))
 (message "emcall: [%s]" (hax:bind 1))
+
+(hax:load-file "mutable_module.nim")
+
+(hax:open-daily-note 'weekly)
 
 (provide 'main)
 ;;; main.el ends here
