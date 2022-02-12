@@ -216,8 +216,8 @@ type
   EmEnv* = ptr EmEnvObj
 
   EmNonlocalSignal* = object of CatchableError
-
   EmWrongNumberOfArguments* = object of EmNonLocalSignal
+  EmMissingEnvArgument* = object of EmNonLocalSignal
 
 type
   EmAtom* = distinct EmValue

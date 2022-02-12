@@ -1,4 +1,4 @@
-import std/[re, os, times, math, macros, strformat, strutils]
+import std/[re, os, times, math, macros, strformat, strutils, options]
 import ./emacs
 
 const newDayAfter = 5
@@ -140,7 +140,13 @@ proc fileIsEmpty(note: string): bool =
 #   removeFile(fileDirectory & "/today.org")
 #   createSymlink(src = note, dest = fileDirectory & "/today.org")
 
-proc dailyNote(sym: NoteType) {.emcall: "open-daily-note".} =
+proc dailyNote(
+    env: EmEnv, sym: NoteType,
+    dir: Option[string] = none string) {.emcall: "open-daily-note".} =
+
+  let dir = env.symOrRequired(
+    "notes-dir", dir, "Missing argument 'dir")
+  echo dir
   echo sym
   echo "has daily note"
 

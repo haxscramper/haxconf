@@ -21,6 +21,7 @@
 
 (hax:load-file "mutable_module.nim")
 
+(setq notes-dir "/aaaa")
 (hax:open-daily-note 'weekly)
 
 (provide 'main)

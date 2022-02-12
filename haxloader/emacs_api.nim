@@ -203,6 +203,10 @@ proc funcall*(
 proc symVal*(env: EmEnv, value: string): EmValue =
   env.funcall("symbol-value", @[env.intern(value)])
 
+proc boundp*(env: EmEnv, value: string): bool =
+  env.boolVal(env.funcall("boundp", @[env.intern(value)]))
+
+
 
 proc symName*(env: EmEnv, value: EmValue): string =
   env.strVal(env.funcall("symbol-name", @[value]))
@@ -276,6 +280,9 @@ func getValidationCall[I: EmBuiltinType](expect: typedesc[I]): string =
 func getValidationCall[T](expect: typedesc[OrNil[T]]): string =
   getValidationCall(T)
 
+func getValidationCall[T](expect: typedesc[Option[T]]): string =
+  getValidationCall(T)
+
 proc mismatch[T](env: EmEnv, value: EmValue, expect: T):
     Option[tuple[want, got: string]] =
 
@@ -321,11 +328,16 @@ proc fromEmacs*[I: SomeInteger](
     target = I(env.intVal(value))
 
 proc fromEmacs*[T](
-    env: EmEnv, target: var OrNil[T], value: EmValue, check: bool = true) =
+    env: EmEnv, target: var Option[T], value: EmValue, check: bool = true) =
   if env.isNotNil(env, value):
     var tmp: T
     fromEmacs(env, target, value, check)
-    target.value = some tmp
+    target = some tmp
+
+
+proc fromEmacs*[T](
+    env: EmEnv, target: var OrNil[T], value: EmValue, check: bool = true) =
+  fromEmacs(env, target.value, value, check)
 
 proc fromEmacs*(
     env: EmEnv, target: var string, value: EmValue, check: bool = true) =
@@ -348,6 +360,29 @@ proc toEmacs*(env: EmEnv, value: bool): EmValue =
 
 proc fromEmacs*[T](env: EmEnv, value: EmValue, check: bool = true): T =
   fromEmacs(env, result, value, check)
+
+proc symOrRequired*[T](
+    env: EmEnv, sym: string, value: Option[T],
+    err: string): T =
+
+  if value.isSome():
+    result = value.get()
+
+  elif env.boundp(sym):
+    try:
+      fromEmacs[T](env, result, env.symVal(sym))
+
+    except EmTypeError as ex:
+      ex.msg &= "Reading value of $#. $#" % [sym, err]
+      raise ex
+
+  else:
+    raise newException(
+      EmMissingEnvArgument,
+      ("$#. Cannot get from argument " &
+        "(was none()) or symbol '$# (wasn't bound)") % [err, sym])
+
+
 
 template instPath(depth = -2): string =
   let (f, l, c) = instantiationInfo(fullpaths = false)
