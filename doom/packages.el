@@ -29,3 +29,5 @@
 (package! highlight-symbol)
 
 (package! keycast)
+
+(package! aggressive-indent-mode)

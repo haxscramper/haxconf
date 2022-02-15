@@ -214,10 +214,17 @@ the text copying.
 
 type
   EmEnv* = ptr EmEnvObj
+    ## Pointer to the emacs environment object
 
   EmNonlocalSignal* = object of CatchableError
+    ## Emacs function call exited via `(signal)`
+
   EmWrongNumberOfArguments* = object of EmNonLocalSignal
+    ## Emacs function expected different number of arguments
+
   EmMissingEnvArgument* = object of EmNonLocalSignal
+    ## Compiled nim function cannot get value of an argument from it's
+    ## parameters or environment.
 
 type
   EmAtom* = distinct EmValue
@@ -281,6 +288,7 @@ type
     EmWindowLive | EmWindow
 
   OrNil*[T] = object
+    ## Emacs function might optionally return `nil` value for any result.
     value*: Option[T]
 
   EmTypeError* = object of CatchableError
