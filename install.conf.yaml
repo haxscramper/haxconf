@@ -28,6 +28,10 @@
     # My user scripts
     ~/hax-scripts: scripts
 
+    # Directory with files that need to be accessed via absolute location
+    # for one reason or another.
+    ~/.config/hax-absolute: absolute
+
 - create:
     - ~/defaultdirs
     - ~/defaultdirs/input

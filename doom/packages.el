@@ -30,4 +30,9 @@
 
 (package! keycast)
 
+;; Used only in lisp mode, but this is the best solution I've found so far
+;; for keeping the code at least somewhat formatted. Maybe in the future it
+;; would be easier to just use tree-sitter and write own code layouter.
 (package! aggressive-indent-mode)
+
+(package! benchmark-init)
