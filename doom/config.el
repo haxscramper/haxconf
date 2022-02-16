@@ -43,9 +43,18 @@
   (add-to-list 'magit-no-confirm 'stage-all-changes)
   (map! :leader
         :desc "new commit and push"
-        :nv "gcc" (cmd! (magit-stage-modified) (magit-commit-create) (magit-push-current-to-pushremote))
+        :nv "gcc" (cmd! (magit-stage-modified)
+                        (magit-commit-create)
+                        (magit-push-current-to-pushremote))
+        ;; This shortcut actually turned out to be a pretty interesting
+        ;; addition - it is now /very/ easy to run incremental commentary
+        ;; on the changes you do in the code, instead of trying to come up
+        ;; with one large commit message at the end.
         :desc "amend commit"
         :nv "gca" (cmd! (magit-stage-modified) (magit-commit-amend))
+        ;; For small feature branches it is easier to repeatedly extend the
+        ;; same commit to keep the changes small, instead of having to do
+        ;; the squash at the very end.
         :desc "extend commit"
         :nv "gce" (cmd! (magit-stage-modified) (magit-commit-extend))
         :desc "force push current to origin"
