@@ -203,6 +203,9 @@ proc funcall*(
 proc symVal*(env: EmEnv, value: string): EmValue =
   env.funcall("symbol-value", @[env.intern(value)])
 
+proc symVal*(env: EmEnv, sym: EmValue): EmValue =
+  env.funcall("symbol-value", @[sym])
+
 proc boundp*(env: EmEnv, value: string): bool =
   env.boolVal(env.funcall("boundp", @[env.intern(value)]))
 
@@ -290,6 +293,9 @@ proc mismatch[T](env: EmEnv, value: EmValue, expect: T):
   if not env.boolVal(env.funcall(callname, @[value])):
     result = some (callname, env.getTypeName(value))
 
+proc mismatch(env: EmEnv, value, expect: EmValue):
+  Option[(string, string)] = discard
+
 proc expectValid*[T](
     env: EmEnv, value: EmValue, expect: T,
     desc: string = ""
@@ -314,10 +320,16 @@ proc fromEmacs*[E: enum](
   if not check or expectValid(env, value, target):
     target = parseEnum[E](env.symName(value))
 
+proc fromEmacs*(
+  env: EmEnv, target: var EmValue, value: EmValue, check: bool = true) =
+  target = value
+
 proc fromEmacs*[B: EmBuiltinType](
   env: EmEnv, target: var B, value: EmValue, check: bool = true) =
   if not check or expectValid(env, value, target):
     target = B(value)
+
+proc toEmacs*(env: EmEnv, value: EmValue): EmValue = value
 
 proc toEmacs*[B: EmBuiltinType](env: EmEnv, value: B): EmValue =
   EmValue(value)

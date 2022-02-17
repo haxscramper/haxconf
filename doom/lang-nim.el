@@ -32,15 +32,12 @@
       (1 font-lock-function-name-face))
    ))
 
-(add-hook!
- nim-mode
- ;: Disable completion from nimsuggest, it is mostly useless
- (nimsuggest-mode 0)
- ;; Flycheck relies on nimsuggest, so disable it as well
- (flycheck-mode 0)
- (electric-indent-mode 0)
- (company-mode t)
- (setq company-backends '(company-capf :with company-etags))
- (setq imenu-generic-expression nim-imenu-generic-expression)
-
- )
+(add-hook! nim-mode
+  (flycheck-mode 0)
+  ;; Disable completion from nimsuggest, it is mostly useless
+  (nimsuggest-mode 0)
+  ;; Flycheck relies on nimsuggest, so disable it as well
+  (electric-indent-mode 0)
+  (company-mode t)
+  (setq company-backends '(company-capf :with company-etags))
+  (setq imenu-generic-expression nim-imenu-generic-expression))

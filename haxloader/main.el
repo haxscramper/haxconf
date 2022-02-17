@@ -20,7 +20,6 @@
 (message "emcall: [%s]" (hax:bind 1))
 
 (hax:load-file "mutable_module.nim")
-
 (setq notes-dir "/aaaa")
 (hax:open-daily-note 'weekly)
 

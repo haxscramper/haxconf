@@ -1,21 +1,20 @@
-;;; -*- lexical-binding: t; -*-
+                                        ; ;; -*- lexical-binding: t; -*-
 (doom! :input
        :completion company (ivy +prescient -childframe +fuzzy +icons)
        :ui
-       doom doom-dashboard
-       (emoji +unicode)
+       ;; Main editor/window UI look
+       doom doom-dashboard modeline indent-guides
        hl-todo
-       indent-guides
-       modeline
-       ophints           ; highlight the region an operation acts on
-       (popup +defaults) ; tame sudden yet inevitable temporary windows
-       unicode
-       treemacs
-       vc-gutter
-       vi-tilde-fringe   ; fringe tildes to mark beyond EOB
+       ophints
+       ;; More manageable popup windows
+       (popup +defaults)
+       ;; Small UX improvements for unicode/emoji/EOL formatting
+       (emoji +unicode) unicode treemacs vc-gutter vi-tilde-fringe
        zen
-       :editor (evil +everywhere) file-templates fold multiple-cursors
-       word-wrap
+       :editor (evil +everywhere) file-templates fold multiple-cursors snippets
+       ;; Formatting configuration for different modes is configured
+       ;; elsewhere. Visual word wrapping
+       (format +onsave) word-wrap
 
        :emacs dired electric ibuffer undo vc
        :term eshell
@@ -29,9 +28,7 @@
        :lang (cc +lsp) emacs-lisp json latex markdown python qt rst sh yaml
        (org +dragndrop)
 
-       :config
-       ;;literate
-       (default +bindings +smartparens))
+       :config (default +bindings +smartparens))
 
 (when doom-debug-p
   (require 'benchmark-init)

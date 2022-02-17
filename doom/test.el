@@ -1,0 +1,1 @@
+(message "DIR: %s" (dir!))

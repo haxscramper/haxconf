@@ -39,4 +39,14 @@
 ;; would be easier to just use tree-sitter and write own code layouter.
 (package! aggressive-indent-mode)
 
+;; At some point I will have to check which of the 9k+ packages that I plan
+;; to install eventually slows everything to a crawl. I didn't dive too
+;; deep into other configuration possibilities, just used first suggestion
+;; I found:
+;; https://github.com/hlissner/doom-emacs/issues/4498#issuecomment-753692913
 (package! benchmark-init)
+
+;; Sometimes regex is not enough. I don't really use folding, but I /do/
+;; plan to use this for various code manipulation magic.
+(package! tree-sitter)
+(package! tree-sitter-langs)

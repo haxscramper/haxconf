@@ -136,6 +136,32 @@ edit:add-var xcpp~ {
   }
 }
 
+edit:add-var doom-runexec~ {|@args|
+  emacs --with-profile doom $@args
+}
+
+edit:add-var doom-debug~ {|@extra|
+  var msg = "/tmp/emacs.messages"
+  var wrn = "/tmp/emacs.warnings"
+  /bin/rm -f $msg
+  /bin/rm -f $wrn
+  emacs ^
+    --no-splash ^
+    --no-window-system ^
+    --with-profile doom ^
+    $@extra ^
+    --eval '(progn
+  (when (get-buffer "*Warnings*") (with-current-buffer "*Messages*"
+    (write-region (point-min) (point-max) "/tmp/emacs.messages")))
+  (when (get-buffer "*Warnings*") (with-current-buffer "*Warnings*"
+    (write-region (point-min) (point-max) "/tmp/emacs.warnings")))
+  (message "Quitting emacs")
+  (save-buffers-kill-emacs))'
+
+  if ?(test -e $msg) { cat $msg }
+  if ?(test -e $wrn) { cat $wrn }
+}
+
 fn gic {
   git checkout (str:trim (git branch -l --sort=committerdate | tac | fzf) ' *')
 }
