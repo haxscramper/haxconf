@@ -12,6 +12,10 @@
 ;; Nim mode for emacs, using krux fork because it is more usable
 (package! nim-mode :recipe (:host github :repo "krux02/nim-mode"))
 
+;; Using `:lang nim' in the `init.el' would've added nim support for
+;; org-mode automatically, but here I have to configure this from scratch.
+(package! ob-nim)
+
 ;; underscore -> UPCASE -> CamelCase conversion of names
 (package! string-inflection)
 

@@ -21,7 +21,7 @@ the current one."
 (defun hax/org-mode-hook ()
   (interactive)
   (abbrev-mode 1)
-  (message "Triggered org-mode hook 1")
+  (org-indent-mode -1)
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
   ;; abomination of a `map!' call to do what I need.
@@ -46,12 +46,19 @@ the current one."
    org-log-reschedule 'note
    org-log-states-order-reversed nil
    org-log-redeadline 'note
+   org-startup-indented nil
    calendar-week-start-day 1
    org-hierarchical-todo-statistics t
    org-image-actual-width (list 300)
    org-startup-with-inline-images nil
-   org-adapt-indentation t
+   org-adapt-indentation nil
    org-log-into-drawer t)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((C . t)
+     (nim . t)
+     (shell . t)
+     (python . t)))
   (setq org-todo-keywords
         '((sequence
            "TODO(t!/!)"

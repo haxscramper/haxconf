@@ -15,7 +15,6 @@
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        zen
        :editor (evil +everywhere) file-templates fold multiple-cursors
-       objed
        word-wrap
 
        :emacs dired electric ibuffer undo vc
@@ -25,9 +24,9 @@
        ;; code comments as well
        :checkers syntax (spell +everywhere) (grammar +langtool)
 
-       :tools (eval +overlay) gist lookup magit pdf
+       :tools (eval +overlay) gist lookup magit pdf lsp
        :os tty
-       :lang cc emacs-lisp json latex markdown python qt rst sh yaml
+       :lang (cc +lsp) emacs-lisp json latex markdown python qt rst sh yaml
        (org +dragndrop)
 
        :config

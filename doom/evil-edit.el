@@ -127,13 +127,13 @@ This command does not push text to `kill-ring'."
 occurrence of symbol"
   (interactive "P")
   (if  (equal arg nil)
-       (setq arg 1))
+      (setq arg 1))
   (let ((range-start (point))
         (range-end   (evil-find-char)))
     (unless (equal range-end range-start)
-            (progn
-              (internal/push-text-to-delete-ring
-               (buffer-substring range-start range-end))))))
+      (progn
+        (internal/push-text-to-delete-ring
+         (buffer-substring range-start range-end))))))
 
 
 (map!
@@ -151,7 +151,7 @@ occurrence of symbol"
  ;; Backspace should **DELETE** text - why in world someone could even
  ;; thing this is not how it should functino.
  :nvi "<C-backspace>" 'backward-delete-word-no-push
-)
+ )
 
 
 
