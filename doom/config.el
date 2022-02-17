@@ -11,9 +11,47 @@
                                 :family "sans"
                                 :size 13))
 
-(setq doom-theme 'doom-one)
+(setq +file-templates-dir (expand-file-name "templates" (dir!)))
+(set-file-templates!
+ '(("/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
+   ("*\\.sh$" :trigger "__" :mode 'sh-mode)))
 
 
+(defun tree-repr (item)
+  "Return tree representation of the item's structure"
+  (let ((tyof (type-of item))
+        (name (symbol-name tyof)))
+    (case tyof
+      ("vector" "vector")
+      (t name))))
+
+(defun hax/c++-rotate-infix ()
+  "Rotate arguments of the current infix expression"
+  (interactive)
+  (let* ((infix (tree-sitter-node-at-point 'binary_expression)))
+    (if (not infix) (message "No infix node found at current position")
+      (let* ((lhs (tsc-get-child-by-field infix :left))
+             (rhs (tsc-get-child-by-field infix :right))
+             (r-rhs (tsc-node-range rhs))
+             (r-lhs (tsc-node-range lhs))
+             ;; Infix operators are not named child nodes for most language
+             ;; parsers.
+             (op  (tsc-get-nth-child infix 1))
+             ;; Remember infix element position to jump to it immediately.
+             (pos (+ 1
+                     (aref r-lhs 0)
+                     (- (aref r-rhs 1) (aref r-rhs 0))))
+             ;; Adding extra spacing here because tree-sitter nodes don't
+             ;; include whitespace character in their boundaries.
+             (text (format "%s %s %s"
+                           (tsc-node-text rhs)
+                           (tsc-node-text op)
+                           (tsc-node-text lhs))))
+        ;; Get full range of infix elements
+        (save-excursion
+          (delete-region (aref r-lhs 0) (aref r-rhs 1))
+          (insert text))
+        (goto-char pos)))))
 
 (load! "evil-main.el")
 (load! "evil-edit.el")
@@ -41,11 +79,19 @@
 (after! magit
   (setq git-commit-major-mode 'org-mode)
   (add-to-list 'magit-no-confirm 'stage-all-changes)
+  (defun hax/magit-force-push-current ()
+    "random documentation string if krux ever wants to get any
+more nitpickery about stuff I write in my configuration files."
+    (interactive)
+    (magit-git-command
+     (format "git push --force origin %s"
+             (magit-get-current-branch))))
+
   (map! :leader
         :desc "new commit and push"
         :nv "gcc" (cmd! (magit-stage-modified)
                         (magit-commit-create)
-                        (magit-push-current-to-pushremote))
+                        (hax/magit-force-push-current))
         ;; This shortcut actually turned out to be a pretty interesting
         ;; addition - it is now /very/ easy to run incremental commentary
         ;; on the changes you do in the code, instead of trying to come up
@@ -58,9 +104,7 @@
         :desc "extend commit"
         :nv "gce" (cmd! (magit-stage-modified) (magit-commit-extend))
         :desc "force push current to origin"
-        :nv "gcP" (cmd! (magit-git-command
-                         (format "git push --force origin %s"
-                                 (magit-get-current-branch))))))
+        :nv "gcP" #'hax/magit-force-push-current))
 
 (after! xref
   (setq-default xref-backend-functions '(etags--xref-backend t)))
