@@ -28,7 +28,7 @@
    ("notNil" . 'font-lock-builtin-face)
    ;; Highlight function calls as well
    (,(rx
-      (| " " "." "]" ")" "(") (group (in lower) (+ word)) "(") .
+      (| " " "." "]" ")" "(" "[") (group (in lower) (+ word)) "(") .
       (1 font-lock-function-name-face))
    ))
 

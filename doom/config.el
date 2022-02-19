@@ -4,7 +4,7 @@
       user-mail-address "haxscramper@gmail.com")
 
 (setq doom-font (font-spec
-                 :family "FiraCode"
+                 :family "JetBrains Mono"
                  :size 18)
 
       doom-variable-pitch-font (font-spec
@@ -27,6 +27,8 @@
 
 (defun hax/c++-rotate-infix ()
   "Rotate arguments of the current infix expression"
+  ;; TODO expression can also be 'rotated', but that would require lookup
+  ;; map.
   (interactive)
   (let* ((infix (tree-sitter-node-at-point 'binary_expression)))
     (if (not infix) (message "No infix node found at current position")
@@ -75,6 +77,8 @@
 
 (setq confirm-kill-emacs nil)
 
+(after! evil-mc
+  (global-evil-mc-mode t))
 
 (after! magit
   (setq git-commit-major-mode 'org-mode)
@@ -88,8 +92,11 @@ more nitpickery about stuff I write in my configuration files."
              (magit-get-current-branch))))
 
   (map! :leader
-        :desc "new commit and push"
+        :desc "new commit"
         :nv "gcc" (cmd! (magit-stage-modified)
+                        (magit-commit-create))
+        :desc "new commit and push"
+        :nv "gcC" (cmd! (magit-stage-modified)
                         (magit-commit-create)
                         (hax/magit-force-push-current))
         ;; This shortcut actually turned out to be a pretty interesting
@@ -110,7 +117,6 @@ more nitpickery about stuff I write in my configuration files."
   (setq-default xref-backend-functions '(etags--xref-backend t)))
 
 (after! keycast
-
   (define-minor-mode keycast-mode
     "Show current command and its key binding in the mode line."
     :global t
@@ -128,42 +134,7 @@ more nitpickery about stuff I write in my configuration files."
 
   (add-to-list 'global-mode-string '("" keycast-mode-line)))
 
-(setq save-abbrevs 'silent)
-
-(setq flycheck-disabled-checkers '(emacs-lisp-checkdoc))
-
-(after! spell-fu
-  (setq spell-fu-idle-delay 0.5 ; default is 0.25
-        ispell-program-name "hunspell"
-        ;; aspell -> "--sug-mode=ultra"
-        ;;ispell-extra-args '("-d en_US")
-        ispell-dictionary "en_US" ; needed for MacOS in particular
-        ispell-personal-dictionary "~/.aspell.en.pws" ; standard location
-        spell-fu-dictionary "~/.config/dict") ; standard location
-
-  ;; use American English as ispell default dicTionary
-  (ispell-change-dictionary "american" t)
-  (setq spell-fu-faces-exclude
-        '(org-block-begin-line
-          org-block-end-line
-          org-code
-          org-date
-          org-drawer org-document-info-keyword
-          org-ellipsis
-          org-link
-          org-meta-line
-          org-properties
-          org-properties-value
-          org-special-keyword
-          org-src
-          org-tag
-          org-verbatim
-          rst-external
-          rst-literal
-          rst-reference
-          sphinx-code-block-face
-          font-lock-string-face))
-  (setq-default ispell-program-name "hunspell"))
+(load! "lang-spelling.el")
 
 (after! hl-todo
   (setq hl-todo-keyword-faces

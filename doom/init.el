@@ -7,7 +7,10 @@
        hl-todo
        ophints
        ;; More manageable popup windows
-       (popup +defaults)
+       (popup
+        ;; Make org-node notes, code editing buffers also respect the popup
+        ;; rules.
+        +all)
        ;; Small UX improvements for unicode/emoji/EOL formatting
        (emoji +unicode) unicode treemacs vc-gutter vi-tilde-fringe
        zen
@@ -25,8 +28,14 @@
 
        :tools (eval +overlay) gist lookup magit pdf lsp
        :os tty
-       :lang (cc +lsp) emacs-lisp json latex markdown python qt rst sh yaml
-       (org +dragndrop)
+       :lang
+       cc qt sh
+       emacs-lisp
+       ;; Configuration, serialization
+       json yaml
+       ;; Markup languages
+       latex markdown rst (org +dragndrop)
+       (python +lsp)
 
        :config (default +bindings +smartparens))
 

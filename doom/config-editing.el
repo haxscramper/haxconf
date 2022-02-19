@@ -1,5 +1,6 @@
 ;;; -*- lexical-binding: t; -*-
 
+(setq scroll-margin 2)
 (setq whitespace-line-column 75)
 (setq-default fill-column 75)
 (setq display-line-numbers-type 'relative)
@@ -26,11 +27,13 @@
 
 (map!
  ;; M-> or M-< to indent code blocks in all modes
- :nv "M->" (lambda () (interactive)
-             (code-indent-shift-right (get-selected-region-start) (get-selected-region-end) 2))
- :nv "M-<" (lambda () (interactive)
-             (code-indent-shift-left (get-selected-region-start) (get-selected-region-end) 2))
- )
+ :nv "M->" (cmd! (code-indent-shift-right
+                  (get-selected-region-start)
+                  (get-selected-region-end) 2))
+ :nv "M-<" (cmd! (code-indent-shift-left
+                  (get-selected-region-start)
+                  (get-selected-region-end) 2))
+ :nv [s-pause] (cmd! (shell-command "entr-space.sh")))
 
 ;; Text case conversion
 

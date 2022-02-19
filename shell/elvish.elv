@@ -1,6 +1,8 @@
 use epm
 use re
 use str
+use file
+use path
 
 epm:install &silent-if-installed github.com/zzamboni/elvish-completions
 use github.com/zzamboni/elvish-completions/vcsh
@@ -53,6 +55,21 @@ set edit:insert:binding[Ctrl-t] = {
 }
 
 set edit:insert:binding[Ctrl-w] = { edit:kill-small-word-left }
+
+set edit:insert:binding[Ctrl-e] = {
+  var temp-file = (path:temp-file)
+  print $edit:current-command > $temp-file
+  try {
+    # This assumes $E:EDITOR is an absolute path. If you prefer to use
+    # just the bare command and have it resolved when this is run use
+    # (external $E:EDITOR)
+    (external $E:EDITOR) $temp-file[name] < /dev/tty > /dev/tty 2>&1
+    set edit:current-command = (slurp < $temp-file[name])[..-1]
+  } finally {
+    file:close $temp-file
+    rm $temp-file[name]
+  }
+}
 
 set edit:insert:binding[Alt-Enter] = { edit:insert-at-dot "\n" }
 
