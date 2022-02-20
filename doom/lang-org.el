@@ -27,28 +27,46 @@ the current one."
 ;; (after!
 ;;   )
 
+(defun font-lock-replace-keywords (mode keyword-list)
+  "Use `font-lock-remove-keywords' on each keyword and then add
+  `keyword-list' to font lock."
+  (font-lock-remove-keywords
+   mode
+   (-map 'car keyword-list))
+  (font-lock-add-keywords mode keyword-list))
+
 (defun hax/org-mode-hook ()
   (interactive)
+  ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
+  ;; pair here is copied from this blog post, since I can't really figure out
+  ;; what exactly is going on with ordering. But that implementation allows
+  ;; me to override the default checkbox highlighting for checkboxes.
+  (font-lock-add-keywords
+   'org-mode
+   `((,(rx bol "- " (group "[X]")) 1 'org-done prepend)
+     (,(rx bol "- " (group "[ ]")) 1 'org-todo prepend))
+   'append)
+
+  (message "Org-mode hook executed")
   (abbrev-mode 1)
   (org-indent-mode -1)
-  (message "Triggered org-mode hook")
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
   ;; abomination of a `map!' call to do what I need.
   (map! :map org-mode-map [C-S-return] nil)
   (map! :map org-mode-map [C-S-return] #'hax/org-insert-todo-entry)
-  ;; (map! :map evil-org-mode-map :ni [C-S-return] nil)
-  ;; (map! :map evil-org-mode-map :ni [C-S-return] #'hax/org-insert-todo-entry)
+  (map! :map evil-org-mode-map :ni [C-S-return] nil)
+  (map! :map evil-org-mode-map :ni [C-S-return] #'hax/org-insert-todo-entry)
 
   (map! :map org-mode-map [C-return] nil)
   (map! :map org-mode-map [C-return] #'+org/insert-item-below)
-  ;; (map! :map evil-org-mode-map :ni [C-return] nil)
-  ;; (map! :map evil-org-mode-map :ni [C-return] #'+org/insert-item-below)
+  (map! :map evil-org-mode-map :ni [C-return] nil)
+  (map! :map evil-org-mode-map :ni [C-return] #'+org/insert-item-below)
 
   (map! :map org-mode-map [M-return] nil)
   (map! :map org-mode-map [M-return] #'org-add-note)
-  ;; (map! :map evil-org-mode-map [M-return] nil)
-  ;; (map! :map evil-org-mode-map [M-return] #'org-add-note)
+  (map! :map evil-org-mode-map [M-return] nil)
+  (map! :map evil-org-mode-map [M-return] #'org-add-note)
 
   ;; Consistent multicursor bindings are more important for me, so
   ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
@@ -65,14 +83,20 @@ the current one."
              (evil-insert-state)
              (yas-expand-snippet "#+begin_src $1\n$0\n#+end_src"))
    :nv ",hi" #'org-indent-mode))
+
 (after! org
   (require 'org-expiry)
+  (add-hook! 'org-mode-hook 'hax/org-mode-hook)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
+      ("anon" "anonymous")
+      ("inf" "infinite")
+      ("ambig" "ambiguous")
       ("i" "I")))
-  (add-hook! 'org-mode-hook 'hax/org-mode-hook)
   (setq
+   ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
+   ;; My attempts on properly managing todos
    org-agenda-files (f-glob "todo/*.org" org-directory)
    ;; Log when schedule changed
    org-log-reschedule 'note
@@ -90,6 +114,7 @@ the current one."
    org-blank-before-new-entry '((heading . t) (plain-list-item . nil))
    org-hierarchical-todo-statistics t
    org-image-actual-width (list 300)
+   org-fontify-done-headline nil
    org-startup-with-inline-images nil
    ;; `:DRAWER:' should be indented to the heading
    org-adapt-indentation t

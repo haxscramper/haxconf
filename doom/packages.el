@@ -9,8 +9,6 @@
 ;; List handing library
 (package! dash)
 
-(package! flycheck-languagetool)
-
 ;; Nim mode for emacs, using krux fork because it is more usable
 (package! nim-mode :recipe (:host github :repo "krux02/nim-mode"))
 

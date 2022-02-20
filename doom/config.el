@@ -3,10 +3,8 @@
 (setq user-full-name "haxscramper"
       user-mail-address "haxscramper@gmail.com")
 
-(setq doom-font (font-spec
-                 :family "JetBrains Mono"
-                 :size 18)
-
+(setq doom-font (font-spec :family "JetBrains Mono" :size 18)
+      doom-unicode-font (font-spec :family "Input Mono Narrow" :size 12)
       doom-variable-pitch-font (font-spec
                                 :family "sans"
                                 :size 13))

@@ -1,4 +1,11 @@
-                                        ; ;; -*- lexical-binding: t; -*-
+;; -*- lexical-binding: t; -*-
+
+;; https://archive.baty.net/2020/respecting-visual-lines-in-doom-emacs/
+(use-package-hook! evil :pre-init
+  ;; sane j and k behavior
+  (setq evil-respect-visual-line-mode t)
+  t)
+
 (doom! :input
        :completion company (ivy +prescient -childframe +fuzzy +icons)
        :ui
@@ -24,7 +31,7 @@
 
        ;; Use hunspell and check for spelling and grammar mistakes in the
        ;; code comments as well
-       :checkers syntax (spell +everywhere) (grammar +langtool)
+       :checkers (spell +everywhere)
 
        :tools (eval +overlay) gist lookup magit pdf lsp
        :os tty

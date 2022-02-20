@@ -3,9 +3,10 @@
 (setq scroll-margin 2)
 (setq whitespace-line-column 75)
 (setq-default fill-column 75)
-(setq display-line-numbers-type 'relative)
 (global-visual-line-mode t)
 
+;; Don't account for folded section lines
+(setq display-line-numbers-type 'visual)
 ;; Editing operations such as deleting work only on parts of the word instead of
 ;; cutting off whole identifier at once.
 ;; https://www.gnu.org/software/emacs/manual/html_node/ccmode/Subword-Movement.html
