@@ -3,11 +3,17 @@
 (setq user-full-name "haxscramper"
       user-mail-address "haxscramper@gmail.com")
 
+
+
 (setq doom-font (font-spec :family "JetBrains Mono" :size 18)
-      doom-unicode-font (font-spec :family "Input Mono Narrow" :size 12)
-      doom-variable-pitch-font (font-spec
-                                :family "sans"
-                                :size 13))
+      doom-unicode-font doom-font
+      doom-serif-font doom-font
+      doom-variable-pitch-font doom-font)
+
+(after! unicode-fonts
+  ;; Otherwise unicode fonts are not properly set in the configuration, and
+  ;; text does not loop properly (uses default fallback consolas)
+  (setq doom-unicode-font doom-font))
 
 (setq +file-templates-dir (expand-file-name "templates" (dir!)))
 (set-file-templates!

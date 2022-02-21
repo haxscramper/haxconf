@@ -29,10 +29,6 @@
        :emacs dired electric ibuffer undo vc
        :term eshell
 
-       ;; Use hunspell and check for spelling and grammar mistakes in the
-       ;; code comments as well
-       :checkers (spell +everywhere)
-
        :tools (eval +overlay) gist lookup magit pdf lsp
        :os tty
        :lang

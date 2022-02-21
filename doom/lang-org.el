@@ -49,7 +49,11 @@ the current one."
 
   (message "Org-mode hook executed")
   (abbrev-mode 1)
+  (flyspell-mode 1)
   (org-indent-mode -1)
+  ;; Indentation guides slow down org-mode when there are multiple folds
+  ;; (at least I was able to identifiy the implementation ot that point)
+  (highlight-indent-guides-mode -1)
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
   ;; abomination of a `map!' call to do what I need.
@@ -114,6 +118,8 @@ the current one."
    org-blank-before-new-entry '((heading . t) (plain-list-item . nil))
    org-hierarchical-todo-statistics t
    org-image-actual-width (list 300)
+   ;; Store seconds in the timestamp format
+   org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S>")
    org-fontify-done-headline nil
    org-startup-with-inline-images nil
    ;; `:DRAWER:' should be indented to the heading
