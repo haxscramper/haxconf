@@ -58,16 +58,17 @@ set edit:insert:binding[Ctrl-w] = { edit:kill-small-word-left }
 
 set edit:insert:binding[Ctrl-e] = {
   var temp-file = (path:temp-file)
-  print $edit:current-command > $temp-file
+  var name = $temp-file[name]".sh"
+  print $edit:current-command > $name
   try {
     # This assumes $E:EDITOR is an absolute path. If you prefer to use
     # just the bare command and have it resolved when this is run use
     # (external $E:EDITOR)
-    (external $E:EDITOR) $temp-file[name] < /dev/tty > /dev/tty 2>&1
-    set edit:current-command = (slurp < $temp-file[name])[..-1]
+    (external $E:EDITOR) $name < /dev/tty > /dev/tty 2>&1
+    set edit:current-command = (slurp < $name)[..-1]
   } finally {
     file:close $temp-file
-    rm $temp-file[name]
+    rm $name
   }
 }
 

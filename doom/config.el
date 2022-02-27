@@ -10,15 +10,32 @@
       doom-serif-font doom-font
       doom-variable-pitch-font doom-font)
 
+(defun hax/buffer-face-mode-variable ()
+  "Set current buffer fase to a different configuration"
+  (interactive)
+  (setq buffer-face-mode-face '(:family "Iosevka Mono"))
+  (buffer-face-mode))
+
+
 (after! unicode-fonts
   ;; Otherwise unicode fonts are not properly set in the configuration, and
   ;; text does not loop properly (uses default fallback consolas)
-  (setq doom-unicode-font doom-font))
+  (setq doom-unicode-font doom-font)
+
+  )
+
+;; `:ui unicode' does it's own fontset configuration, so I have to hack
+;; this in like suggested on issue
+;; https://github.com/hlissner/doom-emacs/issues/3298
+(defadvice! add-my-font-config (&rest _) :after #'unicode-fonts--setup-1
+  ;; Everson mono can be installed from aur as `ttf-everson-mono' (font
+  ;; page is https://www.evertype.com/emono/)
+  (set-fontset-font "fontset-default" 'mathematical "Everson Mono"))
 
 (setq +file-templates-dir (expand-file-name "templates" (dir!)))
-(set-file-templates!
- '(("/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
-   ("*\\.sh$" :trigger "__" :mode 'sh-mode)))
+(set-file-template! "/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
+(set-file-template! "\\.el$" :trigger "__" :mode 'emacs-lisp-mode)
+(set-file-template! "\\.sh$" :trigger "__" :mode 'sh-mode)
 
 
 (defun tree-repr (item)
@@ -76,6 +93,7 @@
 (load! "lang-base.el")
 (load! "lang-c.el")
 (load! "lang-org.el")
+(load! "lang-latex.el")
 
 (load! "config-editing.el")
 

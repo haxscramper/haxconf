@@ -12,8 +12,8 @@
 ;; ;; I need the latest version of the package
 ;; (package! spell-fu :recipe (:host gitlab :repo "ideasman42/emacs-spell-fu"))
 
-;; ;; Nim mode for emacs, using krux fork because it is more usable
-;; (package! nim-mode :recipe (:host github :repo "krux02/nim-mode"))
+;; Nim mode for emacs, using krux fork because it is more usable
+(package! nim-mode :recipe (:host github :repo "krux02/nim-mode"))
 
 (package! spell-fu :pin "8185467b24f05bceb428a0e9909651ec083cc54e")
 

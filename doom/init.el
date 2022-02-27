@@ -6,6 +6,7 @@
   (setq evil-respect-visual-line-mode t)
   t)
 
+
 (doom! :input
        :completion company (ivy +prescient -childframe +fuzzy +icons)
        :ui
@@ -19,7 +20,7 @@
         ;; rules.
         +all)
        ;; Small UX improvements for unicode/emoji/EOL formatting
-       (emoji +unicode) unicode treemacs vc-gutter vi-tilde-fringe
+       (emoji +unicode) unicode vc-gutter vi-tilde-fringe
        zen
        :editor (evil +everywhere) file-templates fold multiple-cursors snippets
        ;; Formatting configuration for different modes is configured
@@ -33,6 +34,7 @@
        :os tty
        :lang
        cc qt sh
+       arduino
        emacs-lisp
        ;; Configuration, serialization
        json yaml

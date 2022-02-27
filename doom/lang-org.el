@@ -35,6 +35,11 @@ the current one."
    (-map 'car keyword-list))
   (font-lock-add-keywords mode keyword-list))
 
+(setq abbrev-expand-function
+      (lambda ()
+        (unless (org-in-src-block-p)
+          (abbrev--default-expand))))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -43,8 +48,8 @@ the current one."
   ;; me to override the default checkbox highlighting for checkboxes.
   (font-lock-add-keywords
    'org-mode
-   `((,(rx bol "- " (group "[X]")) 1 'org-done prepend)
-     (,(rx bol "- " (group "[ ]")) 1 'org-todo prepend))
+   `((,(rx bol (any space) "- " (group "[X]")) 1 'org-done prepend)
+     (,(rx bol (any space) "- " (group "[ ]")) 1 'org-todo prepend))
    'append)
 
   (message "Org-mode hook executed")
@@ -57,44 +62,72 @@ the current one."
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
   ;; abomination of a `map!' call to do what I need.
-  (map! :map org-mode-map [C-S-return] nil)
-  (map! :map org-mode-map [C-S-return] #'hax/org-insert-todo-entry)
-  (map! :map evil-org-mode-map :ni [C-S-return] nil)
-  (map! :map evil-org-mode-map :ni [C-S-return] #'hax/org-insert-todo-entry)
-
-  (map! :map org-mode-map [C-return] nil)
-  (map! :map org-mode-map [C-return] #'+org/insert-item-below)
-  (map! :map evil-org-mode-map :ni [C-return] nil)
-  (map! :map evil-org-mode-map :ni [C-return] #'+org/insert-item-below)
-
-  (map! :map org-mode-map [M-return] nil)
-  (map! :map org-mode-map [M-return] #'org-add-note)
-  (map! :map evil-org-mode-map [M-return] nil)
-  (map! :map evil-org-mode-map [M-return] #'org-add-note)
-
-  ;; Consistent multicursor bindings are more important for me, so
-  ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
-  (map! :map evil-org-mode-map :ni "C-S-j" nil)
-  (map! :map evil-org-mode-map :ni "C-S-k" nil)
+  (map!
+   :map org-mode-map
+   [C-S-return] nil
+   [C-return] nil
+   [M-return] nil
+   )
 
   (map!
    :map evil-org-mode-map
+   :ni [C-S-return] nil
+   :ni [C-return] nil
+   [M-return] nil
+   )
+
+  (map!
+   :map org-mode-map
+   [M-return] #'org-add-note
+   [C-S-return] #'hax/org-insert-todo-entry
+   [C-return] #'+org/insert-item-below)
+
+  (map!
+   :map evil-org-mode-map
+   ;; Consistent multicursor bindings are more important for me, so
+   ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
+   :ni "C-S-j" nil
+   :ni "C-S-k" nil
+
+   [M-return] #'org-add-note
+   :ni [C-S-return] #'hax/org-insert-todo-entry
+   :ni [C-return] #'+org/insert-item-below
+
    :nv ",#" #'hax/org-update-all-cookies
+   :nv ",eh" 'org-html-export-to-html
+   :desc "Async export to pdf"
+   :nv ",ep" (cmd! (org-latex-export-to-pdf t))
+   :nv ",ea" 'org-ascii-export-to-ascii
+   :nv ",eP" 'org-latex-export-to-pdf
+   :nv ",el" 'org-latex-export-to-latex
    :nv ",in" #'org-add-note
    :n ",tc" #'org-toggle-checkbox
    :desc "insert #+begin_src"
    :n ",ic" (cmd!
              (evil-insert-state)
              (yas-expand-snippet "#+begin_src $1\n$0\n#+end_src"))
-   :nv ",hi" #'org-indent-mode))
+   :nv ",hi" #'org-indent-mode
+   :nv ",ci" #'org-clock-in
+   :nv ",co" #'org-clock-out
+   )
 
-(after! org
+  (setq company-backends
+        '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
+
+(add-hook! 'org-mode-hook 'hax/org-mode-hook)
+
+(after!
+  org
   (require 'org-expiry)
-  (add-hook! 'org-mode-hook 'hax/org-mode-hook)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
       ("anon" "anonymous")
       ("inf" "infinite")
+      ("js" "JavaScript")
+      ("rust" "Rust")
+      ("dod" "data-oriented")
+      ("cxx" "C++")
+      ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
   (setq
@@ -103,11 +136,11 @@ the current one."
    ;; My attempts on properly managing todos
    org-agenda-files (f-glob "todo/*.org" org-directory)
    ;; Log when schedule changed
-   org-log-reschedule 'note
+   org-log-reschedule 'time
    ;; Notes should go from top to bottom
    org-log-states-order-reversed nil
    ;; Log when deadline changed
-   org-log-redeadline 'note
+   org-log-redeadline 'time
    ;; This looks nice but has a lot of random glitches on this
    ;; configuration
    org-startup-indented nil
@@ -120,12 +153,21 @@ the current one."
    org-image-actual-width (list 300)
    ;; Store seconds in the timestamp format
    org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S>")
+   ;; Fontification of the 'headings' also affects checkbox items, and I
+   ;; tend to them on several lines where heading fontification only
+   ;; highlights first one. So essentially this features is pretty nice,
+   ;; but just doesn't work properly for my use case
    org-fontify-done-headline nil
    org-startup-with-inline-images nil
    ;; `:DRAWER:' should be indented to the heading
    org-adapt-indentation t
    ;; Notes
-   org-log-into-drawer t)
+   org-log-into-drawer t
+   ;; Don't remove zero-length clocks. Most tasks can't be accomplished
+   ;; under a minute, but I like to avoid having extra smart filtering of
+   ;; the actions I make. If I need to do the analysis of my actions I can
+   ;; filter out outliers manually
+   org-clock-out-remove-zero-time-clocks nil)
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((C . t)
