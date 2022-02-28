@@ -102,6 +102,46 @@
 (after! evil-mc
   (global-evil-mc-mode t))
 
+;; Use `C-c C-return' to annotate single lines in the commit message. Maybe
+;; this can somehow be integrated with github review (read the anotations
+;; from the commit message and add them as review on github instead of
+;; going there and repeating the process manually)
+(defvar hax/last-commit-section nil)
+
+(defun hax/magit-insert-section-location ()
+  (interactive)
+  (let* ((msg-buffer (get-buffer "COMMIT_EDITMSG"))
+         (hunk (magit-diff-visit--hunk)))
+    (when (and msg-buffer hunk)
+      (let* ((goto-worktree nil)
+             (window (get-buffer-window msg-buffer))
+             (file (magit-file-relative-name (magit-file-at-point t t)))
+             (goto-from (magit-diff-visit--goto-from-p hunk goto-worktree))
+             (line (magit-diff-hunk-line hunk goto-from)))
+        (setq hax/last-commit-section (list (current-buffer) (point)))
+        (select-window window)
+        (goto-char (line-end-position))
+        (insert "\n")
+        (insert (format "- %s:%s :: " file line))
+        (evil-insert-state 1)
+        (save-excursion (insert "\n"))))))
+
+(defun hax/return-to-section-location ()
+  (interactive)
+  (when hax/last-commit-section
+    (let* ((buffer (nth 0 hax/last-commit-section))
+           (pos (nth 1 hax/last-commit-section)))
+      (select-window (get-buffer-window buffer))
+      (goto-char pos))))
+
+(map!
+ :map magit-diff-mode-map
+ :n "C-c <C-return>" #'hax/magit-insert-section-location)
+
+(map!
+ :map with-editor-mode-map
+ :ni "C-c <C-return>" #'hax/return-to-section-location)
+
 (after! magit
   (setq git-commit-major-mode 'org-mode)
   (add-to-list 'magit-no-confirm 'stage-all-changes)
@@ -112,6 +152,8 @@ more nitpickery about stuff I write in my configuration files."
     (magit-git-command
      (format "git push --force origin %s"
              (magit-get-current-branch))))
+
+
 
   (map! :leader
         :desc "new commit"

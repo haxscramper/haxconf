@@ -34,7 +34,7 @@
        :os tty
        :lang
        cc qt sh
-       arduino
+       arduino vim
        emacs-lisp
        ;; Configuration, serialization
        json yaml
