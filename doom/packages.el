@@ -57,3 +57,6 @@
 (package! tree-sitter-langs)
 
 (package! flyspell)
+
+;; Editing vim configuration files
+(package! vimrc-mode)

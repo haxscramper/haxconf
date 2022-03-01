@@ -40,17 +40,19 @@ the current one."
         (unless (org-in-src-block-p)
           (abbrev--default-expand))))
 
+(font-lock-add-keywords
+ 'org-mode
+ `((,(rx bol (any space) "- " (group "[X]")) 1 'org-done prepend)
+   (,(rx bol (any space) "- " (group "[ ]")) 1 'org-todo prepend))
+ 'append)
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
   ;; pair here is copied from this blog post, since I can't really figure out
   ;; what exactly is going on with ordering. But that implementation allows
   ;; me to override the default checkbox highlighting for checkboxes.
-  (font-lock-add-keywords
-   'org-mode
-   `((,(rx bol (any space) "- " (group "[X]")) 1 'org-done prepend)
-     (,(rx bol (any space) "- " (group "[ ]")) 1 'org-todo prepend))
-   'append)
+  
 
   (message "Org-mode hook executed")
   (abbrev-mode 1)
