@@ -35,6 +35,7 @@
        :lang
        cc qt sh
        arduino
+       lua
        emacs-lisp
        ;; Configuration, serialization
        json yaml

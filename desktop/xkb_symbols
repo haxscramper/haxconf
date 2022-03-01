@@ -1,0 +1,58 @@
+xkb_keymap {
+    xkb_keycodes  { include "evdev+aliases(qwerty)" };
+
+    xkb_compat    {
+        include "complete"
+    };
+
+    xkb_geometry  { include "pc(pc105)" };
+
+
+    xkb_types    {
+        include "complete"
+        type "THREE_GROUPS" {
+            modifiers = Alt+Mod5;
+            map[None] = Level1;
+            map[Mod5] = Level2;
+            map[Alt+Mod5] = Level3;
+            level_name[Level1] = "Base";
+            level_name[Level2] = "Mod5";
+            level_name[Level3] = "Alt+Mod5";
+        };
+    };
+
+    xkb_symbols {
+        include "pc+us+ru:2+inet(evdev)+compose(ralt)"
+        include "ctrl(nocaps)"
+        include "group(win_space_toggle)"
+
+        #key <RALT> { [ISO_Level3_Shift ] };
+        #modifier_map Mod5 { ISO_Level3_Shift };
+
+        key <AB09> {
+            symbols[Group1]= [          period,         greater ],
+            symbols[Group2]= [     Cyrillic_yu,         greater ]
+        };
+
+        key <TLDE> {
+            symbols[Group1] = [ grave, asciitilde ],
+            symbols[Group2] = [ grave, asciitilde ]
+        };
+
+        key <AE03> {
+            symbols[Group1] = [ 3, numbersign ],
+            symbols[Group2] = [ 3, numbersign ]
+        };
+
+        #key <SPCE> {
+        #    type = "THREE_GROUPS",
+        #    actions[Group1]=[NoAction(), LockGroup(group=1), LockGroup(group=2)]
+
+        #};
+
+        key <RWIN> {
+            actions[Group1] = [ SetGroup(group=2) ],
+            actions[Group2] = [ SetGroup(group=1) ]
+        };
+    };
+};

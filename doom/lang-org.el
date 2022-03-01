@@ -127,6 +127,7 @@ the current one."
       ("inf" "infinite")
       ("js" "JavaScript")
       ("rust" "Rust")
+      ("vm" "VM")
       ("dod" "data-oriented")
       ("cxx" "C++")
       ("im" "I'm")

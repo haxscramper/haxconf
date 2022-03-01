@@ -32,6 +32,13 @@
     # for one reason or another.
     ~/.config/hax-absolute: absolute
 
+    # Rofi text selector configuration and themes
+    ~/.config/rofi/config.rasi: desktop/rofi
+    ~/.config/rofi/theme: desktop/rofi-theme.rasi
+
+    /tmp/rc.lua: desktop/awesome_wm.lua
+    ~/.config/haxconf: .
+
 - create:
     - ~/defaultdirs
     - ~/defaultdirs/input

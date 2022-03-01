@@ -1,0 +1,4 @@
+configuration {
+	matching: "fuzzy";
+	theme: "~/.config/rofi/theme";
+}
