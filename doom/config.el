@@ -200,6 +200,30 @@ more nitpickery about stuff I write in my configuration files."
 
 (load! "lang-spelling.el")
 
+;; (setq
+;;  telega-chat-fill-column 60
+;;  telega-chat-use-markdown-version 1
+;;  ;; telega-chat-input-prompt "****\n"
+;;  )
+
+(set-popup-rule! "*Telega Root*" :ignore t)
+(defun hax/telega-mode-hook ()
+  (interactive)
+  (setq telega-chat-use-markdown-formatting t)
+  (spacemacs/toggle-relative-line-numbers-on)
+  (map!
+   :map telega-msg-button-map
+   :nvi "k" nil
+   :nvi "l" nil)
+  (map!
+   :map telega-chat-mode-map
+   :nvi "RET" #'electric-newline-and-maybe-indent
+   :i "<C-return>" #'telega-chatbuf-input-send
+   :i "<f7>" (lambda (text)
+               (interactive "scode: ")
+               (insert (concat "`" (s-trim text) "` ")))))
+
+
 (after! hl-todo
   (setq hl-todo-keyword-faces
         '(("TODO" warning bold)

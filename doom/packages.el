@@ -60,3 +60,6 @@
 
 ;; Editing vim configuration files
 (package! vimrc-mode)
+
+;; Emacs as a telegram client
+(package! telega)

@@ -46,6 +46,15 @@ the current one."
    (,(rx bol (any space) "- " (group "[ ]")) 1 'org-todo prepend))
  'append)
 
+(defun hax/replace-next-placeholder ()
+  "Find placeholder string, ('{{{replace-target}}}') delete it and enter insert
+mode"
+  (interactive)
+  (let ((target "{{{replace}}}"))
+    (search-forward target)
+    (delete-backward-char (length target))
+    (evil-insert-state)))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -110,13 +119,20 @@ the current one."
              (yas-expand-snippet "#+begin_src $1\n$0\n#+end_src"))
    :nv ",hi" #'org-indent-mode
    :nv ",ci" #'org-clock-in
-   :nv ",co" #'org-clock-out
-   )
+   :nv ",co" #'org-clock-out)
+
+  (map!
+   :leader
+   :n "SPC" #'hax/replace-next-placeholder)
 
   (setq company-backends
         '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
 
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
+
+
+
+
 
 (after!
   org
@@ -136,14 +152,59 @@ the current one."
   (setq
    ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
-   ;; My attempts on properly managing todos
-   org-agenda-files (f-glob "todo/*.org" org-directory)
+   ;; Directory for todo management
+   hax/todo.d (f-join org-directory "todo")
+   ;; GTD inbox
+   hax/inbox.org (f-join hax/todo.d "inbox.org")
+   ;; Main GTD organizer
+   hax/main.org (f-join hax/todo.d "main.org")
+   ;; Random junk notes that I generate, copy from other places etc.
+   hax/notes.org (f-join hax/todo.d "notes.org")
+   ;; Agenda is a main todo file
+   org-agenda-files (list hax/main.org)
+   org-refile-targets `((,hax/main.org :maxlevel . 3))
+   org-tag-alist '((:startgroup . nil)
+                   ("@work" . ?w)
+                   ("@home" . ?h)
+                   ;; Personal code and other projects
+                   ("@projects" . ?p)
+                   ("@organization" . ?o)
+                   ("@errands" . ?e)
+                   (:endgroup . nil))
+   org-capture-templates
+   '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
+     ;; just dump everything in it, refile later.
+     ("t" "GTD todo inbox" entry (file hax/inbox.org)
+      "* TODO %i%?
+  :PROPERTIES:
+  :CREATED: %T
+  :END:
+
+{{{replace}}}
+")
+     ("d" "Daily" entry (file hax/notes.org)
+      "* %i%? :daily:
+  :PROPERTIES:
+  :CREATED: %T
+  :END:
+
+{{{replace}}}
+")
+     ("n" "Note" entry (file hax/notes.org)
+      "** %i%?
+  :PROPERTIES:
+  :CREATED: %T
+  :END:
+
+{{{replace}}}
+"))
    ;; Log when schedule changed
    org-log-reschedule 'time
    ;; Notes should go from top to bottom
    org-log-states-order-reversed nil
    ;; Log when deadline changed
    org-log-redeadline 'time
+   org-log-refile 'time
    ;; This looks nice but has a lot of random glitches on this
    ;; configuration
    org-startup-indented nil
@@ -178,23 +239,27 @@ the current one."
      (shell . t)
      (python . t)))
   (setq org-todo-keywords
+        ;; I don't use most of these keywords as well, and sometimes they
+        ;; overlap with GTD management. You can think of them as "yes" and
+        ;; "yes, but in green"
         '((sequence
-           "TODO(t!/!)"
-           "LATER(l!)"
-           "NEXT(n!)"
-           "POSTPONED(P!/!)"
-           "WIP(w!)"
-           "STALLED(s!)"
-           "REVIEW(r!/!)"
-           "TIMEOUT(T)"
-           "FAILED(f@/!)"
+           "TODO(t!/!)"         ;; Must be done now
+           "LATER(l!)"          ;; Can be done sometimes later
+           "NEXT(n!)"           ;; Next task after current
+           "POSTPONED(P!/!)"    ;; Work is temporarily paused
+           "WIP(w!)"            ;; Working on it
+           "STALLED(s!)"        ;; External event is preventing further work
+           "REVIEW(r!/!)"       ;; Check if this task must be done or not
+           "TIMEOUT(T)"         ;; Cannot be done due to time limits
+           "FAILED(f@/!)"       ;; Tried to finish the task but failed
            "CANCELED(C@/!)"
            "|"
-           "DONE(d!/@)"
-           "COMPLETED(c!/@)"
-           "NUKED(N@/!)"
-           "PARTIALLY(p@/!)"
-           "FUCKING___DONE(F)")))
+           "DONE(d!/@)"         ;; Task completed
+           "COMPLETED(c!/@)"    ;; Task completed
+           "NUKED(N@/!)"        ;; Completed but angry
+           "PARTIALLY(p@/!)"    ;; Can be considered completed
+           "FUCKING___DONE(F)"  ;; Completed but very angry
+           )))
   (setq org-todo-keyword-faces
         '(("TODO" . "orange")
           ("LATER" . "DeepPink")
@@ -209,8 +274,4 @@ the current one."
           ("REVIEW" . "SteelBlue")
           ("FAILED" . "red")
           ("FUCKING___DONE" . "gold1")
-          ("TIMEOUT" . "red")))
-  (setq org-global-properties
-        '(("Effort_ALL" .
-           "0:10 0:30 1:00 2:00 4:00 1d 2d 3d 1w 2w 1m 2m 3m 5m 1y 100y")))
-  )
+          ("TIMEOUT" . "red"))))
