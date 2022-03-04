@@ -164,4 +164,5 @@ the right."
  :v ",a[" #'align-repeat-left-square-brace
  :v ",a{" #'align-repeat-left-curly-brace
  :v ",a)" #'align-repeat-left-paren
+ :v ",a=" #'align-repeat-equal
  )

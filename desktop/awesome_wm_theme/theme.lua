@@ -12,6 +12,7 @@ local my_table = awful.util.table or gears.table
 local theme                                     = {}
 theme.confdir = os.getenv("HOME") .. "/.config/haxconf/desktop/awesome_wm_theme"
 theme.font                                      = "JetBrains Mono 12"
+theme.wallpaper = os.getenv("HOME") .. "/defaultdirs/images/wallpapers/bg-0"
 theme.menu_bg_normal                            = "#000000"
 theme.menu_bg_focus                             = "#000000"
 theme.bg_normal                                 = "#000000"

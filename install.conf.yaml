@@ -40,10 +40,19 @@
     ~/.config/haxconf: .
 
 - create:
+    # Default directory
     - ~/defaultdirs
+    # 'downloads'
     - ~/defaultdirs/input
+    # Telegram client chat cache
+    - ~/defaultdirs/input/telegram
+    # Word, libreoffice documents, everything related
     - ~/defaultdirs/documents
+    # Images for various purposes
     - ~/defaultdirs/images
     - ~/defaultdirs/images/wallpapers
     - ~/defaultdirs/notes
+    # Stored PDF files
     - ~/defaultdirs/pdf
+    # Git repo with all the archived input - mostly archivebox processing
+    - ~/defaultdirs/archive

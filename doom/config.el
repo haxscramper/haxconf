@@ -206,7 +206,56 @@ more nitpickery about stuff I write in my configuration files."
 ;;  ;; telega-chat-input-prompt "****\n"
 ;;  )
 
+(setq hax/fullscreen-capture t)
+(defun check-if-fullscreen-capture (name action)
+  (interactive)
+  (let* ((can (or (s-equals-p "*Capture*" name)
+                  (s-starts-with-p "CAPTURE-" name)))
+         (should hax/fullscreen-capture)
+         (res (and can should)))
+    (message ">> [%s] %s + %s := %s" name can should res)
+    res))
+
 (set-popup-rule! "*Telega Root*" :ignore t)
+
+(defvar hax/org-capture-before-config nil
+  "Window configuration before `org-capture'.")
+
+(defadvice org-capture (before save-config activate)
+  "Save the window configuration before `org-capture'."
+  (setq hax/org-capture-before-config (current-window-configuration)))
+
+(defun hax/org-capture-hook ()
+  (interactive)
+  (message "org capture hook")
+  (when hax/fullscreen-capture
+    (delete-other-windows)))
+
+(add-hook! 'org-capture-mode-hook 'hax/org-capture-hook)
+
+(defun hax/org-capture-cleanup ()
+  "Clean up the frame created while capturing via org-protocol."
+  ;; In case we run capture from emacs itself and not an external app,
+  ;; we want to restore the old window config
+  (when hax/org-capture-before-config
+    (set-window-configuration hax/org-capture-before-config))
+  (-when-let ((&alist 'name name) (frame-parameters))
+    (when (equal name "org-protocol-capture")
+      (delete-frame))))
+
+(add-hook 'org-capture-after-finalize-hook 'hax/org-capture-cleanup)
+
+
+(setq revert-without-query '(".*"))
+(defun hax/save-buffers-kill-emacs (&optional arg)
+  "Don't prompt for useless shit, learn to clean up after yourself"
+  (interactive "P")
+  (save-all-buffers)
+  (kill-emacs))
+
+(fset 'save-buffers-kill-emacs 'hax/save-buffers-kill-emacs)
+
+
 (defun hax/telega-mode-hook ()
   (interactive)
   (setq telega-chat-use-markdown-formatting t)

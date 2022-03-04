@@ -78,39 +78,20 @@ end
 
 local hotkeys_popup = require("awful.hotkeys_popup").widget
 
--- local sxiv_rule_any = {class={"sxiv", "SXIV"}}
--- for group_name, group_data in pairs({
---         ["sxiv"] = { color="#659FdF", rule_any=sxiv_rule_any }
--- }) do
---     hotkeys_popup.group_rules[group_name] = group_data
--- end
-
--- local sxiv_keys = {
---   ["sxiv"] = {{
---       modifiers = {},
---       keys = {
---         ['?'] = "Rotate 180 deg",
---         ['='] = "Zoom to 100%",
---         -- ['<'] = "Rotate CCW 90" -- FIXME does not work and causes
---         -- all section to be removed
---       }
---   }, {
---       modifiers = {"Shift"},
---       keys = {
---         [','] = "Rotate CCW 90",
---         ['.'] = "Rotate CW 90",
---       }
---   }},
--- }
-
--- hotkeys_popup.add_hotkeys(sxiv_keys)
-
-
 globalkeys = gears.table.join(
     awful.key(
       { modkey,           },
       "h",
       hotkeys_popup.show_help,
+     {description="show help", group="awesome"}),
+
+    awful.key(
+      { modkey,           },
+      "n",
+      function ()
+        log("asdfasdf")
+        print("Pressed mod N")
+      end,
      {description="show help", group="awesome"}),
 
     awful.key(

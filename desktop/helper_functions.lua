@@ -115,10 +115,8 @@ end
 
 -- Write message into today's log file
 function write_log(log_message)
-  local path = os.getenv("HOME") ..
-    "/.config/hax-local/log/" .. os.date("%Y-%m-%d")
+  local path = "/tmp/awesome-wm-log"
   local file = io.open(path, "a")
-
   io.output(file)
   io.write(os.date("[%H:%M:%S] " .. log_message .. "\n"))
   io.close(file)
@@ -126,7 +124,7 @@ end
 
 -- TODO enable for main instance and turn off for all nested (using
 -- awmtt)
-print_logging = true
+print_logging = false
 
 function log(text)
   if print_logging then

@@ -175,28 +175,18 @@ mode"
    '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
      ;; just dump everything in it, refile later.
      ("t" "GTD todo inbox" entry (file hax/inbox.org)
-      "* TODO %i%?
-  :PROPERTIES:
-  :CREATED: %T
-  :END:
-
-{{{replace}}}
+      "* TODO %?
+:PROPERTIES:
+:CREATED: %T
+:END:
 ")
-     ("d" "Daily" entry (file hax/notes.org)
-      "* %i%? :daily:
-  :PROPERTIES:
-  :CREATED: %T
-  :END:
+     ("d" "Daily" entry (file+olp+datetree hax/notes.org)
+      "** %T
+:PROPERTIES:
+:CREATED: %T
+:END:
 
-{{{replace}}}
-")
-     ("n" "Note" entry (file hax/notes.org)
-      "** %i%?
-  :PROPERTIES:
-  :CREATED: %T
-  :END:
-
-{{{replace}}}
+%?
 "))
    ;; Log when schedule changed
    org-log-reschedule 'time
