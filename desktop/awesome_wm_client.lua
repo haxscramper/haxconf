@@ -10,7 +10,6 @@ client.connect_signal("manage", function (c)
     get_num_widget(c)
     update_client_numeration()
     client.focus = mouse.object_under_pointer()
-
     local geo = c:geometry()
     local coords = mouse.coords()
 

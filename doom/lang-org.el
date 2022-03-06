@@ -55,6 +55,42 @@ mode"
     (delete-backward-char (length target))
     (evil-insert-state)))
 
+(defun hax/org-download-setup ()
+  (require 'org-download)
+  (let ((base
+         (if (buffer-file-name) (buffer-file-name)
+           (let ((buf (org-capture-get :buffer)))
+             (if buf (buffer-file-name buf)) (f-join hax/todo.d "images")))))
+    (setq org-download-image-dir (f-dirname base))
+    (setq org-download-timestamp (concat (f-filename base) "_%Y%m%d-%H%M%S_" ))
+    (setq org-image-actual-width 300)
+    (setq org-download-link-format "[[file:%s]]")
+    (setq org-download-method 'directory)
+    (setq org-download-heading-lvl nil)))
+
+(defun hax/org-paste-clipboard (&optional default-name)
+  (interactive "P")
+  (require 'org-download)
+  (let ((file
+         (if default-name
+             (read-string
+              (format "Filename [%s]: " org-download-screenshot-basename)
+              nil nil org-download-screenshot-basename)
+
+           default-name))
+        (out (s-split
+              "\n"
+              (with-output-to-string
+                (call-process
+                 "xclip" nil standard-output nil
+                 "-o" "-selection" "cli" "-t" "TARGETS")))))
+    ;; If clipboard does not contain image use regular pasting logic,
+    ;; otherwise insert image. Mapybe `p' should work differently in
+    ;; org-mode instead, but I'm not sure about that.
+    (if (--any? (s-starts-with? "image/" it) out)
+        (org-download-clipboard file)
+      (evil-paste-after-without-register 1))))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -80,6 +116,9 @@ mode"
    [M-return] nil
    )
 
+  (map! :map evil-org-mode-map :nvi "M-p" #'hax/org-paste-clipboard)
+  (map! :map org-mode-map :nvi "M-p" #'hax/org-paste-clipboard)
+
   (map!
    :map evil-org-mode-map
    :ni [C-S-return] nil
@@ -93,6 +132,7 @@ mode"
    [C-S-return] #'hax/org-insert-todo-entry
    [C-return] #'+org/insert-item-below)
 
+  (hax/org-download-setup)
   (map!
    :map evil-org-mode-map
    ;; Consistent multicursor bindings are more important for me, so
@@ -100,6 +140,7 @@ mode"
    :ni "C-S-j" nil
    :ni "C-S-k" nil
 
+   :ni "C-;" #'flyspell-correct-wrapper
    [M-return] #'org-add-note
    :ni [C-S-return] #'hax/org-insert-todo-entry
    :ni [C-return] #'+org/insert-item-below
@@ -113,13 +154,16 @@ mode"
    :nv ",el" 'org-latex-export-to-latex
    :nv ",in" #'org-add-note
    :n ",tc" #'org-toggle-checkbox
+   :n ",ta" #'counsel-org-tag
    :desc "insert #+begin_src"
    :n ",ic" (cmd!
              (evil-insert-state)
              (yas-expand-snippet "#+begin_src $1\n$0\n#+end_src"))
    :nv ",hi" #'org-indent-mode
    :nv ",ci" #'org-clock-in
-   :nv ",co" #'org-clock-out)
+   :nv ",co" #'org-clock-out
+   :desc "start WIP clocking"
+   :nv ",cw" (cmd! (org-todo "WIP") (org-clock-in)))
 
   (map!
    :leader
@@ -130,9 +174,142 @@ mode"
 
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
 
+(defun hax/org-capture-hook ()
+  (interactive)
+  ;; I use adaptive indentation for drawers, but I don't want to forcefully
+  ;; indent the text inside of the subtrees.
+  (let ((text (buffer-substring (line-beginning-position) (point))))
+    (when (string-match "^\s+$" text)
+      (message "%s" text)
+      (delete-region (line-beginning-position) (point)))))
+
+;; Scroll to the last position of the message buffer after something has
+;; been printed.
+(defadvice message (after message-tail activate)
+  "goto point max after a message"
+  (with-current-buffer "*Messages*"
+    (goto-char (point-max))
+    (walk-windows
+     (lambda (window)
+       (if (string-equal (buffer-name (window-buffer window)) "*Messages*")
+           (set-window-point window (point-max))))
+     nil
+     t)))
+
+
+(add-hook! 'org-capture-mode-hook 'hax/org-capture-hook)
+(setq hax/fullscreen-capture nil)
+(defun hax/org-post-capture-hook ()
+  (interactive)
+  ;; If starting capture from dropdown mode, delete the client window frame
+  ;; after. That won't work if it is the single client, but when launching
+  ;; using daemon mode it does /exactly/ what is needed.
+  (when hax/fullscreen-capture
+    (delete-frame))
+  ;; Fullscreen capture must be set again with new `--eval' argument
+  ;; when starting next cature.
+  (setq hax/fullscreen-capture nil))
+
+(add-hook! 'org-capture-after-finalize-hook 'hax/org-post-capture-hook)
+
+
+(map!
+ :n ",nt" (cmd! (org-capture nil "t"))
+ :n ",nd" (cmd! (org-capture nil "d"))
+ ;; Quick access to common operations. No specific meaning behind the key
+ ;; specification.
+ :desc "Global agenda"
+ :n [M-f7] (cmd! (org-agenda nil "*"))
+ :desc "New note"
+ :n [M-f8] (cmd! (org-capture nil "d"))
+ :desc "New todo"
+ :n [M-f9] (cmd! (org-capture nil "t"))
+ :desc "New note for clock"
+ :n [M-f10] (cmd! (org-capture nil "c")))
+
+(defun hax/agenda-mode-hook ()
+  (interactive)
+  ;; I want to be able to use fX __**EVERYWHERE**__.
+  (local-set-key (kbd "<f1>") 'winum-select-window-1)
+  (local-set-key (kbd "<f2>") 'winum-select-window-2)
+  (local-set-key (kbd "<f3>") 'winum-select-window-3)
+  (local-set-key (kbd "<f4>") 'winum-select-window-4)
+  (local-set-key (kbd "<f5>") 'winum-select-window-5)
+  (local-set-key (kbd "<f6>") 'winum-select-window-6)
+  (local-set-key (kbd "<M-f7>") 'org-agenda-quit))
+
+(add-hook! 'org-agenda-mode-hook 'hax/agenda-mode-hook)
+
+
+(defmacro hax/defaccept! (name body)
+  `(defun ,name ()
+     (let* (;; Use org-element API instead of cave-tier hacks with forward
+            ;; regex searches.
+            (tree (org-element-at-point))
+            ;; Store the position of the tree end
+            (subtree-end (save-excursion (org-end-of-subtree t))))
+       ;; If element is not scheduled, skip it
+       (unless ,body
+         subtree-end))))
+
+(hax/defaccept! accept-scheduled/deadlined
+                (or (org-element-property :scheduled tree)
+                    (org-element-property :deadline tree)))
+
+(hax/defaccept! skip-scheduled/deadlined
+                (not (or (org-element-property :scheduled tree)
+                         (org-element-property :deadline tree))))
+
+(setq
+ org-agenda-custom-commands
+ `(("*" "All"
+    ((agenda
+      ""
+      ((org-agenda-span 7)
+       ;; Start showing events from today onwards, when quickly assessing
+       ;; target tasks I don't really need to focus on the past events.
+       (org-agenda-start-day "-0d")
+       (org-agenda-skip-function 'accept-scheduled/deadlined)))
+     (todo "WIP")
+     (todo
+      "TODO"
+      ((org-agenda-skip-function 'skip-scheduled/deadlined)
+       (org-agenda-sorting-strategy '((priority-down)))))
+     (todo "POSTPONED")))))
+
+(defun hax/parent-subtrees()
+  "test"
+  (let* ((len 18)
+         (str (s-pad-left len " " (s-join "." (org-get-outline-path)))))
+    (substring str (- (length str) len) (length str))))
+
+(setq
+ org-agenda-prefix-format '((agenda . " %i %-12t% s %(hax/parent-subtrees) ")
+                            (todo . " %i %(hax/parent-subtrees) ")
+                            (tags . " %i %(hax/parent-subtrees) ")
+                            (search . " %i %(hax/parent-subtrees) "))
+ org-agenda-start-on-weekday nil
+ org-agenda-ndays 14
+ org-agenda-show-all-dates t
+ org-agenda-skip-deadline-if-done t
+ org-agenda-skip-scheduled-if-done t
+ org-agenda-repeating-timestamp-show-all nil
+ org-deadline-warning-days 14
+ org-agenda-start-day "-0d"
+ )
 
 
 
+(defun hax/capture-location ()
+  "Get formatted string about capture location"
+  (let ((orig (org-capture-get :original-file)))
+    (if (magit-toplevel)
+        (let* ((top (f-filename (magit-toplevel)))
+               (file (magit-file-relative-name orig)))
+          (format "from ~%s:%s:%s~" top file (point)))
+      (if orig
+          (format "from ~%s:%s~" (f-filename orig) (point))
+        ""))))
 
 (after!
   org
@@ -149,6 +326,27 @@ mode"
       ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
+
+  (setq org-capture-templates
+        '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
+          ;; just dump everything in it, refile later.
+          ("t" "GTD todo inbox" entry (file hax/inbox.org)
+           "* TODO %?
+  :PROPERTIES:
+  :CREATED: %T
+  :END:
+"
+           :empty-lines-before 1
+           :empty-lines-after 1)
+          ("d" "Daily" entry (file+olp+datetree hax/notes.org)
+           "** %T %(hax/capture-location)\n\n%?"
+           :empty-lines-before 1
+           :empty-lines-after 1)
+          ("c" "Clock" entry (clock)
+           "** %T %(hax/capture-location)\n\n%?"
+           :empty-lines-before 1
+           :empty-lines-after 1)))
+
   (setq
    ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
@@ -161,33 +359,9 @@ mode"
    ;; Random junk notes that I generate, copy from other places etc.
    hax/notes.org (f-join hax/todo.d "notes.org")
    ;; Agenda is a main todo file
-   org-agenda-files (list hax/main.org)
-   org-refile-targets `((,hax/main.org :maxlevel . 3))
-   org-tag-alist '((:startgroup . nil)
-                   ("@work" . ?w)
-                   ("@home" . ?h)
-                   ;; Personal code and other projects
-                   ("@projects" . ?p)
-                   ("@organization" . ?o)
-                   ("@errands" . ?e)
-                   (:endgroup . nil))
-   org-capture-templates
-   '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
-     ;; just dump everything in it, refile later.
-     ("t" "GTD todo inbox" entry (file hax/inbox.org)
-      "* TODO %?
-:PROPERTIES:
-:CREATED: %T
-:END:
-")
-     ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %T
-:PROPERTIES:
-:CREATED: %T
-:END:
+   org-agenda-files (list hax/main.org hax/inbox.org)
+   org-refile-targets `((,hax/main.org :maxlevel . 2))
 
-%?
-"))
    ;; Log when schedule changed
    org-log-reschedule 'time
    ;; Notes should go from top to bottom
@@ -222,6 +396,7 @@ mode"
    ;; the actions I make. If I need to do the analysis of my actions I can
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
+
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((C . t)
@@ -264,4 +439,20 @@ mode"
           ("REVIEW" . "SteelBlue")
           ("FAILED" . "red")
           ("FUCKING___DONE" . "gold1")
-          ("TIMEOUT" . "red"))))
+          ("TIMEOUT" . "red")))
+  (setq org-tag-alist
+        (concatenate
+         'list
+         '((:startgroup . nil)
+           ("@work" . ?w)
+           ("@home" . ?h)
+           ;; Personal code and other projects
+           ("@projects" . ?p)
+           ("@organization" . ?o)
+           ("@errands" . ?e)
+           (:endgroup . nil))
+         (--map
+          `(,(substring it 1 (length it)) . ??)
+          (--filter
+           (< 0 (length it))
+           (s-split "\n" (f-read (f-join hax/todo.d "tags"))))))))

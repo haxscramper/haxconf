@@ -166,6 +166,25 @@ globalkeys = gears.table.join(
       { description = "open/close ncmpcpp", group = "custom"}),
 
     awful.key(
+      { modkey },
+      "i",
+      function()
+        debug_notify("Triggered insert")
+        drop(
+          "emacsclient --create-frame " ..
+            "--eval '(setq hax/fullscreen-capture t)' " ..
+            "--eval '(org-capture nil \"d\")' " ..
+            "--eval '(delete-other-windows)'",
+            "top",
+            "center",
+            0.75,
+            0.4,
+            false
+        )
+      end,
+      { description = "open emacs dropdown", group = "custom"}),
+
+    awful.key(
       { modkey, "Control" },
       "e",
       function()

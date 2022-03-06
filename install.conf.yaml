@@ -7,7 +7,7 @@
       # Create parent directories for link targets as needed
       create: true
 
-- clean: ['~']
+- clean: ["~"]
 
 - link:
     # Shell configuration
@@ -36,7 +36,7 @@
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
 
-    /tmp/rc.lua: desktop/awesome_wm.lua
+    ~/.config/awesome/rc.lua: desktop/awesome_wm.lua
     ~/.config/haxconf: .
 
 - create:

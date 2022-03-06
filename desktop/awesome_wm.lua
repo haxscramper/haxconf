@@ -257,19 +257,3 @@ end
 
 log("Done loading")
 
-local lain = require("lain")
-local emquake = lain.util.quake({
-    app = "emacs --with-profile doom --eval '(setq hax/fullscreen-capture t)' --eval '(org-capture nil \"d\")'",
-    extra = "",
-    name = "drop-emacs",
-    height = 0.5,
-    width = 0.8,
-    vert = "top",
-    horiz = "center"
-})
-
-function emacs_drop(prog, arg)
-  emquake:toggle()
-end
-
-emacs_drop("/tmp/test", {})

@@ -56,10 +56,27 @@
 (package! tree-sitter)
 (package! tree-sitter-langs)
 
+;; I could not configure built-in spellchecking via spellfu, so using
+;; old-fashioned flyspell - at least it works properly.
 (package! flyspell)
 
 ;; Editing vim configuration files
 (package! vimrc-mode)
 
-;; Emacs as a telegram client
+;; Emacs as a telegram client. Still hangs and crashes randomly, but maybe
+;; I will figure out what is wrong (eventually). When it works it is a lot
+;; better for focused discussions - single chat that you have to write
+;; messages longer than one line.
 (package! telega)
+
+;; Better interfaces for spellcheck correction and candidate selection
+(package! flyspell-correct)
+(package! consult-flyspell
+  :recipe (:type git :host gitlab :repo "OlMon/consult-flyspell" :branch "master"))
+
+;; Easily setup frame with multiple choice selection at the `(point)'
+;; location.
+(package! frog-menu)
+
+;; https://github.com/abo-abo/org-download
+(package! org-download)
