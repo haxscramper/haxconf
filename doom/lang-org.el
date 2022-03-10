@@ -91,6 +91,142 @@ mode"
         (org-download-clipboard file)
       (evil-paste-after-without-register 1))))
 
+(defun hax/org-assign-tag ()
+  "Add or remove tags in `org-mode'. If new tag is added, store
+it in the persistent list of tags, and update current list of tags"
+  (interactive)
+  (save-excursion
+    (if (eq major-mode 'org-agenda-mode)
+        (if org-agenda-bulk-marked-entries
+            (setq counsel-org-tags nil)
+          (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
+                              (org-agenda-error))))
+            (with-current-buffer (marker-buffer hdmarker)
+              (goto-char hdmarker)
+              (setq counsel-org-tags (counsel--org-get-tags)))))
+      (unless (org-at-heading-p)
+        (org-back-to-heading t))
+      (setq counsel-org-tags (counsel--org-get-tags)))
+    (let* ((org-last-tags-completion-table
+            (append (and (or org-complete-tags-always-offer-all-agenda-tags
+                             (eq major-mode 'org-agenda-mode))
+                         (org-global-tags-completion-table
+                          (org-agenda-files)))
+                    (unless (boundp 'org-current-tag-alist)
+                      org-tag-persistent-alist)
+                    (or (if (boundp 'org-current-tag-alist)
+                            org-current-tag-alist
+                          org-tag-alist)
+                        (org-get-buffer-tags))))
+           (selected (ivy-read (counsel-org-tag-prompt)
+                               (lambda (str _pred _action)
+                                 (delete-dups
+                                  (all-completions str #'org-tags-completion-function)))
+                               :history 'org-tags-history
+                               :action #'counsel-org-tag-action
+                               :caller 'hax/org-assign-tag)))
+      (unless (--any (s-equals? (car it) selected) org-tag-alist)
+        (f-append-text (concat "\n#" selected) 'utf-8 hax/tags-file)
+        (setq org-tag-alist (push (cons selected ??) org-tag-alist ))
+        (message
+         "New tag %s"
+         (propertize selected 'face `(:foreground ,(doom-color 'red)))))
+      selected)))
+
+(defun hax/org-insert-link-to-subtree ()
+  "Insert link to any subtree in any org file, using
+`[[ID][path]]' link."
+  (interactive)
+  (let (entries)
+    (dolist (b (buffer-list))
+      (with-current-buffer b
+        (when (derived-mode-p 'org-mode)
+          (setq entries
+                (nconc entries
+                       (counsel-outline-candidates
+                        (cdr (assq 'org-mode counsel-outline-settings))
+                        (counsel-org-goto-all--outline-path-prefix)))))))
+    (ivy-read
+     "Goto: " entries
+     :history 'counsel-org-goto-history
+     :action (lambda (x)
+               ;; Go to position of the found entry, get IT's id (creating
+               ;; one if it is missing), and then insert result into the
+               ;; final output
+               (let ((id (with-current-buffer (marker-buffer (cdr x))
+                           ;; Save excursion to avoid moving cursor in
+                           ;; other buffers (or in the same buffer if
+                           ;; linking within one file)
+                           (save-excursion
+                             (goto-char (marker-position (cdr x)))
+                             (org-id-get-create)))))
+                 (insert (format "[[id:%s][%s]]" id (car x)))))
+     :caller 'hax/org-insert-link-to-heading)))
+
+
+
+(defvar hax/org-refile-refiled-from-id nil)
+(defvar hax/org-refile-refiled-from-header nil)
+
+;; (defvar hax/internal::org-refile-refiled-from-params nil "Parameters of ")
+
+(defun hax/org-save-source-id-and-header ()
+  "Saves refile's source entry's id and header name to
+`hax/org-refile-refiled-from-id' and
+`hax/org-refile-refiled-from-header'. If refiling entry is
+first level entry then it stores file path and buffer name
+respectively."
+  (interactive)
+  (save-excursion
+    (if (org-up-heading-safe)
+        ;; If we are in some outline, assign
+        (progn
+          ;; Store original node ID, optionally creating it if missing
+          (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
+          ;; Get original heading path, without tags, todo, priority elements
+          (setq hax/org-refile-refiled-from-header
+                (org-get-heading 'no-tags 'no-todo 'no-priority 'no-comment)))
+      (setq hax/org-refile-refiled-from-id
+            (cons 'file (buffer-file-name)))
+      (setq hax/org-refile-refiled-from-header (buffer-name)))))
+
+;; IDEA add more complex log entries too: make this function accept
+;; org-mode subtree in elisp form (parsed from org-elements)
+(defun org-add-log-entry (text)
+  "Add log entry for current subtree"
+  (save-excursion
+    (goto-char (- (org-log-beginning t) 1))
+    (insert (concat "\n" (s-repeat (current-indentation) " ") "- " text))))
+
+(defun hax/org-refile-add-refiled-from-note ()
+  "Adds a note to entry at point on where the entry was refiled
+from using the org ID from `hax/org-refile-refiled-from-id'
+and `hax/org-refile-refiled-from-header' variables."
+  (interactive)
+  (when (and hax/org-refile-refiled-from-id
+             hax/org-refile-refiled-from-header)
+    (let* ((time-format (substring (cdr org-time-stamp-formats) 1 -1))
+           (kind (car hax/org-refile-refiled-from-id))
+           (src (cdr hax/org-refile-refiled-from-id))
+           (time-stamp (format-time-string time-format (current-time))))
+      (org-add-log-entry
+       (format
+        "Refiled on [%s] from [[%s][%s]]"
+        time-stamp
+        (if (eq kind 'id) (format "id:%s" src)
+          (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
+        hax/org-refile-refiled-from-header)))
+    (setq hax/org-refile-refiled-from-id nil)
+    (setq hax/org-refile-refiled-from-header nil)))
+
+(add-hook
+ 'org-after-refile-insert-hook #'hax/org-refile-add-refiled-from-note)
+
+(advice-add
+ 'org-refile :before #'hax/org-save-source-id-and-header)
+
+
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -105,7 +241,9 @@ mode"
   (org-indent-mode -1)
   ;; Indentation guides slow down org-mode when there are multiple folds
   ;; (at least I was able to identifiy the implementation ot that point)
-  (highlight-indent-guides-mode -1)
+  ;; (highlight-indent-guides-mode -1)
+
+
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
   ;; abomination of a `map!' call to do what I need.
@@ -116,8 +254,12 @@ mode"
    [M-return] nil
    )
 
-  (map! :map evil-org-mode-map :nvi "M-p" #'hax/org-paste-clipboard)
-  (map! :map org-mode-map :nvi "M-p" #'hax/org-paste-clipboard)
+  (map!
+   :map org-mode-map
+   :nvi "M-p" #'hax/org-paste-clipboard
+   :nvi "M-C-p" (cmd!
+                 (insert "#+capion: ")
+                 (save-excursion (hax/org-paste-clipboard))))
 
   (map!
    :map evil-org-mode-map
@@ -152,9 +294,12 @@ mode"
    :nv ",ea" 'org-ascii-export-to-ascii
    :nv ",eP" 'org-latex-export-to-pdf
    :nv ",el" 'org-latex-export-to-latex
+   :nv ",eo" 'org-odt-export-to-odt
+   :nv ",eh" 'org-html-export-to-html
    :nv ",in" #'org-add-note
    :n ",tc" #'org-toggle-checkbox
-   :n ",ta" #'counsel-org-tag
+   :n ",ta" #'hax/org-assign-tag
+   :n ",lt" #'hax/org-insert-link-to-subtree
    :desc "insert #+begin_src"
    :n ",ic" (cmd!
              (evil-insert-state)
@@ -271,11 +416,13 @@ mode"
        (org-agenda-start-day "-0d")
        (org-agenda-skip-function 'accept-scheduled/deadlined)))
      (todo "WIP")
+     (todo "POSTPONED")
      (todo
       "TODO"
       ((org-agenda-skip-function 'skip-scheduled/deadlined)
        (org-agenda-sorting-strategy '((priority-down)))))
-     (todo "POSTPONED")))))
+     ;; (todo "COMPLETED")
+     ))))
 
 (defun hax/parent-subtrees()
   "test"
@@ -314,6 +461,14 @@ mode"
 (after!
   org
   (require 'org-expiry)
+  (defun org-odt-inline-src-block (_inline-src-block _contents _info)
+    "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
+CONTENTS holds the contents of the item.  INFO is a plist holding
+contextual information."
+    (format "<text:span text:style-name=\"%s\">%s</text:span>"
+	    "OrgCode" (org-odt--encode-plain-text
+		       (org-element-property :value _inline-src-block))))
+
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
       ("anon" "anonymous")
@@ -334,22 +489,41 @@ mode"
            "* TODO %?
   :PROPERTIES:
   :CREATED: %T
+  :ID: %(org-id-new)
   :END:
 "
            :empty-lines-before 1
            :empty-lines-after 1)
           ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-           "** %T %(hax/capture-location)\n\n%?"
+           "** %T %(hax/capture-location)
+  :PROPERTIES:
+  :CREATED: %T
+  :ID: %(org-id-new)
+  :END:
+
+%?"
+           :empty-lines-before 1
+           :empty-lines-after 1)
+          ("D" "Daily start" plain (file+olp+datetree hax/notes.org)
+           "%i%?"
            :empty-lines-before 1
            :empty-lines-after 1)
           ("c" "Clock" entry (clock)
-           "** %T %(hax/capture-location)\n\n%?"
+           "** %T %(hax/capture-location)
+  :PROPERTIES:
+  :CREATED: %T
+  :ID: %(org-id-new)
+  :END:
+
+%?"
            :empty-lines-before 1
            :empty-lines-after 1)))
 
   (setq
    ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
+   ;; File with locations of the org-id entries
+   org-id-locations-file (f-join org-directory ".org-id-locations")
    ;; Directory for todo management
    hax/todo.d (f-join org-directory "todo")
    ;; GTD inbox
@@ -360,7 +534,8 @@ mode"
    hax/notes.org (f-join hax/todo.d "notes.org")
    ;; Agenda is a main todo file
    org-agenda-files (list hax/main.org hax/inbox.org)
-   org-refile-targets `((,hax/main.org :maxlevel . 2))
+   org-refile-targets `((,hax/main.org :maxlevel . 2)
+                        (,hax/inbox.org :maxlevel . 2))
 
    ;; Log when schedule changed
    org-log-reschedule 'time
@@ -368,7 +543,9 @@ mode"
    org-log-states-order-reversed nil
    ;; Log when deadline changed
    org-log-redeadline 'time
-   org-log-refile 'time
+   ;; Not using default configuration - instead more informative version is
+   ;; implemented using custom hooks.
+   org-log-refile nil
    ;; This looks nice but has a lot of random glitches on this
    ;; configuration
    org-startup-indented nil
@@ -440,6 +617,7 @@ mode"
           ("FAILED" . "red")
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . "red")))
+  (setq hax/tags-file (f-join hax/todo.d "tags"))
   (setq org-tag-alist
         (concatenate
          'list
@@ -455,4 +633,21 @@ mode"
           `(,(substring it 1 (length it)) . ??)
           (--filter
            (< 0 (length it))
-           (s-split "\n" (f-read (f-join hax/todo.d "tags"))))))))
+           (s-split "\n" (f-read hax/tags-file)))))))
+
+
+
+
+
+(setq
+ org-odt-category-map-alist
+ '(("__Table__" "Figure" "value" "Таблица"
+    org-odt--enumerable-p)
+   ("__Figure__" "Figure" "value" "Рисунок"
+    org-odt--enumerable-image-p)
+   ("__MathFormula__" "Text" "math-formula" "Equation"
+    org-odt--enumerable-formula-p)
+   ("__DvipngImage__" "Equation" "value" "Equation"
+    org-odt--enumerable-latex-image-p)
+   ("__Listing__" "Listing" "value" "Листинг"
+    org-odt--enumerable-p)))

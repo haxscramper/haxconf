@@ -124,7 +124,7 @@ alias:new find-lib "ldconfig -p | grep -i"
 alias:new vi nvim
 alias:new ec emacsclient --nw
 alias:new mkdir e:mkdir -p
-
+alias:new ip e:ip -c -4
 
 set edit:abbr['paci '] = 'sudo pacman -Sv '
 set edit:abbr['pacl '] = 'pacman -Qqe '
@@ -156,6 +156,12 @@ edit:add-var xcpp~ {
 
 edit:add-var doom-runexec~ {|@args|
   emacs --with-profile doom $@args
+}
+
+edit:add-var sdsa~ {
+  var action = (echo "enable\ndisable\nstop\nstart\nrestart\nstatus" | fzf)
+  var module = (systemctl list-unit-files | fzf | awk "{print $1}")
+  set edit:current-command = "sudo systemctl "$action" "$module
 }
 
 edit:add-var doom-debug~ {|@extra|

@@ -11,7 +11,7 @@
        :completion company (ivy +prescient -childframe +fuzzy +icons)
        :ui
        ;; Main editor/window UI look
-       doom doom-dashboard modeline indent-guides
+       doom doom-dashboard modeline
        hl-todo
        ophints
        ;; More manageable popup windows

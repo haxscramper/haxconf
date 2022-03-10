@@ -2,9 +2,10 @@ local gears = require("gears")
 local awful = require("awful")
 local wibox = require("wibox")
 local beautiful = require("beautiful")
-local drop = require("scratchdrop")
 local os = require("os")
 local io = require("io")
+
+local drop = dofile(haxconf("awesome_scratchdrop/init.lua"))
 
 local note_config = {
   log_min_delay = 8,
@@ -12,7 +13,7 @@ local note_config = {
 }
 
 function term_drop (prog, arg)
-  drop(
+  drop.toggle(
     "alacritty -e " .. prog,
     arg.vert or "top",
     arg.horiz or "center",
@@ -169,8 +170,7 @@ globalkeys = gears.table.join(
       { modkey },
       "i",
       function()
-        debug_notify("Triggered insert")
-        drop(
+        drop.toggle(
           "emacsclient --create-frame " ..
             "--eval '(setq hax/fullscreen-capture t)' " ..
             "--eval '(org-capture nil \"d\")' " ..
@@ -179,8 +179,8 @@ globalkeys = gears.table.join(
             "center",
             0.75,
             0.4,
-            false
-        )
+            false)
+
       end,
       { description = "open emacs dropdown", group = "custom"}),
 
@@ -196,3 +196,4 @@ globalkeys = gears.table.join(
 function add_shortcut (shortcut)
   globalkeys = gears.table.join(globalkeys, shortcut)
 end
+

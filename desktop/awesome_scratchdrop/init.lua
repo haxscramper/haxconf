@@ -38,9 +38,11 @@ local scratchdrop = {} -- module scratch.drop
 
 local dropdown = {}
 
+local drop = {}
+
 -- Create a new window for the drop-down application when it doesn't
 -- exist, or toggle between hidden and visible states when it does
-function toggle(prog, vert, horiz, width, height, sticky, screen)
+function drop.toggle(prog, vert, horiz, width, height, sticky, screen)
     vert   = vert   or "top"
     horiz  = horiz  or "center"
     width  = width  or 1
@@ -70,7 +72,7 @@ function toggle(prog, vert, horiz, width, height, sticky, screen)
             dropdown[prog][screen] = c
 
             -- Scratchdrop clients are floaters
-            awful.client.floating.set(c, true)
+            c.floating = true
 
             -- Client geometry and placement
             local screengeom = capi.screen[screen].workarea
@@ -80,14 +82,15 @@ function toggle(prog, vert, horiz, width, height, sticky, screen)
 
             if     horiz == "left"  then x = screengeom.x
             elseif horiz == "right" then x = screengeom.width - width
-            else   x =  screengeom.x+(screengeom.width-width)/2 - 1 end
+            else   x =  screengeom.x + (screengeom.width - width) / 2 - 1 end
 
             if     vert == "bottom" then y = screengeom.height + screengeom.y - height
-            elseif vert == "center" then y = screengeom.y+(screengeom.height-height)/2
+            elseif vert == "center" then y = screengeom.y + (screengeom.height - height) / 2
             else   y =  screengeom.y end
 
             -- Client properties
             c:geometry({ x = x, y = y, width = width, height = height })
+            mouse.coords({ x = x + 20, y = y + 20})
             c.ontop = true
             c.above = true
             c.skip_taskbar = true
@@ -101,7 +104,7 @@ function toggle(prog, vert, horiz, width, height, sticky, screen)
 
         -- Add manage signal and spawn the program
         attach_signal("manage", spawnw)
-        awful.util.spawn_with_shell(prog, false) -- original without '_with_shell'
+        awful.spawn.with_shell(prog, false) -- original without '_with_shell'
     else
         -- Get a running client
         c = dropdown[prog][screen]
@@ -130,4 +133,4 @@ function toggle(prog, vert, horiz, width, height, sticky, screen)
     end
 end
 
-return setmetatable(scratchdrop, { __call = function(_, ...) return toggle(...) end })
+return drop

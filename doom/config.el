@@ -153,8 +153,6 @@ more nitpickery about stuff I write in my configuration files."
      (format "git push --force origin %s"
              (magit-get-current-branch))))
 
-
-
   (map! :leader
         :desc "new commit"
         :nv "gcc" (cmd! (magit-stage-modified)

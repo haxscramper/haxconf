@@ -13,6 +13,8 @@ client.connect_signal("manage", function (c)
     local geo = c:geometry()
     local coords = mouse.coords()
 
+    -- if true then return end
+
     geo.x = coords.x
     geo.y = coords.y
     c.floating = true
