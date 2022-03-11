@@ -185,7 +185,7 @@ respectively."
           (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
           ;; Get original heading path, without tags, todo, priority elements
           (setq hax/org-refile-refiled-from-header
-                (org-get-heading 'no-tags 'no-todo 'no-priority 'no-comment)))
+                (counsel-org-goto-all--outline-path-prefix)))
       (setq hax/org-refile-refiled-from-id
             (cons 'file (buffer-file-name)))
       (setq hax/org-refile-refiled-from-header (buffer-name)))))
@@ -405,22 +405,49 @@ and `hax/org-refile-refiled-from-header' variables."
                 (not (or (org-element-property :scheduled tree)
                          (org-element-property :deadline tree))))
 
+(hax/defaccept! accept-distant-scheduled/deadlined
+                (let* ((dead (org-element-property :deadline tree))
+                       (shed (org-element-property :scheduled tree))
+                       (now (time-to-days (current-time))))
+                  (when (or dead shed)
+                    (let* ((dead-days
+                            (if dead (- (time-to-days (org-timestamp-to-time dead)) now) nil))
+                           (shed-days
+                            (if shed (- (time-to-days (org-timestamp-to-time shed)) now) nil)))
+                      (message "dead: %s shed: %s" dead-days shed-days)
+                      (or (and dead-days (< 15 dead-days 90))
+                          (and shed-days (< 15 shed-days 90)))))))
+
+
 (setq
  org-agenda-custom-commands
  `(("*" "All"
     ((agenda
       ""
-      ((org-agenda-span 7)
+      ((org-agenda-span 14)
        ;; Start showing events from today onwards, when quickly assessing
        ;; target tasks I don't really need to focus on the past events.
        (org-agenda-start-day "-0d")
+       ;; I show planned and deadlined events for the next two weeks - no
+       ;; need to repeat the same information again for today.
+       (org-deadline-warning-days 0)
        (org-agenda-skip-function 'accept-scheduled/deadlined)))
+     (agenda
+      "Next 90 days"
+      ((org-agenda-span 90)
+       (org-agenda-show-all-dates nil)
+       ;; Only show dates with proper deadlines
+       (org-agenda-skip-function 'accept-distant-scheduled/deadlined)
+       ;; Skip all entries that don't have deadline or scheduled in range
+       ;; of `[14-90]' days.
+       ))
      (todo "WIP")
      (todo "POSTPONED")
      (todo
       "TODO"
       ((org-agenda-skip-function 'skip-scheduled/deadlined)
        (org-agenda-sorting-strategy '((priority-down)))))
+
      ;; (todo "COMPLETED")
      ))))
 
@@ -534,7 +561,7 @@ contextual information."
    hax/notes.org (f-join hax/todo.d "notes.org")
    ;; Agenda is a main todo file
    org-agenda-files (list hax/main.org hax/inbox.org)
-   org-refile-targets `((,hax/main.org :maxlevel . 2)
+   org-refile-targets `((,hax/main.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
 
    ;; Log when schedule changed
@@ -624,6 +651,7 @@ contextual information."
          '((:startgroup . nil)
            ("@work" . ?w)
            ("@home" . ?h)
+           ("@univeristy" . ?u)
            ;; Personal code and other projects
            ("@projects" . ?p)
            ("@organization" . ?o)
