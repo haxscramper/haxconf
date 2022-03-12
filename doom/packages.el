@@ -72,7 +72,8 @@
 ;; Better interfaces for spellcheck correction and candidate selection
 (package! flyspell-correct)
 (package! consult-flyspell
-  :recipe (:type git :host gitlab :repo "OlMon/consult-flyspell" :branch "master"))
+  :recipe (:type git :host gitlab :repo "OlMon/consult-flyspell"
+           :branch "master"))
 
 ;; Easily setup frame with multiple choice selection at the `(point)'
 ;; location.
@@ -80,3 +81,5 @@
 
 ;; https://github.com/abo-abo/org-download
 (package! org-download)
+
+(package! simpleclip)

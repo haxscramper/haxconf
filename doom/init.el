@@ -38,7 +38,7 @@
        lua
        emacs-lisp
        ;; Configuration, serialization
-       json yaml
+       json yaml xml
        ;; Markup languages
        latex markdown rst (org +dragndrop)
        (python +lsp)

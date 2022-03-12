@@ -160,10 +160,69 @@ it in the persistent list of tags, and update current list of tags"
                            (save-excursion
                              (goto-char (marker-position (cdr x)))
                              (org-id-get-create)))))
-                 (insert (format "[[id:%s][%s]]" id (car x)))))
+                 (insert (format " [[id:%s][%s]]" id (car x)))))
      :caller 'hax/org-insert-link-to-heading)))
 
+(defun www-get-page-title (url)
+  "Return title of the URL page, or if not found the page's
+filename (as an approximation)"
+  (let ((title))
+    (with-current-buffer (url-retrieve-synchronously url)
+      (goto-char (point-min))
+      (re-search-forward "<title>\\([^<]*\\)</title>" nil t 1)
+      (setq title (match-string 1))
+      (goto-char (point-min))
+      (re-search-forward "charset=\\([-0-9a-zA-Z]*\\)" nil t 1)
+      (if title
+          (decode-coding-string
+           title
+           (pcase (match-string 1)
+             ;; Safeguard against CAPS in names, maybe other weird coding
+             ;; schemes.
+             ("UTF-8" 'utf-8)
+             (_ (intern (match-string 1)))))
+        (url-filename (url-generic-parse-url url))))))
 
+
+
+(cl-defun hax/org-insert-clipboard-link
+    (&optional (link-name nil) (add-spacing t))
+  (interactive)
+  (let ((run-again t))
+    (while run-again
+      (let* ((link (simpleclip-get-contents))
+             (link-name (if link-name link-name
+                          (when link
+                            (condition-case nil
+                                (www-get-page-title link)
+                              (error (read-from-minibuffer "Auto title failed: "))))))
+             (org-link
+              (format
+               (concat (if add-spacing " " "") "[[%s][%s]]")
+               link link-name))
+             (read-answer-short t)
+             (selected
+              (if link-name
+                  (read-answer
+                   (format "Insert '%s" org-link)
+                   '(("yes" ?y "insert link")
+                     ("no" ?n "do not insert link")
+                     ("update" ?u "update link from clipboard")
+                     ("help" ?h "show help")
+                     ("edit" ?e "prompt for new link name")
+                     ("quit" ?q "quit")))
+                (warn "Invalid link")
+                (setq run-again nil)
+                nil)))
+
+        (cond
+         ((string= selected "yes") (insert org-link) (setq run-again nil))
+         ((string= selected "no") (setq run-again nil))
+         ((string= selected "edit") (setq link-name
+                                          (read-string "New link name: ")))
+         ((string= selected "update") t)
+         ((string= selected "help") (setq run-again nil))
+         ((string= selected "quit") (setq run-again nil)))))))
 
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
@@ -300,6 +359,7 @@ and `hax/org-refile-refiled-from-header' variables."
    :n ",tc" #'org-toggle-checkbox
    :n ",ta" #'hax/org-assign-tag
    :n ",lt" #'hax/org-insert-link-to-subtree
+   :n ",ll" #'hax/org-insert-clipboard-link
    :desc "insert #+begin_src"
    :n ",ic" (cmd!
              (evil-insert-state)
@@ -414,7 +474,7 @@ and `hax/org-refile-refiled-from-header' variables."
                             (if dead (- (time-to-days (org-timestamp-to-time dead)) now) nil))
                            (shed-days
                             (if shed (- (time-to-days (org-timestamp-to-time shed)) now) nil)))
-                      (message "dead: %s shed: %s" dead-days shed-days)
+                      ;; (message "dead: %s shed: %s" dead-days shed-days)
                       (or (and dead-days (< 15 dead-days 90))
                           (and shed-days (< 15 shed-days 90)))))))
 
@@ -432,23 +492,25 @@ and `hax/org-refile-refiled-from-header' variables."
        ;; need to repeat the same information again for today.
        (org-deadline-warning-days 0)
        (org-agenda-skip-function 'accept-scheduled/deadlined)))
-     (agenda
-      "Next 90 days"
-      ((org-agenda-span 90)
-       (org-agenda-show-all-dates nil)
-       ;; Only show dates with proper deadlines
-       (org-agenda-skip-function 'accept-distant-scheduled/deadlined)
-       ;; Skip all entries that don't have deadline or scheduled in range
-       ;; of `[14-90]' days.
-       ))
+
      (todo "WIP")
      (todo "POSTPONED")
-     (todo
-      "TODO"
-      ((org-agenda-skip-function 'skip-scheduled/deadlined)
-       (org-agenda-sorting-strategy '((priority-down)))))
+     ;; ;; Show all todo items in the agenda files.
+     ;; (todo
+     ;;  "TODO"
+     ;;  ((org-agenda-skip-function 'skip-scheduled/deadlined)
+     ;;   (org-agenda-sorting-strategy '((priority-down)))))
 
-     ;; (todo "COMPLETED")
+     ;; ;; REVIEW - show all agenda items in the `[15-90]' day range.
+     ;; (agenda
+     ;;  "Next 90 days"
+     ;;  ((org-agenda-span 20)
+     ;;   (org-agenda-show-all-dates nil)
+     ;;   ;; Only show dates with proper deadlines
+     ;;   (org-agenda-skip-function 'accept-distant-scheduled/deadlined)
+     ;;   ;; Skip all entries that don't have deadline or scheduled in range
+     ;;   ;; of `[14-90]' days.
+     ;;   ))
      ))))
 
 (defun hax/parent-subtrees()
@@ -458,7 +520,7 @@ and `hax/org-refile-refiled-from-header' variables."
     (substring str (- (length str) len) (length str))))
 
 (setq
- org-agenda-prefix-format '((agenda . " %i %-12t% s %(hax/parent-subtrees) ")
+ org-agenda-prefix-format '((agenda . " %i %-12t%-12s %(hax/parent-subtrees) ")
                             (todo . " %i %(hax/parent-subtrees) ")
                             (tags . " %i %(hax/parent-subtrees) ")
                             (search . " %i %(hax/parent-subtrees) "))
@@ -473,6 +535,15 @@ and `hax/org-refile-refiled-from-header' variables."
  )
 
 
+;; Store capture location *before* the capture happens, this way location
+;; information is reported to the hook properly.
+(defvar hax/org-capture-from-line nil)
+(defun hax/org-pre-capture-hook (fun args)
+  (interactive)
+  (setq hax/org-capture-from-line (line-number-at-pos)))
+
+(advice-add 'org-capture :before #'hax/org-pre-capture-hook)
+
 
 (defun hax/capture-location ()
   "Get formatted string about capture location"
@@ -480,9 +551,9 @@ and `hax/org-refile-refiled-from-header' variables."
     (if (magit-toplevel)
         (let* ((top (f-filename (magit-toplevel)))
                (file (magit-file-relative-name orig)))
-          (format "from ~%s:%s:%s~" top file (point)))
+          (format "from ~%s:%s:%s~" top file hax/org-capture-from-line))
       (if orig
-          (format "from ~%s:%s~" (f-filename orig) (point))
+          (format "from ~%s:%s~" (f-filename orig) hax/org-capture-from-line)
         ""))))
 
 (after!
@@ -559,9 +630,12 @@ contextual information."
    hax/main.org (f-join hax/todo.d "main.org")
    ;; Random junk notes that I generate, copy from other places etc.
    hax/notes.org (f-join hax/todo.d "notes.org")
-   ;; Agenda is a main todo file
+   ;; Project configuration
+   hax/projects.org (f-join hax/todo.d "projects.org")
+   ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org hax/inbox.org)
-   org-refile-targets `((,hax/main.org :maxlevel . 3)
+   org-refile-targets `((,hax/main.org :maxlevel . 2)
+                        (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
 
    ;; Log when schedule changed
