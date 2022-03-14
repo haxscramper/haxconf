@@ -149,11 +149,39 @@ occurrence of symbol"
  ;; Delete deletes things
  :v "d" 'delete-region
  ;; Backspace should **DELETE** text - why in world someone could even
- ;; thing this is not how it should functino.
+ ;; thing this is not how it should function.
  :nvi "<C-backspace>" 'backward-delete-word-no-push
+ ;; I use visual line numbering, and it works best if movements also follow
+ ;; the same logic.
+ :nv "j" #'evil-next-visual-line
+ :nv "k" #'evil-previous-visual-line
+
+ ;; For line end/start I don't really need to jump to the start of the
+ ;; /visual/ line, because it might be in the middle of the real one (and
+ ;; that has little to no practical use most of the time)
+ :desc "end-line-insert"
+ :nv "A" (cmd! (goto-char (line-end-position)) (evil-insert-state))
+
+ :desc "start-line-insert"
+ :nv "I" (cmd! (goto-char (line-beginning-position)) (evil-insert-state))
+
+ :desc "end-line"
+ :nv "$" (cmd! (goto-char (line-end-position)))
+
+ :desc "start-line"
+ :nv "0" (cmd! (goto-char (line-beginning-position)))
+
+ ;; Paired with 'visible' search allows to jump to the target character
+ ;; more efficiently.
+ :nv "f" #'evil-snipe-f
+ :nv "F" #'evil-snipe-F
+
+ :nv "C-f" #'avy-goto-char-2
  )
 
-
+(map! :after evil-snipe
+      :map evil-snipe-parent-transient-map
+      ";" nil)
 
 ;; Additional functionality for the multicursor editing
 
