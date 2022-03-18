@@ -18,3 +18,6 @@
 state. This function can be used in `(interactive)' checks for
 functions that accept arguments with code region"
   (list (get-selected-region-start) (get-selected-region-end) current-prefix-arg))
+
+(defun get-selected-region-text ()
+  (buffer-substring (get-selected-region-start) (get-selected-region-end)))

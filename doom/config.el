@@ -189,9 +189,15 @@ more nitpickery about stuff I write in my configuration files."
   (setq keycast-substitute-alist
         '((evil-next-line nil nil)
           (evil-previous-line nil nil)
+          (next-line nil nil)
+          (previous-line nil nil)
+          (evil-next-visual-line nil nil)
+          (evil-previous-visual-line nil nil)
           (evil-forward-char nil nil)
           (evil-backward-char nil nil)
           (ivy-done nil nil)
+          (mouse-set-point nil nil)
+          (org-self-insert-command nil nil)
           (self-insert-command nil nil)))
 
   (add-to-list 'global-mode-string '("" keycast-mode-line)))
@@ -240,12 +246,15 @@ more nitpickery about stuff I write in my configuration files."
 
 (after! hl-todo
   (setq hl-todo-keyword-faces
-        '(("TODO" warning bold)
+        `(("TODO" warning bold)
           ("FIXME" error bold)
           ("HACK" font-lock-constant-face bold)
           ("REVIEW" font-lock-keyword-face bold)
+          ("IDEA" success bold)
           ("NOTE" success bold)
           ("DEPRECATED" font-lock-doc-face bold)
+          ("REFACTOR" font-lock-comment-face)
+          ("STYLE" ,(doom-color 'yellow))
           ("BUG" error bold)
           ("MAYBE" warning bold)
           ("XXX" font-lock-constant-face bold))))
@@ -278,3 +287,24 @@ more nitpickery about stuff I write in my configuration files."
    ;;   ("XXXX" quote hax/face::boxed::red-bold-boxed)))
 
 (winum-mode t)
+
+
+(defun hax/ace-delete-window (&optional arg)
+  "Ace delete window. If the universal prefix argument is used
+then kill the buffer too."
+  (interactive "P")
+  (require 'ace-window)
+  (aw-select
+   " Ace - Delete Window"
+   (lambda (window)
+     (when (equal '(4) arg)
+       (with-selected-window window
+         (spacemacs/kill-this-buffer arg)))
+     (aw-delete-window window))))
+
+(setq aw-dispatch-always t)
+
+(map!
+ :leader
+ :nv "w d"  #'hax/ace-delete-window
+ )

@@ -61,9 +61,14 @@ mode"
          (if (buffer-file-name) (buffer-file-name)
            (let ((buf (org-capture-get :buffer)))
              (if buf (buffer-file-name buf)) (f-join hax/todo.d "images")))))
-    (setq org-download-image-dir (f-dirname base))
+    (setq org-download-image-dir
+          (f-join (f-dirname base) (concat (f-base base) ".images")))
     (setq org-download-timestamp (concat (f-filename base) "_%Y%m%d-%H%M%S_" ))
     (setq org-image-actual-width 300)
+    ;; Update configuration to it's original values - some doom emacs
+    ;; configuration changes these as well, and I don't need it.
+    (setq org-download-link-format-function #'org-download-link-format-function-default)
+    (setq org-download-abbreviate-filename-function #'file-relative-name)
     (setq org-download-link-format "[[file:%s]]")
     (setq org-download-method 'directory)
     (setq org-download-heading-lvl nil)))
@@ -133,9 +138,10 @@ it in the persistent list of tags, and update current list of tags"
          (propertize selected 'face `(:foreground ,(doom-color 'red)))))
       selected)))
 
-(defun hax/org-insert-link-to-subtree ()
+(defun hax/org-insert-link-to-subtree (&optional description)
   "Insert link to any subtree in any org file, using
-`[[ID][path]]' link."
+`[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
+name, otherwise use description."
   (interactive)
   (let (entries)
     (dolist (b (buffer-list))
@@ -160,7 +166,7 @@ it in the persistent list of tags, and update current list of tags"
                            (save-excursion
                              (goto-char (marker-position (cdr x)))
                              (org-id-get-create)))))
-                 (insert (format " [[id:%s][%s]]" id (car x)))))
+                 (insert (format " [[id:%s][%s]]" id (if description description (car x))))))
      :caller 'hax/org-insert-link-to-heading)))
 
 (defun www-get-page-title (url)
@@ -176,33 +182,29 @@ filename (as an approximation)"
       (if title
           (decode-coding-string
            title
-           (pcase (match-string 1)
-             ;; Safeguard against CAPS in names, maybe other weird coding
-             ;; schemes.
-             ("UTF-8" 'utf-8)
-             (_ (intern (match-string 1)))))
+           'utf-8
+           ;; (pcase (match-string 1)
+           ;;   ;; Safeguard against CAPS in names, maybe other weird coding
+           ;;   ;; schemes.
+           ;;   ("UTF-8" 'utf-8)
+           ;;   (_ (intern (match-string 1))))
+           )
         (url-filename (url-generic-parse-url url))))))
 
 
 
-(cl-defun hax/org-insert-clipboard-link
-    (&optional (link-name nil) (add-spacing t))
+(defun hax/org-insert-clipboard-link (&optional description)
+  ;; FIXME https://astralcodexten.substack.com/p/heuristics-that-almost-always-work?s=r
   (interactive)
   (let ((run-again t))
     (while run-again
       (let* ((link (simpleclip-get-contents))
-             (link-name (if link-name link-name
-                          (when link
-                            (condition-case nil
-                                (www-get-page-title link)
-                              (error (read-from-minibuffer "Auto title failed: "))))))
-             (org-link
-              (format
-               (concat (if add-spacing " " "") "[[%s][%s]]")
-               link link-name))
+             (name (if description description
+                     (when link (www-get-page-title link))))
+             (org-link (format "[[%s][%s]]" link name))
              (read-answer-short t)
              (selected
-              (if link-name
+              (if name
                   (read-answer
                    (format "Insert '%s" org-link)
                    '(("yes" ?y "insert link")
@@ -211,18 +213,49 @@ filename (as an approximation)"
                      ("help" ?h "show help")
                      ("edit" ?e "prompt for new link name")
                      ("quit" ?q "quit")))
-                (warn "Invalid link")
+                (warn "Bad url: %s" link)
                 (setq run-again nil)
                 nil)))
-
+        (setq description name)
         (cond
          ((string= selected "yes") (insert org-link) (setq run-again nil))
          ((string= selected "no") (setq run-again nil))
-         ((string= selected "edit") (setq link-name
+         ((string= selected "edit") (setq description
                                           (read-string "New link name: ")))
          ((string= selected "update") t)
          ((string= selected "help") (setq run-again nil))
          ((string= selected "quit") (setq run-again nil)))))))
+
+(defun hax/org-insert-footnote (footnote)
+  (interactive "sfootnote name: ")
+  (insert (format "[fn:%s]" footnote))
+  (let* ((at (org-element-at-point))
+         (tree (if (eq 'headline (car at)) at (org-element-property :parent at))))
+    (goto-char (org-element-property :end tree))
+    (insert (format "[fn:%s] " footnote))
+    (evil-insert-state)
+    (save-excursion (insert "\n\n"))))
+
+(defun hax/org-gen-footnote-name ()
+  (interactive)
+  (point)
+  (format
+   "%s-%s"
+   (s-replace-regexp
+    (rx (not word))
+    ""
+    (s-trim (buffer-substring (point) (save-excursion (backward-word) (point)))))
+   (line-number-at-pos)))
+
+(defun hax/org-insert-footnote-link (footnote)
+  (interactive "sfootnote name: ")
+  (insert (format "[fn:%s]" footnote))
+  (let* ((at (org-element-at-point))
+         (tree (if (eq 'headline (car at)) at (org-element-property :parent at))))
+    (save-excursion
+      (goto-char (org-element-property :end tree))
+      (insert (format "\n[fn:%s] " footnote))
+      (hax/org-insert-clipboard-link))))
 
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
@@ -313,12 +346,7 @@ and `hax/org-refile-refiled-from-header' variables."
    [M-return] nil
    )
 
-  (map!
-   :map org-mode-map
-   :nvi "M-p" #'hax/org-paste-clipboard
-   :nvi "M-C-p" (cmd!
-                 (insert "#+capion: ")
-                 (save-excursion (hax/org-paste-clipboard))))
+
 
   (map!
    :map evil-org-mode-map
@@ -342,7 +370,7 @@ and `hax/org-refile-refiled-from-header' variables."
    :ni "C-S-k" nil
 
    :ni "C-;" #'flyspell-correct-wrapper
-   [M-return] #'org-add-note
+   :nvi [M-return] #'org-add-note
    :ni [C-S-return] #'hax/org-insert-todo-entry
    :ni [C-return] #'+org/insert-item-below
 
@@ -358,8 +386,27 @@ and `hax/org-refile-refiled-from-header' variables."
    :nv ",in" #'org-add-note
    :n ",tc" #'org-toggle-checkbox
    :n ",ta" #'hax/org-assign-tag
-   :n ",lt" #'hax/org-insert-link-to-subtree
-   :n ",ll" #'hax/org-insert-clipboard-link
+   :ni "M-i M-i" #'hax/org-paste-clipboard
+   :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
+                         (save-excursion (hax/org-paste-clipboard)))
+   :desc "link to subtree"
+   :v "M-i M-l M-t" (cmd! (let ((text (get-selected-region-text)))
+                            (delete-region (get-selected-region-start) (get-selected-region-end))
+                            (hax/org-insert-clipboard-link text)))
+   :desc "link to clipboard"
+   :v "M-i M-l M-l" (cmd! (let ((text (get-selected-region-text)))
+                            (delete-region (get-selected-region-start) (get-selected-region-end))
+                            (hax/org-insert-clipboard-link text)))
+
+   :ni "M-i M-l M-t" #'hax/org-insert-link-to-subtree
+   :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
+
+   :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link
+                            (hax/org-gen-footnote-name)))
+   :ni "M-i M-f" (cmd! (hax/org-insert-footnote
+                        (hax/org-gen-footnote-name)))
+   :desc "insert {{{macro}}}"
+   :ni "M-i M-{" (cmd! (insert "{{{") (save-excursion (insert "}}}")))
    :desc "insert #+begin_src"
    :n ",ic" (cmd!
              (evil-insert-state)
@@ -371,8 +418,13 @@ and `hax/org-refile-refiled-from-header' variables."
    :nv ",cw" (cmd! (org-todo "WIP") (org-clock-in)))
 
   (map!
-   :leader
-   :n "SPC" #'hax/replace-next-placeholder)
+   :map evil-org-mode-map
+   ;; https://github.com/hlissner/doom-emacs/issues/3978#issuecomment-699004440
+   ;; `:leader' key mapping is global, and I want to use `SPC-SPC' only for
+   ;; org-mode.
+   :localleader
+   :n "SPC" #'hax/replace-next-placeholder
+   :nv "si" #'counsel-org-goto)
 
   (setq company-backends
         '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
@@ -630,11 +682,14 @@ contextual information."
    hax/main.org (f-join hax/todo.d "main.org")
    ;; Random junk notes that I generate, copy from other places etc.
    hax/notes.org (f-join hax/todo.d "notes.org")
+   hax/fic.org (f-join hax/todo.d "fic.org")
    ;; Project configuration
    hax/projects.org (f-join hax/todo.d "projects.org")
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org hax/inbox.org)
-   org-refile-targets `((,hax/main.org :maxlevel . 2)
+   org-refile-targets `((nil :maxlevel . 3)
+                        (,hax/fic.org :maxlevel . 4)
+                        (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
 
@@ -656,6 +711,7 @@ contextual information."
    ;; together.
    org-blank-before-new-entry '((heading . t) (plain-list-item . nil))
    org-hierarchical-todo-statistics t
+   org-goto-interface 'outline-path-completionp
    org-image-actual-width (list 300)
    ;; Store seconds in the timestamp format
    org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S>")
@@ -753,3 +809,10 @@ contextual information."
     org-odt--enumerable-latex-image-p)
    ("__Listing__" "Listing" "value" "Листинг"
     org-odt--enumerable-p)))
+
+
+
+(after! org-special-block-extras
+  (o-defblock
+   parallel (cols 2) (bar nil)
+   (format "[[<%s>]]" contents)))

@@ -135,6 +135,7 @@ occurrence of symbol"
         (internal/push-text-to-delete-ring
          (buffer-substring range-start range-end))))))
 
+(setq evil-snipe-scope 'visible)
 
 (map!
  :n  "c"  #'evil-change-without-register
@@ -179,9 +180,10 @@ occurrence of symbol"
  :nv "C-f" #'avy-goto-char-2
  )
 
-(map! :after evil-snipe
-      :map evil-snipe-parent-transient-map
-      ";" nil)
+(map!
+ :after evil-snipe
+ :map evil-snipe-parent-transient-map
+ ";" nil)
 
 ;; Additional functionality for the multicursor editing
 

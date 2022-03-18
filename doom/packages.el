@@ -83,3 +83,15 @@
 (package! org-download)
 
 (package! simpleclip)
+
+(package! ninja-mode)
+
+(package! graphviz-dot-mode)
+
+;; https://alhassy.github.io/org-special-block-extras/
+(package! org-special-block-extras)
+
+;; Window deletion and selection
+(package! ace-window)
+
+(package! ox-epub)
