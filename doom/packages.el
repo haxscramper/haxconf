@@ -95,3 +95,5 @@
 (package! ace-window)
 
 (package! ox-epub)
+(package! ox-json)
+

@@ -169,28 +169,33 @@ name, otherwise use description."
                  (insert (format " [[id:%s][%s]]" id (if description description (car x))))))
      :caller 'hax/org-insert-link-to-heading)))
 
-(defun www-get-page-title (url)
+(cl-defun www-get-page-title (url &optional (timeout 15))
   "Return title of the URL page, or if not found the page's
 filename (as an approximation)"
-  (let ((title))
-    (with-current-buffer (url-retrieve-synchronously url)
-      (goto-char (point-min))
-      (re-search-forward "<title>\\([^<]*\\)</title>" nil t 1)
-      (setq title (match-string 1))
-      (goto-char (point-min))
-      (re-search-forward "charset=\\([-0-9a-zA-Z]*\\)" nil t 1)
-      (if title
-          (decode-coding-string
-           title
-           'utf-8
-           ;; (pcase (match-string 1)
-           ;;   ;; Safeguard against CAPS in names, maybe other weird coding
-           ;;   ;; schemes.
-           ;;   ("UTF-8" 'utf-8)
-           ;;   (_ (intern (match-string 1))))
-           )
-        (url-filename (url-generic-parse-url url))))))
+  (message "%s" timeout)
+  (let ((title)
+        (content (url-retrieve-synchronously url nil nil timeout)))
+    (if (not content)
+        (error "Failed to retrieve URL content")
+      (with-current-buffer content
+        (goto-char (point-min))
+        (re-search-forward "<title>\\([^<]*\\)</title>" nil t 1)
+        (setq title (match-string 1))
+        (goto-char (point-min))
+        (re-search-forward "charset=\\([-0-9a-zA-Z]*\\)" nil t 1)
+        (if title
+            (decode-coding-string
+             title
+             'utf-8
+             ;; (pcase (match-string 1)
+             ;;   ;; Safeguard against CAPS in names, maybe other weird coding
+             ;;   ;; schemes.
+             ;;   ("UTF-8" 'utf-8)
+             ;;   (_ (intern (match-string 1))))
+             )
+          (url-filename (url-generic-parse-url url)))))))
 
+;; (www-get-page-title "https://www.studyinjapan.go.jp/en/planning/about-scholarship/")
 
 
 (defun hax/org-insert-clipboard-link (&optional description)
@@ -255,7 +260,8 @@ filename (as an approximation)"
     (save-excursion
       (goto-char (org-element-property :end tree))
       (insert (format "\n[fn:%s] " footnote))
-      (hax/org-insert-clipboard-link))))
+      (hax/org-insert-clipboard-link)
+      (insert "\n\n"))))
 
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
@@ -400,6 +406,9 @@ and `hax/org-refile-refiled-from-header' variables."
 
    :ni "M-i M-l M-t" #'hax/org-insert-link-to-subtree
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
+   :ni "M-i M-l M-d" (lambda (description)
+                       (interactive "sLink description: ")
+                       (hax/org-insert-clipboard-link description))
 
    :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link
                             (hax/org-gen-footnote-name)))
@@ -417,17 +426,26 @@ and `hax/org-refile-refiled-from-header' variables."
    :desc "start WIP clocking"
    :nv ",cw" (cmd! (org-todo "WIP") (org-clock-in)))
 
-  (map!
-   :map evil-org-mode-map
-   ;; https://github.com/hlissner/doom-emacs/issues/3978#issuecomment-699004440
-   ;; `:leader' key mapping is global, and I want to use `SPC-SPC' only for
-   ;; org-mode.
-   :localleader
-   :n "SPC" #'hax/replace-next-placeholder
-   :nv "si" #'counsel-org-goto)
+
 
   (setq company-backends
         '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
+
+(map!
+ ;; https://github.com/hlissner/doom-emacs/issues/3978#issuecomment-699004440
+ ;; `:leader' key mapping is global, and I want to use `SPC-SPC' only for
+ ;; org-mode. But local leader (`:localleader') is configured to be
+ ;; `SPC-m', and I don't wnat to use this combinations (or change mnemnics
+ ;; for every single other combination), so keybindings here are global,
+ ;; with hack for specific goto configurations.
+ ;;
+ ;; Not specifying `:map' as `:leader' takes priority anyway.
+ :leader
+ :n "SPC" #'hax/replace-next-placeholder
+ :nv "si" (cmd! (call-interactively
+                 (cond
+                  ((eq major-mode 'org-mode) 'counsel-org-goto)
+                  (t 'counsel-imenu)))) )
 
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
 
@@ -809,6 +827,18 @@ contextual information."
     org-odt--enumerable-latex-image-p)
    ("__Listing__" "Listing" "value" "Листинг"
     org-odt--enumerable-p)))
+
+(setq
+ org-odt-transform-processes
+ '(("Optimize Column Width of all Tables"
+    "soffice" "--norestore" "--invisible" "--headless"
+    "macro:///OrgMode.Utilities.OptimizeColumnWidth(%I)")
+   ("Update All"
+    "soffice" "--norestore" "--invisible" "--headless"
+    "macro:///OrgMode.Utilities.UpdateAll(%I)")
+   ("Reload"
+    "soffice" "--norestore" "--invisible" "--headless"
+    "macro:///OrgMode.Utilities.Reload(%I)")))
 
 
 

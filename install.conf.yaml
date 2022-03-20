@@ -35,6 +35,7 @@
     # Rofi text selector configuration and themes
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
+    ~/.xbindkeysrc: desktop/xbindkeysrc.sh
 
     ~/.config/awesome/rc.lua: desktop/awesome_wm.lua
     ~/.config/haxconf: .

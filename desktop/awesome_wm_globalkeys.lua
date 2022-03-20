@@ -170,6 +170,7 @@ globalkeys = gears.table.join(
       { modkey },
       "i",
       function()
+        -- TODO pass current window name to emacs
         drop.toggle(
           "emacsclient --create-frame " ..
             "--eval '(setq hax/fullscreen-capture t)' " ..
