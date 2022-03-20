@@ -266,6 +266,29 @@ filename (as an approximation)"
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
 
+
+(defun hax/org-subtree-timestamp (arg &optional inactive)
+  "Insert active timestamp in current subtree"
+  ;; TODO Implement insertion of the time ranges
+  ;; MAYBE Check for conflicts with 'DEADLINE' and 'SCHEDULED'
+  (interactive "P")
+  (save-excursion
+    (org-back-to-heading)
+    (let* ((old (org-entry-get nil "TIMESTAMP"))
+           (tree (org-element-at-point))
+           (dedl (org-entry-get nil "DEADLINE"))
+           (shed (org-entry-get nil "SCHEDULED"))
+           (lvl (org-element-property :level tree)))
+      (if old
+          (error "FIXME - implement update of the existing dates")
+        (let ((time (org-read-date arg 'totime)))
+          (next-line)
+          (insert (s-repeat (1+ lvl) " "))
+          (insert "TIMESTAMP: ")
+          (org-insert-time-stamp time (or org-time-was-given arg) inactive)
+          (if (not (or dedl shed))
+              (insert "\n")))))))
+
 ;; (defvar hax/internal::org-refile-refiled-from-params nil "Parameters of ")
 
 (defun hax/org-save-source-id-and-header ()
@@ -527,8 +550,9 @@ and `hax/org-refile-refiled-from-header' variables."
        (unless ,body
          subtree-end))))
 
-(hax/defaccept! accept-scheduled/deadlined
+(hax/defaccept! accept-scheduled/deadlined/timed
                 (or (org-element-property :scheduled tree)
+                    (org-element-property :timestamp tree)
                     (org-element-property :deadline tree)))
 
 (hax/defaccept! skip-scheduled/deadlined
@@ -551,7 +575,16 @@ and `hax/org-refile-refiled-from-header' variables."
 
 (setq
  org-agenda-custom-commands
- `(("*" "All"
+ `(
+   ("l" "Long"
+    ((agenda
+      ""
+      ((org-agenda-span 90)
+       (org-agenda-start-day "-7d")
+       (org-deadline-warning-days 35)
+       ;; (org-agenda-skip-function 'accept-scheduled/deadlined/timed)
+       ))))
+   ("*" "All"
     ((agenda
       ""
       ((org-agenda-span 14)
@@ -561,7 +594,7 @@ and `hax/org-refile-refiled-from-header' variables."
        ;; I show planned and deadlined events for the next two weeks - no
        ;; need to repeat the same information again for today.
        (org-deadline-warning-days 0)
-       (org-agenda-skip-function 'accept-scheduled/deadlined)))
+       (org-agenda-skip-function 'accept-scheduled/deadlined/timed)))
 
      (todo "WIP")
      (todo "POSTPONED")
@@ -634,8 +667,8 @@ and `hax/org-refile-refiled-from-header' variables."
 CONTENTS holds the contents of the item.  INFO is a plist holding
 contextual information."
     (format "<text:span text:style-name=\"%s\">%s</text:span>"
-	    "OrgCode" (org-odt--encode-plain-text
-		       (org-element-property :value _inline-src-block))))
+            "OrgCode" (org-odt--encode-plain-text
+                       (org-element-property :value _inline-src-block))))
 
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
@@ -651,21 +684,25 @@ contextual information."
       ("i" "I")))
 
   (setq org-capture-templates
+        ;; agenda just includes everything that contains an "active time
+        ;; stamp". An active time stamp is any time stamp in angular
+        ;; brackets. That's why all templates use `%U' instead of `%T' for
+        ;; timestamps - creation date should not be inserted in the agenda.
         '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
           ;; just dump everything in it, refile later.
           ("t" "GTD todo inbox" entry (file hax/inbox.org)
            "* TODO %?
   :PROPERTIES:
-  :CREATED: %T
+  :CREATED: %U
   :ID: %(org-id-new)
   :END:
 "
            :empty-lines-before 1
            :empty-lines-after 1)
           ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-           "** %T %(hax/capture-location)
+           "** %U %(hax/capture-location)
   :PROPERTIES:
-  :CREATED: %T
+  :CREATED: %U
   :ID: %(org-id-new)
   :END:
 
@@ -677,9 +714,9 @@ contextual information."
            :empty-lines-before 1
            :empty-lines-after 1)
           ("c" "Clock" entry (clock)
-           "** %T %(hax/capture-location)
+           "** %U %(hax/capture-location)
   :PROPERTIES:
-  :CREATED: %T
+  :CREATED: %U
   :ID: %(org-id-new)
   :END:
 
@@ -711,6 +748,7 @@ contextual information."
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
 
+   org-log-done 'time
    ;; Log when schedule changed
    org-log-reschedule 'time
    ;; Notes should go from top to bottom
