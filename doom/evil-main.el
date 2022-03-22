@@ -17,6 +17,11 @@
  :nv "K" nil
  )
 
+;; (map!
+;;  :nv ".." #'evil-repeat
+;;  :nv ".f" #'evil-snipe-repeat
+;;  )
+
 (map!
  :leader
  ;; transition period - maybe I will change them back to default versions

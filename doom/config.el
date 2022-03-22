@@ -205,13 +205,24 @@ more nitpickery about stuff I write in my configuration files."
 (load! "lang-spelling.el")
 (set-popup-rule! "*Telega Root*" :ignore t)
 
-;; (setq
-;;  telega-chat-fill-column 60
-;;  telega-chat-use-markdown-version 1
-;;  ;; telega-chat-input-prompt "****\n"
-;;  )
+(defun hax/telega-mode-hook ()
+  (interactive)
+  (setq
+   telega-chat-fill-column 60
+   telega-chat-use-markdown-version 1
+   telega-chat-input-prompt "****\n")
 
+  (map!
+   :map telega-chat-mode-map
+   ;; FIXME this breaks 'ret' on the image preview selection
+   :nvi [return] #'electric-newline-and-maybe-indent
+   :nvi [C-return] #'telega-chatbuf-input-send
+   :nvi [f7] (lambda (text)
+               (interactive "scode: ")
+               (insert (concat "`" (s-trim text) "` ")))))
 
+(after! telega
+  (add-hook 'telega-chat-mode-hook 'hax/telega-mode-hook))
 
 
 

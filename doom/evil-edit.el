@@ -164,7 +164,7 @@ occurrence of symbol"
  :nv "A" (cmd! (goto-char (line-end-position)) (evil-insert-state))
 
  :desc "start-line-insert"
- :nv "I" (cmd! (goto-char (line-beginning-position)) (evil-insert-state))
+ :nv "I" (cmd! (goto-char (line-beginning-position)) (evil-insert-line 1))
 
  :desc "end-line"
  :nv "$" (cmd! (goto-char (line-end-position)))

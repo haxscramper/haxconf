@@ -392,6 +392,12 @@ and `hax/org-refile-refiled-from-header' variables."
 
   (hax/org-download-setup)
   (map!
+   :map org-mode-map
+   :localleader
+   :nv "dt" #'hax/org-subtree-timestamp
+   )
+
+  (map!
    :map evil-org-mode-map
    ;; Consistent multicursor bindings are more important for me, so
    ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
@@ -418,6 +424,12 @@ and `hax/org-refile-refiled-from-header' variables."
    :ni "M-i M-i" #'hax/org-paste-clipboard
    :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
                          (save-excursion (hax/org-paste-clipboard)))
+
+   :desc "link to word"
+   :v "M-i M-l M-w" (cmd! (let ((text (get-selected-region-text)))
+                            (delete-region (get-selected-region-start) (get-selected-region-end))
+                            (insert (format "[[%s][%s]]" text text))))
+
    :desc "link to subtree"
    :v "M-i M-l M-t" (cmd! (let ((text (get-selected-region-text)))
                             (delete-region (get-selected-region-start) (get-selected-region-end))
@@ -550,15 +562,6 @@ and `hax/org-refile-refiled-from-header' variables."
        (unless ,body
          subtree-end))))
 
-(hax/defaccept! accept-scheduled/deadlined/timed
-                (or (org-element-property :scheduled tree)
-                    (org-element-property :timestamp tree)
-                    (org-element-property :deadline tree)))
-
-(hax/defaccept! skip-scheduled/deadlined
-                (not (or (org-element-property :scheduled tree)
-                         (org-element-property :deadline tree))))
-
 (hax/defaccept! accept-distant-scheduled/deadlined
                 (let* ((dead (org-element-property :deadline tree))
                        (shed (org-element-property :scheduled tree))
@@ -572,7 +575,6 @@ and `hax/org-refile-refiled-from-header' variables."
                       (or (and dead-days (< 15 dead-days 90))
                           (and shed-days (< 15 shed-days 90)))))))
 
-
 (setq
  org-agenda-custom-commands
  `(
@@ -581,9 +583,7 @@ and `hax/org-refile-refiled-from-header' variables."
       ""
       ((org-agenda-span 90)
        (org-agenda-start-day "-7d")
-       (org-deadline-warning-days 35)
-       ;; (org-agenda-skip-function 'accept-scheduled/deadlined/timed)
-       ))))
+       (org-deadline-warning-days 35)))))
    ("*" "All"
     ((agenda
       ""
@@ -593,8 +593,7 @@ and `hax/org-refile-refiled-from-header' variables."
        (org-agenda-start-day "-0d")
        ;; I show planned and deadlined events for the next two weeks - no
        ;; need to repeat the same information again for today.
-       (org-deadline-warning-days 0)
-       (org-agenda-skip-function 'accept-scheduled/deadlined/timed)))
+       (org-deadline-warning-days 0)))
 
      (todo "WIP")
      (todo "POSTPONED")
@@ -603,17 +602,6 @@ and `hax/org-refile-refiled-from-header' variables."
      ;;  "TODO"
      ;;  ((org-agenda-skip-function 'skip-scheduled/deadlined)
      ;;   (org-agenda-sorting-strategy '((priority-down)))))
-
-     ;; ;; REVIEW - show all agenda items in the `[15-90]' day range.
-     ;; (agenda
-     ;;  "Next 90 days"
-     ;;  ((org-agenda-span 20)
-     ;;   (org-agenda-show-all-dates nil)
-     ;;   ;; Only show dates with proper deadlines
-     ;;   (org-agenda-skip-function 'accept-distant-scheduled/deadlined)
-     ;;   ;; Skip all entries that don't have deadline or scheduled in range
-     ;;   ;; of `[14-90]' days.
-     ;;   ))
      ))))
 
 (defun hax/parent-subtrees()
@@ -641,9 +629,10 @@ and `hax/org-refile-refiled-from-header' variables."
 ;; Store capture location *before* the capture happens, this way location
 ;; information is reported to the hook properly.
 (defvar hax/org-capture-from-line nil)
-(defun hax/org-pre-capture-hook (fun args)
+(defun hax/org-pre-capture-hook (&optional fun args)
   (interactive)
-  (setq hax/org-capture-from-line (line-number-at-pos)))
+  (when (and fun args)
+    (setq hax/org-capture-from-line (line-number-at-pos))))
 
 (advice-add 'org-capture :before #'hax/org-pre-capture-hook)
 
@@ -695,6 +684,7 @@ contextual information."
   :PROPERTIES:
   :CREATED: %U
   :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
   :END:
 "
            :empty-lines-before 1
@@ -709,6 +699,16 @@ contextual information."
 %?"
            :empty-lines-before 1
            :empty-lines-after 1)
+          ("i" "Immediate" entry (file+olp+datetree hax/immediate.org)
+           "* TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+           :empty-lines-after 1
+           :empty-lines-before 1)
           ("D" "Daily start" plain (file+olp+datetree hax/notes.org)
            "%i%?"
            :empty-lines-before 1
@@ -733,6 +733,11 @@ contextual information."
    hax/todo.d (f-join org-directory "todo")
    ;; GTD inbox
    hax/inbox.org (f-join hax/todo.d "inbox.org")
+   ;; Immediate plans for today. Similar to GTD inbox, but reserved for
+   ;; very minor items used to organize the thoughts. Items from here can
+   ;; duplicate others (heading might be a direct link), and they are not
+   ;; refiled anywhere else.
+   hax/immediate.org (f-join hax/todo.d "immediate.org")
    ;; Main GTD organizer
    hax/main.org (f-join hax/todo.d "main.org")
    ;; Random junk notes that I generate, copy from other places etc.
@@ -748,6 +753,7 @@ contextual information."
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
 
+   ;; Add `COMPLETED' timestamp property
    org-log-done 'time
    ;; Log when schedule changed
    org-log-reschedule 'time
@@ -804,6 +810,7 @@ contextual information."
            "POSTPONED(P!/!)"    ;; Work is temporarily paused
            "WIP(w!)"            ;; Working on it
            "STALLED(s!)"        ;; External event is preventing further work
+           "MAYBE(m!)"          ;; Not Guaranteed to happen
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "TIMEOUT(T)"         ;; Cannot be done due to time limits
            "FAILED(f@/!)"       ;; Tried to finish the task but failed
@@ -816,20 +823,21 @@ contextual information."
            "FUCKING___DONE(F)"  ;; Completed but very angry
            )))
   (setq org-todo-keyword-faces
-        '(("TODO" . "orange")
+        `(("TODO" . "orange")
           ("LATER" . "DeepPink")
           ("NEXT" . "DarkRed")
           ("POSTPONED" . "coral")
-          ("DONE" . "green")
-          ("NUKED" . "purple")
+          ("DONE" . ,(doom-color 'green))
+          ("MAYBE" . ,(doom-color 'blue))
+          ("NUKED" . ,(doom-color 'purple))
           ("CANCELED" . "snow")
           ("PARTIALLY" . "goldenrod")
           ("WIP" . "tan")
           ("STALLED" . "gold")
           ("REVIEW" . "SteelBlue")
-          ("FAILED" . "red")
+          ("FAILED" . ,(doom-color 'red))
           ("FUCKING___DONE" . "gold1")
-          ("TIMEOUT" . "red")))
+          ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-join hax/todo.d "tags"))
   (setq org-tag-alist
         (concatenate
@@ -848,10 +856,6 @@ contextual information."
           (--filter
            (< 0 (length it))
            (s-split "\n" (f-read hax/tags-file)))))))
-
-
-
-
 
 (setq
  org-odt-category-map-alist

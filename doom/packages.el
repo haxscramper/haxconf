@@ -67,7 +67,7 @@
 ;; I will figure out what is wrong (eventually). When it works it is a lot
 ;; better for focused discussions - single chat that you have to write
 ;; messages longer than one line.
-(package! telega)
+(package! telega :pin nil)
 
 ;; Better interfaces for spellcheck correction and candidate selection
 (package! flyspell-correct)
@@ -96,4 +96,4 @@
 
 (package! ox-epub)
 (package! ox-json)
-
+(package! org-ref)
