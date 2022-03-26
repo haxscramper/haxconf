@@ -171,16 +171,21 @@ globalkeys = gears.table.join(
       "i",
       function()
         -- TODO pass current window name to emacs
-        drop.toggle(
-          "emacsclient --create-frame " ..
+        local c = mouse.object_under_pointer()
+        local name = ""
+        if c ~= nil then
+          name = c.name
+          debug_notify(name)
+        end
+
+        local cmd = "emacsclient --create-frame " ..
             "--eval '(setq hax/fullscreen-capture t)' " ..
+            "--eval '(setq hax/fullscreen-client-name \"" .. string.format("%q", name) .. "\")'" ..
             "--eval '(org-capture nil \"d\")' " ..
-            "--eval '(delete-other-windows)'",
-            "top",
-            "center",
-            0.75,
-            0.4,
-            false)
+            "--eval '(delete-other-windows)' "
+
+        -- debug_notify(cmd)
+        drop.toggle(cmd, "top", "center", 0.75, 0.4, false)
 
       end,
       { description = "open emacs dropdown", group = "custom"}),

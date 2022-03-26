@@ -51,7 +51,7 @@ fn addseq {|key| set sequence = $sequence""$key }
 fn setseq {|key| set sequence = $key }
 
 set edit:insert:binding[Ctrl-t] = {
-  try { edit:insert-at-dot (fd | fzf 2> /dev/tty) } except e { }
+  try { edit:insert-at-dot (fd | fzf 2> /dev/tty) } catch e { }
 }
 
 set edit:insert:binding[Ctrl-w] = { edit:kill-small-word-left }
@@ -150,7 +150,7 @@ edit:add-var xcpp~ {
     fzf --read0 --multi --print0 |
     xargs -r0 realpath |
     xclip -sel cli
-  } except {
+  } catch {
   }
 }
 

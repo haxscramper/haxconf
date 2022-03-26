@@ -211,7 +211,11 @@ more nitpickery about stuff I write in my configuration files."
    telega-chat-fill-column 60
    telega-chat-use-markdown-version 1
    telega-chat-input-prompt "****\n")
-
+  (doom/toggle-line-numbers)
+  (map!
+   :map telega-msg-button-map
+   :nvi "k" nil
+   :nvi "l" nil)
   (map!
    :map telega-chat-mode-map
    ;; FIXME this breaks 'ret' on the image preview selection
@@ -224,6 +228,10 @@ more nitpickery about stuff I write in my configuration files."
 (after! telega
   (add-hook 'telega-chat-mode-hook 'hax/telega-mode-hook))
 
+(set-formatter! 'html-tidy
+  '("xmllint" "--pretty" "2" "-")
+  :modes '(nxml-mode)
+  )
 
 
 (setq revert-without-query '(".*"))
@@ -236,24 +244,6 @@ more nitpickery about stuff I write in my configuration files."
   (kill-emacs))
 
 (fset 'save-buffers-kill-emacs 'hax/save-buffers-kill-emacs)
-
-
-(defun hax/telega-mode-hook ()
-  (interactive)
-  (setq telega-chat-use-markdown-formatting t)
-  (spacemacs/toggle-relative-line-numbers-on)
-  (map!
-   :map telega-msg-button-map
-   :nvi "k" nil
-   :nvi "l" nil)
-  (map!
-   :map telega-chat-mode-map
-   :nvi "RET" #'electric-newline-and-maybe-indent
-   :i "<C-return>" #'telega-chatbuf-input-send
-   :i "<f7>" (lambda (text)
-               (interactive "scode: ")
-               (insert (concat "`" (s-trim text) "` ")))))
-
 
 (after! hl-todo
   (setq hl-todo-keyword-faces

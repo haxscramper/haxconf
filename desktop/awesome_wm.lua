@@ -50,7 +50,7 @@ end
 
 function debug_notify(text)
   naughty.notify({
-      title = "Debug notifty",
+      -- title = "Debug notifty",
       preset = naughty.config.presets.low,
       text = text,
       timeout = 10,

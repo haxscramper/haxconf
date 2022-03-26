@@ -6,23 +6,58 @@ local beautiful = require("beautiful")
 local hotkeys_popup = require("awful.hotkeys_popup").widget
 local help_group = "client"
 
+local start = os.time()
+
+function client_under_cursor ()
+  local cord = mouse.coords()
+  for c in awful.client.iterate(function (c) return true end) do
+    local geo = c:geometry()
+    if geo.x <= cord.x and cord.x <= geo.x + geo.width and
+      geo.y <= cord.y and cord.y <= geo.y + geo.height then
+      return c
+    end
+  end
+end
+
 client.connect_signal("manage", function (c)
     get_num_widget(c)
     update_client_numeration()
-    client.focus = mouse.object_under_pointer()
+    local under = client_under_cursor()
+    if under ~= nil then
+      client.focus = under
+      debug_notify(string.format("Focsing on %q", under.class))
+    end
+
+    local desc =
+      "class:" .. (c.class or "<none>") ..
+      " type:" .. (c.type or "<none>") ..
+      " inst:" .. (c.instance or "<none>")
+
+    if (os.time() - start) < 5 then
+      -- debug_notify(string.format("Initial layout debounce - %.2f on %q", os.time() - start, desc))
+      return
+    end
+
     local geo = c:geometry()
     local coords = mouse.coords()
 
-    -- if true then return end
+    debug_notify("manage:: " .. desc)
+
+    if has_value({"sun-awt-X11-XDialogPeer", "de-jave-jave-Jave"}, c.class) then
+      c.floating = true
+      return
+    end
 
     geo.x = coords.x
     geo.y = coords.y
     c.floating = true
 
     if has_value({"TelegramDesktop", "InputOutput"}, c.class) then
+      awful.titlebar.hide(c)
       return
 
-    elseif has_value({"Emacs", "Firefox", "Navigator", "kitty"}, c.class) then
+    elseif has_value({"Emacs", "firefox", "kitty"}, c.class) and
+           (c.type ~= nil and c.type == "normal") then
       c.floating = false
       c:geometry(geo)
       loc = c:geometry()
@@ -188,8 +223,8 @@ end
 
 
 client.connect_signal("mouse::enter", function(c) client.focus = c end)
-client.connect_signal("focus", function(cl) update_client_numeration() end)
-client.connect_signal("unfocus", function(cl) update_client_numeration() end)
+-- client.connect_signal("focus", function(cl) update_client_numeration() end)
+-- client.connect_signal("unfocus", function(cl) update_client_numeration() end)
 
 
 --- Add a titlebar if titlebars_enabled is set to true in the rules.

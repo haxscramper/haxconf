@@ -231,15 +231,19 @@ filename (as an approximation)"
          ((string= selected "help") (setq run-again nil))
          ((string= selected "quit") (setq run-again nil)))))))
 
+(defun org-wrapping-subtree (&optional tree)
+  (if (eq 'headline (car tree))
+      tree
+    (org-wrapping-subtree (org-element-property :parent tree))))
+
 (defun hax/org-insert-footnote (footnote)
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
-  (let* ((at (org-element-at-point))
-         (tree (if (eq 'headline (car at)) at (org-element-property :parent at))))
-    (goto-char (org-element-property :end tree))
-    (insert (format "[fn:%s] " footnote))
-    (evil-insert-state)
-    (save-excursion (insert "\n\n"))))
+  (goto-char (org-element-property
+              :end (org-wrapping-subtree (org-element-at-point))))
+  (insert (format "[fn:%s] " footnote))
+  (evil-insert-state)
+  (save-excursion (insert "\n\n")))
 
 (defun hax/org-gen-footnote-name ()
   (interactive)
@@ -509,6 +513,7 @@ and `hax/org-refile-refiled-from-header' variables."
 
 (add-hook! 'org-capture-mode-hook 'hax/org-capture-hook)
 (setq hax/fullscreen-capture nil)
+(setq hax/fullscreen-client-name nil)
 (defun hax/org-post-capture-hook ()
   (interactive)
   ;; If starting capture from dropdown mode, delete the client window frame
@@ -518,7 +523,8 @@ and `hax/org-refile-refiled-from-header' variables."
     (delete-frame))
   ;; Fullscreen capture must be set again with new `--eval' argument
   ;; when starting next cature.
-  (setq hax/fullscreen-capture nil))
+  (setq hax/fullscreen-capture nil)
+  (setq hax/fullscreen-client-name nil))
 
 (add-hook! 'org-capture-after-finalize-hook 'hax/org-post-capture-hook)
 
@@ -640,13 +646,14 @@ and `hax/org-refile-refiled-from-header' variables."
 (defun hax/capture-location ()
   "Get formatted string about capture location"
   (let ((orig (org-capture-get :original-file)))
+    (message "[%s]" hax/fullscreen-client-name)
     (if (magit-toplevel)
         (let* ((top (f-filename (magit-toplevel)))
                (file (magit-file-relative-name orig)))
           (format "from ~%s:%s:%s~" top file hax/org-capture-from-line))
       (if orig
           (format "from ~%s:%s~" (f-filename orig) hax/org-capture-from-line)
-        ""))))
+        (format "from ~%s~" (s-replace "~" "∼" hax/fullscreen-client-name))))))
 
 (after!
   org
@@ -746,7 +753,7 @@ contextual information."
    ;; Project configuration
    hax/projects.org (f-join hax/todo.d "projects.org")
    ;; Agenda is a main todo file and inbox
-   org-agenda-files (list hax/main.org hax/inbox.org)
+   org-agenda-files (list hax/main.org hax/inbox.org hax/immediate.org)
    org-refile-targets `((nil :maxlevel . 3)
                         (,hax/fic.org :maxlevel . 4)
                         (,hax/main.org :maxlevel . 3)
@@ -882,7 +889,48 @@ contextual information."
     "soffice" "--norestore" "--invisible" "--headless"
     "macro:///OrgMode.Utilities.Reload(%I)")))
 
+(setq org-odt--entry-template "
+      <text:table-of-content-entry-template text:outline-level=\"%d\" text:style-name=\"Contents_20_%d\">
+       <text:index-entry-link-start text:style-name=\"Internet_20_link\"/>
+       <text:index-entry-chapter/>
+       <text:index-entry-text/>
+       <text:index-entry-tab-stop style:type=\"right\" style:leader-char=\".\"/>
+       <text:index-entry-page-number />
+       <text:index-entry-link-end/>
+      </text:table-of-content-entry-template>\n")
 
+(defun org-odt--format-toc (title entries depth)
+  "Return a table of contents.
+TITLE is the title of the table, as a string, or nil.  ENTRIES is
+the contents of the table, as a string.  DEPTH is an integer
+specifying the depth of the table."
+  (concat
+   "
+<text:table-of-content text:style-name=\"OrgIndexSection\" text:protected=\"true\" text:name=\"Table of Contents\">\n"
+   (format "  <text:table-of-content-source text:outline-level=\"%d\">" depth)
+   (and title
+        (format "
+    <text:index-title-template text:style-name=\"Contents_20_Heading\">%s</text:index-title-template>
+"
+                title))
+
+   (let ((levels (number-sequence 1 10)))
+     (mapconcat
+      (lambda (level)
+        (format org-odt--entry-template level level)) levels ""))
+   "
+  </text:table-of-content-source>
+  <text:index-body>"
+   (and title
+        (format "
+    <text:index-title text:style-name=\"Sect1\" text:name=\"Table of Contents1_Head\">
+      <text:p text:style-name=\"Contents_20_Heading\">%s</text:p>
+    </text:index-title>\n"
+                title))
+   entries
+   "
+  </text:index-body>
+</text:table-of-content>"))
 
 (after! org-special-block-extras
   (o-defblock
