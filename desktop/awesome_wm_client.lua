@@ -24,9 +24,14 @@ client.connect_signal("manage", function (c)
     update_client_numeration()
     local under = client_under_cursor()
     if under ~= nil then
-      client.focus = under
-      debug_notify(string.format("Focsing on %q", under.class))
+      -- client.focus = under
+      -- under:raise()
+      -- debug_notify(string.format("Focsing on %q", under.class))
     end
+
+    local nofloat =
+      has_value({"Emacs", "firefox", "kitty"}, c.class) and
+      (c.type ~= nil and c.type == "normal")
 
     local desc =
       "class:" .. (c.class or "<none>") ..
@@ -35,12 +40,16 @@ client.connect_signal("manage", function (c)
 
     if (os.time() - start) < 5 then
       -- debug_notify(string.format("Initial layout debounce - %.2f on %q", os.time() - start, desc))
+      if nofloat then
+        c.floating = false
+      end
       return
     end
 
     local geo = c:geometry()
     local coords = mouse.coords()
 
+    -- debug_notify(dump(geo))
     debug_notify("manage:: " .. desc)
 
     if has_value({"sun-awt-X11-XDialogPeer", "de-jave-jave-Jave"}, c.class) then
@@ -52,12 +61,20 @@ client.connect_signal("manage", function (c)
     geo.y = coords.y
     c.floating = true
 
-    if has_value({"TelegramDesktop", "InputOutput"}, c.class) then
+    if has_value({"TelegramDesktop", "InputOutput"}, c.class) and
+      ((c.type or "normal") == "normal") then
       awful.titlebar.hide(c)
+      c.fullscreen = false
+      -- c:geometry({
+      --     x = 0,
+      --     y = 0,
+      --     height = 600,
+      --     width = 600
+      -- })
+
       return
 
-    elseif has_value({"Emacs", "firefox", "kitty"}, c.class) and
-           (c.type ~= nil and c.type == "normal") then
+    elseif nofloat then
       c.floating = false
       c:geometry(geo)
       loc = c:geometry()

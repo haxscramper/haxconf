@@ -21,6 +21,25 @@
    ("let" "^let \\(.*\\)" 1)
    ("var" "^var \\(.*\\)" 1)))
 
+(defun hax/wrap-with-current-indent ()
+  (interactive)
+  (newline-and-indent-same-level)
+  (insert "## ")
+  (fill-paragraph))
+
+(defun hax/nim-mode-hook ()
+  (interactive)
+  (flycheck-mode 0)
+  ;; Disable completion from nimsuggest, it is mostly useless
+  (nimsuggest-mode 0)
+  ;; Flycheck relies on nimsuggest, so disable it as well
+  (electric-indent-mode 0)
+  (company-mode t)
+  (setq company-backends '(company-capf :with company-etags))
+  (setq imenu-generic-expression nim-imenu-generic-expression)
+  (map!
+   :map nim-mode-map
+   :nv [C-M-q] #'hax/wrap-with-current-indent))
 
 (font-lock-replace-keywords
  'nim-mode
@@ -32,12 +51,4 @@
       (1 font-lock-function-name-face))
    ))
 
-(add-hook! nim-mode
-  (flycheck-mode 0)
-  ;; Disable completion from nimsuggest, it is mostly useless
-  (nimsuggest-mode 0)
-  ;; Flycheck relies on nimsuggest, so disable it as well
-  (electric-indent-mode 0)
-  (company-mode t)
-  (setq company-backends '(company-capf :with company-etags))
-  (setq imenu-generic-expression nim-imenu-generic-expression))
+(add-hook! 'nim-mode-hook 'hax/nim-mode-hook)

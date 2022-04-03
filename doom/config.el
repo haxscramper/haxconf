@@ -82,6 +82,7 @@
 ;; Load helper functions for working with selections, indentation and other
 ;; elements. They are used later on in different keybindings for various modes.
 (load! "lib/selections.el")
+(load! "lib/strings.el")
 (load! "lib/indentation.el")
 (load! "lib/fontlock.el")
 (load! "lib/searches.el")
@@ -204,6 +205,13 @@ more nitpickery about stuff I write in my configuration files."
 
 (load! "lang-spelling.el")
 (set-popup-rule! "*Telega Root*" :ignore t)
+(set-popup-rule! "*eshell*" :ignore t :modeline t)
+
+;; (defun hax/eshell-mode-hook ()
+;;   (interactive)
+;;   (hide-mode-line-mode 0))
+
+;; (add-hook! 'eshell-mode-hook 'hax/eshell-mode-hook)
 
 (defun hax/telega-mode-hook ()
   (interactive)
@@ -232,6 +240,13 @@ more nitpickery about stuff I write in my configuration files."
   '("xmllint" "--pretty" "2" "-")
   :modes '(nxml-mode)
   )
+
+(set-formatter! 'shfmt
+  '("shfmt"
+    "-ci" ;; Switch cases will be indented.
+    "-i" "4" ;; Indent: 0 for tabs (default), >0 for number of spaces.
+    "-sr" ;; Redirect operators will be followed by a space.
+    ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
 
 
 (setq revert-without-query '(".*"))

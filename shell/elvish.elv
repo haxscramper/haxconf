@@ -267,13 +267,13 @@ fn nr_setup {|file|
   e:kitty @ set-window-title "nimble-rebuild "$file
 }
 
-fn nr {|file|
+edit:add-var nr~ {|file|
   nr_setup $file
   cd-if-absolute $file
   var result = (str:trim-suffix $file ".nim")
   var cache = (str:trim-suffix (basename $file) ".nim")
   e:fd --type f . |
-  e:entr -rc sh -c "time nim c -r -o:"$result" --nimcache:/tmp/nimcache/"$cache" "$file
+  e:entr -rc sh -c "time nim c -r -o:"$result".bin --nimcache:/tmp/nimcache/"$cache" "$file
 }
 
 fn dot-rebuild {|file|

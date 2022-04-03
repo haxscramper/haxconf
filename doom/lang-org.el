@@ -119,10 +119,7 @@ it in the persistent list of tags, and update current list of tags"
                           (org-agenda-files)))
                     (unless (boundp 'org-current-tag-alist)
                       org-tag-persistent-alist)
-                    (or (if (boundp 'org-current-tag-alist)
-                            org-current-tag-alist
-                          org-tag-alist)
-                        (org-get-buffer-tags))))
+                    org-tag-alist))
            (selected (ivy-read (counsel-org-tag-prompt)
                                (lambda (str _pred _action)
                                  (delete-dups
@@ -540,8 +537,10 @@ and `hax/org-refile-refiled-from-header' variables."
  :n [M-f8] (cmd! (org-capture nil "d"))
  :desc "New todo"
  :n [M-f9] (cmd! (org-capture nil "t"))
+ :desc "New immediate todo"
+ :n [M-f10] (cmd! (org-capture nil "i"))
  :desc "New note for clock"
- :n [M-f10] (cmd! (org-capture nil "c")))
+ :n [M-f11] (cmd! (org-capture nil "c")))
 
 (defun hax/agenda-mode-hook ()
   (interactive)
@@ -581,34 +580,7 @@ and `hax/org-refile-refiled-from-header' variables."
                       (or (and dead-days (< 15 dead-days 90))
                           (and shed-days (< 15 shed-days 90)))))))
 
-(setq
- org-agenda-custom-commands
- `(
-   ("l" "Long"
-    ((agenda
-      ""
-      ((org-agenda-span 90)
-       (org-agenda-start-day "-7d")
-       (org-deadline-warning-days 35)))))
-   ("*" "All"
-    ((agenda
-      ""
-      ((org-agenda-span 14)
-       ;; Start showing events from today onwards, when quickly assessing
-       ;; target tasks I don't really need to focus on the past events.
-       (org-agenda-start-day "-0d")
-       ;; I show planned and deadlined events for the next two weeks - no
-       ;; need to repeat the same information again for today.
-       (org-deadline-warning-days 0)))
 
-     (todo "WIP")
-     (todo "POSTPONED")
-     ;; ;; Show all todo items in the agenda files.
-     ;; (todo
-     ;;  "TODO"
-     ;;  ((org-agenda-skip-function 'skip-scheduled/deadlined)
-     ;;   (org-agenda-sorting-strategy '((priority-down)))))
-     ))))
 
 (defun hax/parent-subtrees()
   "test"
@@ -655,17 +627,17 @@ and `hax/org-refile-refiled-from-header' variables."
           (format "from ~%s:%s~" (f-filename orig) hax/org-capture-from-line)
         (format "from ~%s~" (s-replace "~" "∼" hax/fullscreen-client-name))))))
 
+(defun org-odt-inline-src-block (_inline-src-block _contents _info)
+  "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
+CONTENTS holds the contents of the item.  INFO is a plist holding
+contextual information."
+  (format "<text:span text:style-name=\"%s\">%s</text:span>"
+          "OrgCode" (org-odt--encode-plain-text
+                     (org-element-property :value _inline-src-block))))
+
 (after!
   org
   (require 'org-expiry)
-  (defun org-odt-inline-src-block (_inline-src-block _contents _info)
-    "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
-CONTENTS holds the contents of the item.  INFO is a plist holding
-contextual information."
-    (format "<text:span text:style-name=\"%s\">%s</text:span>"
-            "OrgCode" (org-odt--encode-plain-text
-                       (org-element-property :value _inline-src-block))))
-
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
       ("anon" "anonymous")
@@ -696,6 +668,16 @@ contextual information."
 "
            :empty-lines-before 1
            :empty-lines-after 1)
+          ("I" "Idea" entry (file hax/inbox.org)
+           "* %? :idea:
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+           :empty-lines-before 1
+           :empty-lines-after 1)
           ("d" "Daily" entry (file+olp+datetree hax/notes.org)
            "** %U %(hax/capture-location)
   :PROPERTIES:
@@ -706,7 +688,11 @@ contextual information."
 %?"
            :empty-lines-before 1
            :empty-lines-after 1)
-          ("i" "Immediate" entry (file+olp+datetree hax/immediate.org)
+          ;; Immediate plans for today. Similar to GTD inbox, but reserved for
+          ;; very minor items used to organize the thoughts. Items from here can
+          ;; duplicate others (heading might be a direct link), and they are not
+          ;; refiled anywhere else.
+          ("i" "Immediate" entry (file+olp+datetree hax/notes.org)
            "* TODO %?
   :PROPERTIES:
   :CREATED: %U
@@ -714,6 +700,7 @@ contextual information."
   :ORIGIN: %(hax/capture-location)
   :END:
 "
+           :prepend t
            :empty-lines-after 1
            :empty-lines-before 1)
           ("D" "Daily start" plain (file+olp+datetree hax/notes.org)
@@ -740,11 +727,6 @@ contextual information."
    hax/todo.d (f-join org-directory "todo")
    ;; GTD inbox
    hax/inbox.org (f-join hax/todo.d "inbox.org")
-   ;; Immediate plans for today. Similar to GTD inbox, but reserved for
-   ;; very minor items used to organize the thoughts. Items from here can
-   ;; duplicate others (heading might be a direct link), and they are not
-   ;; refiled anywhere else.
-   hax/immediate.org (f-join hax/todo.d "immediate.org")
    ;; Main GTD organizer
    hax/main.org (f-join hax/todo.d "main.org")
    ;; Random junk notes that I generate, copy from other places etc.
@@ -753,7 +735,7 @@ contextual information."
    ;; Project configuration
    hax/projects.org (f-join hax/todo.d "projects.org")
    ;; Agenda is a main todo file and inbox
-   org-agenda-files (list hax/main.org hax/inbox.org hax/immediate.org)
+   org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org)
    org-refile-targets `((nil :maxlevel . 3)
                         (,hax/fic.org :maxlevel . 4)
                         (,hax/main.org :maxlevel . 3)
@@ -799,6 +781,29 @@ contextual information."
    ;; the actions I make. If I need to do the analysis of my actions I can
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
+
+  (setq
+   org-agenda-custom-commands
+   `(("l" "Long"
+      ((agenda
+        ""
+        ((org-agenda-span 90)
+         (org-agenda-start-day "-7d")
+         (org-deadline-warning-days 35)))))
+     ("*" "All"
+      ((todo "TODO|WIP" ((org-agenda-files '(,hax/notes.org))))
+       (agenda
+        ""
+        ((org-agenda-span 14)
+         ;; Start showing events from today onwards, when quickly assessing
+         ;; target tasks I don't really need to focus on the past events.
+         (org-agenda-start-day "-0d")
+         ;; I show planned and deadlined events for the next two weeks - no
+         ;; need to repeat the same information again for today.
+         (org-deadline-warning-days 0)))
+
+       (todo "WIP")
+       (todo "POSTPONED")))))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
