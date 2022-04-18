@@ -97,6 +97,7 @@
 (load! "lang-latex.el")
 
 (load! "config-editing.el")
+(load! "temp-settings.el")
 
 (setq confirm-kill-emacs nil)
 

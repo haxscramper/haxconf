@@ -635,8 +635,8 @@ contextual information."
           "OrgCode" (org-odt--encode-plain-text
                      (org-element-property :value _inline-src-block))))
 
-(after!
-  org
+(defun hax/org-mode-configure()
+  (interactive)
   (require 'org-expiry)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("rst" "RST")
@@ -686,6 +686,18 @@ contextual information."
   :END:
 
 %?"
+           :empty-lines-before 1
+           :empty-lines-after 1)
+          ("@" "Daily" entry (file+olp+datetree hax/notes.org)
+           "** %U %(hax/capture-location) %(hax/immediate-note-tags)
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :END:
+
+%(hax/get-immediate-note-content)
+"
+           :immediate-finish t
            :empty-lines-before 1
            :empty-lines-after 1)
           ;; Immediate plans for today. Similar to GTD inbox, but reserved for
@@ -857,7 +869,7 @@ contextual information."
          '((:startgroup . nil)
            ("@work" . ?w)
            ("@home" . ?h)
-           ("@univeristy" . ?u)
+           ("@university" . ?u)
            ;; Personal code and other projects
            ("@projects" . ?p)
            ("@organization" . ?o)
@@ -868,6 +880,9 @@ contextual information."
           (--filter
            (< 0 (length it))
            (s-split "\n" (f-read hax/tags-file)))))))
+
+(after! org
+  (hax/org-mode-configure))
 
 (setq
  org-odt-category-map-alist
@@ -941,3 +956,77 @@ specifying the depth of the table."
   (o-defblock
    parallel (cols 2) (bar nil)
    (format "[[<%s>]]" contents)))
+
+(setq hax/immediate-note-content "")
+(setq hax/immediate-note-tags '())
+
+(defun hax/get-immediate-note-content ()
+  hax/immediate-note-content)
+
+(cl-defun hax/immediate-note-tags (&optional (predefined '()))
+  (let ((tags (append predefined hax/immediate-note-tags)))
+    (if (< 0 (length tags))
+        (s-wrap (s-join ":" tags) ":" ":")
+      "")))
+
+(hax/immediate-note-tags)
+
+(cl-defun org-note-insert-at-time+date
+    (text second minute hour day month year &optional (tags '()))
+
+  (let ((org-overriding-default-time
+         (funcall
+          (lambda () (encode-time second minute hour day month year)))))
+    (setq hax/immediate-note-tags tags)
+    (setq hax/immediate-note-content text)
+    (org-capture nil "@")
+    (setq hax/immediate-note-content "")
+    (setq hax/immediate-note-tags '())))
+
+
+(progn
+  (defun hax/tg-extract-date (msg)
+    (with-temp-buffer
+      (insert msg)
+      (goto-char 0)
+      (re-search-forward (rx "["
+                             (group (1+ digit)) "/" ;; 1 month
+                             (group (1+ digit)) "/" ;; 2 day
+                             (group (1+ digit)) " " ;; 3 year
+                             (group (1+ digit)) ":" ;; 4 hour
+                             (group (1+ digit)) " " ;; 5 minute
+                             (group (| "PM" "AM"))  ;; 6 AM/PM
+                             "]"))
+      (let ((hour (string-to-number (match-string 4))))
+        (list
+         ;; sec
+         0
+         ;; min
+         (string-to-number (match-string 5))
+         ;; hour
+         (if (string= (match-string 6) "PM") (+ hour 12) hour)
+         ;; day
+         (string-to-number (match-string 2))
+         ;; mon
+         (string-to-number (match-string 1))
+         ;; year
+         (+ 2000 (string-to-number (match-string 3)))))))
+
+  (defun hax/tg-extract-tags (msg)
+    (with-temp-buffer
+      (insert msg)
+      (goto-char 0)
+      (matches-in-buffer (rx "#" (group (1+ (| word "_" "#"))))
+                         (lambda () (match-string 1)))))
+  (defun hax/tg-insert-note (msg)
+    (interactive)
+    (pcase (hax/tg-extract-date msg)
+      (`(,sec ,min ,hour ,day ,month ,year)
+       (org-note-insert-at-time+date
+        (s-delete-lines (s-trim msg) 1) sec min hour day month year
+        (append '("from_tg") (hax/tg-extract-tags msg))))))
+  (defun hax/tg-insert-selected-note (beginning end)
+    (interactive "r")
+    (hax/tg-insert-note (buffer-substring beginning end))
+    (kill-region beginning end)
+    (message (propertize "inserted note" 'face `(:foreground ,(doom-color 'red))))))
