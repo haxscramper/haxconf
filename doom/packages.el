@@ -98,3 +98,4 @@
 (package! ox-json)
 (package! org-ref)
 
+(package! mini-frame)
