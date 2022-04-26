@@ -30,7 +30,7 @@
        :emacs dired electric ibuffer undo vc
        :term eshell
 
-       :tools (eval +overlay) gist lookup magit pdf lsp
+       :tools (eval +overlay) gist (lookup +dictionary +offline) magit pdf lsp
        :os tty
        :lang
        cc qt sh

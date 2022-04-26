@@ -239,8 +239,11 @@ more nitpickery about stuff I write in my configuration files."
 
 (set-formatter! 'html-tidy
   '("xmllint" "--pretty" "2" "-")
-  :modes '(nxml-mode)
-  )
+  :modes '(nxml-mode))
+
+(set-formatter! 'asmfmt
+  '("hax-asmfmt.sh")
+  :modes '(asm-mode))
 
 (set-formatter! 'shfmt
   '("shfmt"

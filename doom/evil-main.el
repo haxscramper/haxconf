@@ -44,6 +44,8 @@
  :nvi "<f4>" 'winum-select-window-4
  :nvi "<f5>" 'winum-select-window-5
  :nvi "<f6>" 'winum-select-window-6
+ :nvi "<f7>" 'winum-select-window-7
+ :nvi "<f8>" 'winum-select-window-8
  )
 
 (defun save-all-buffers() (interactive) (save-some-buffers t))

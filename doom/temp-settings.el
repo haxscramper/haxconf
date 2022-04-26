@@ -56,3 +56,16 @@
    '((top . 200)
      (width . 0.8)
      (left . 0.5))))
+
+(add-to-list 'auto-mode-alist '("\\.ASM" . asm-mode))
+
+
+
+
+(defun hax/asm-mode-hook ()
+  (interactive)
+  (setq
+   imenu-generic-expression
+   `(("label" ,(rx bol (group (+ (| (any word) "_"))) ":") 1))))
+
+(add-hook! asm-mode 'hax/asm-mode-hook)
