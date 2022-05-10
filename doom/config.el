@@ -208,11 +208,6 @@ more nitpickery about stuff I write in my configuration files."
 (set-popup-rule! "*Telega Root*" :ignore t)
 (set-popup-rule! "*eshell*" :ignore t :modeline t)
 
-;; (defun hax/eshell-mode-hook ()
-;;   (interactive)
-;;   (hide-mode-line-mode 0))
-
-;; (add-hook! 'eshell-mode-hook 'hax/eshell-mode-hook)
 
 (defun hax/telega-mode-hook ()
   (interactive)
@@ -240,6 +235,8 @@ more nitpickery about stuff I write in my configuration files."
 (set-formatter! 'html-tidy
   '("xmllint" "--pretty" "2" "-")
   :modes '(nxml-mode))
+
+(set-formatter! 'html-tidy '("hax-htmlfmt.sh") :modes '(html-mode web-mode))
 
 (set-formatter! 'asmfmt
   '("hax-asmfmt.sh")

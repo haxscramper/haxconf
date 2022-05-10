@@ -39,7 +39,11 @@
   (setq imenu-generic-expression nim-imenu-generic-expression)
   (map!
    :map nim-mode-map
-   :nv [C-M-q] #'hax/wrap-with-current-indent))
+   :nv [C-M-q] #'hax/wrap-with-current-indent
+   :desc "insert-inline-comment"
+   :n ",i#"  (cmd! (insert "#[ ")
+                   (save-excursion (insert " ]#"))
+                   (evil-insert-state))))
 
 (font-lock-replace-keywords
  'nim-mode

@@ -135,10 +135,22 @@ it in the persistent list of tags, and update current list of tags"
          (propertize selected 'face `(:foreground ,(doom-color 'red)))))
       selected)))
 
-(defun hax/org-insert-link-to-subtree (&optional description)
+(defun hax/maybe-numeric-prefix ()
+  "Return optional numeric prefix, if one was supplied for current
+interactive function call"
+  (if (and current-prefix-arg (not (consp current-prefix-arg)))
+      (prefix-numeric-value current-prefix-arg)
+    nil))
+
+(defun hax/?? (&optional last-n)
+  (message "[%s]" last-n))
+
+(map! :n "M-s-d" (cmd! (hax/?? (hax/maybe-numeric-prefix))))
+
+(defun hax/org-insert-link-to-subtree (&optional description last-n)
   "Insert link to any subtree in any org file, using
-`[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
-name, otherwise use description."
+  `[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
+  name, otherwise use description."
   (interactive)
   (let (entries)
     (dolist (b (buffer-list))
@@ -153,22 +165,34 @@ name, otherwise use description."
      "Goto: " entries
      :history 'counsel-org-goto-history
      :action (lambda (x)
-               ;; Go to position of the found entry, get IT's id (creating
-               ;; one if it is missing), and then insert result into the
-               ;; final output
-               (let ((id (with-current-buffer (marker-buffer (cdr x))
-                           ;; Save excursion to avoid moving cursor in
-                           ;; other buffers (or in the same buffer if
-                           ;; linking within one file)
-                           (save-excursion
-                             (goto-char (marker-position (cdr x)))
-                             (org-id-get-create)))))
-                 (insert (format " [[id:%s][%s]]" id (if description description (car x))))))
+               ;; If function is called with prefix value
+               (let* ((name (with-current-buffer (marker-buffer (cdr x))
+                              (save-excursion
+                                (goto-char (marker-position (cdr x)))
+                                ;; If full path is requested, return it
+                                ;; formatted directly, otherwise fall back to
+                                ;; default formatting logic.
+                                (let* ((loc (-slice (org-get-outline-path t)
+                                                    (if last-n (- 0 last-n) 0))))
+                                  (org-format-outline-path loc)))))
+                      ;; Go to position of the found entry, get IT's id (creating
+                      ;; one if it is missing), and then insert result into the
+                      ;; final output
+                      (id (with-current-buffer (marker-buffer (cdr x))
+                            ;; Save excursion to avoid moving cursor in
+                            ;; other buffers (or in the same buffer if
+                            ;; linking within one file)
+                            (save-excursion
+                              (goto-char (marker-position (cdr x)))
+                              (org-id-get-create)))))
+                 (insert (format " [[id:%s][%s]]" id
+                                 (hax/org-cleanup-subtree-name
+                                  (if description description name))))))
      :caller 'hax/org-insert-link-to-heading)))
 
 (cl-defun www-get-page-title (url &optional (timeout 15))
   "Return title of the URL page, or if not found the page's
-filename (as an approximation)"
+  filename (as an approximation)"
   (message "%s" timeout)
   (let ((title)
         (content (url-retrieve-synchronously url nil nil timeout)))
@@ -294,10 +318,10 @@ filename (as an approximation)"
 
 (defun hax/org-save-source-id-and-header ()
   "Saves refile's source entry's id and header name to
-`hax/org-refile-refiled-from-id' and
-`hax/org-refile-refiled-from-header'. If refiling entry is
-first level entry then it stores file path and buffer name
-respectively."
+  `hax/org-refile-refiled-from-id' and
+  `hax/org-refile-refiled-from-header'. If refiling entry is
+  first level entry then it stores file path and buffer name
+  respectively."
   (interactive)
   (save-excursion
     (if (org-up-heading-safe)
@@ -322,8 +346,8 @@ respectively."
 
 (defun hax/org-refile-add-refiled-from-note ()
   "Adds a note to entry at point on where the entry was refiled
-from using the org ID from `hax/org-refile-refiled-from-id'
-and `hax/org-refile-refiled-from-header' variables."
+  from using the org ID from `hax/org-refile-refiled-from-id'
+  and `hax/org-refile-refiled-from-header' variables."
   (interactive)
   (when (and hax/org-refile-refiled-from-id
              hax/org-refile-refiled-from-header)
@@ -348,6 +372,20 @@ and `hax/org-refile-refiled-from-header' variables."
  'org-refile :before #'hax/org-save-source-id-and-header)
 
 
+(defvar hax/org-src-use-full t
+  "Org-src buffer edits should use full buffer, not small popup")
+
+(defun hax/org-toggle-src-full ()
+  (interactive)
+  (setq hax/org-src-use-full (not hax/org-src-use-full)))
+
+(set-popup-rule!
+  (lambda (name action) (and (s-starts-with? "*Org Src" name) (not hax/org-src-use-full)))
+  :size 0.5  :quit nil :select t :autosave t :modeline t :ttl nil)
+
+(set-popup-rule!
+  (lambda (name action) (and (s-starts-with? "*Org Src" name) hax/org-src-use-full))
+  :ignore t)
 
 (defun hax/org-mode-hook ()
   (interactive)
@@ -355,7 +393,6 @@ and `hax/org-refile-refiled-from-header' variables."
   ;; pair here is copied from this blog post, since I can't really figure out
   ;; what exactly is going on with ordering. But that implementation allows
   ;; me to override the default checkbox highlighting for checkboxes.
-  
 
   (message "Org-mode hook executed")
   (abbrev-mode 1)
@@ -440,7 +477,12 @@ and `hax/org-refile-refiled-from-header' variables."
                             (delete-region (get-selected-region-start) (get-selected-region-end))
                             (hax/org-insert-clipboard-link text)))
 
-   :ni "M-i M-l M-t" #'hax/org-insert-link-to-subtree
+   :desc "link subtree, last name"
+   :ni "M-i M-l M-T" (cmd! (hax/org-insert-link-to-subtree nil (hax/maybe-numeric-prefix)))
+   :desc "link subtree, full name"
+   :ni "M-i M-l M-t" (cmd! (hax/org-insert-link-to-subtree
+                            nil (or (hax/maybe-numeric-prefix) 1)))
+
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
    :ni "M-i M-l M-d" (lambda (description)
                        (interactive "sLink description: ")
@@ -609,23 +651,36 @@ and `hax/org-refile-refiled-from-header' variables."
 (defvar hax/org-capture-from-line nil)
 (defun hax/org-pre-capture-hook (&optional fun args)
   (interactive)
-  (when (and fun args)
-    (setq hax/org-capture-from-line (line-number-at-pos))))
+  (setq hax/org-capture-from-line (line-number-at-pos)))
 
 (advice-add 'org-capture :before #'hax/org-pre-capture-hook)
 
-
 (defun hax/capture-location ()
   "Get formatted string about capture location"
-  (let ((orig (org-capture-get :original-file)))
+  (let ((orig (org-capture-get :original-file))
+        (uuid
+         (substring
+          (s-replace "-" "" (s-upcase (uuidgen-4))) 0 8)))
     (message "[%s]" hax/fullscreen-client-name)
     (if (magit-toplevel)
         (let* ((top (f-filename (magit-toplevel)))
                (file (magit-file-relative-name orig)))
-          (format "from ~%s:%s:%s~" top file hax/org-capture-from-line))
+          (format
+           "from ~%s:%s:%s~ (=%s=)"
+           top file hax/org-capture-from-line uuid))
       (if orig
-          (format "from ~%s:%s~" (f-filename orig) hax/org-capture-from-line)
-        (format "from ~%s~" (s-replace "~" "∼" hax/fullscreen-client-name))))))
+          (format
+           "from ~%s:%s~ (=%s=)"
+           (f-filename orig) hax/org-capture-from-line uuid)
+        (format
+         "from ~%s~ (=%s=)"
+         (s-replace "~" "∼" hax/fullscreen-client-name) uuid)))))
+
+(defun hax/org-cleanup-subtree-name (name)
+  "Remove trailing UUID helper if present"
+  (if (s-match (rx "(=" (= 8 (any alnum digit)) "=)" eol) name)
+      (substring name 0 (- (length name) (+ 8 2 2 1)))
+    name))
 
 (defun org-odt-inline-src-block (_inline-src-block _contents _info)
   "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
@@ -639,14 +694,9 @@ contextual information."
   (interactive)
   (require 'org-expiry)
   (define-abbrev-table 'org-mode-abbrev-table
-    '(("rst" "RST")
-      ("anon" "anonymous")
+    '(("anon" "anonymous")
       ("inf" "infinite")
-      ("js" "JavaScript")
-      ("rust" "Rust")
       ("vm" "VM")
-      ("dod" "data-oriented")
-      ("cxx" "C++")
       ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
@@ -1016,8 +1066,9 @@ specifying the depth of the table."
     (with-temp-buffer
       (insert msg)
       (goto-char 0)
-      (matches-in-buffer (rx "#" (group (1+ (| word "_" "#"))))
-                         (lambda () (match-string 1)))))
+      (-distinct (matches-in-buffer
+                  (rx "#" (group (1+ (| word "_" "#"))))
+                  (lambda () (match-string 1))))))
   (defun hax/tg-insert-note (msg)
     (interactive)
     (pcase (hax/tg-extract-date msg)
@@ -1030,3 +1081,15 @@ specifying the depth of the table."
     (hax/tg-insert-note (buffer-substring beginning end))
     (kill-region beginning end)
     (message (propertize "inserted note" 'face `(:foreground ,(doom-color 'red))))))
+
+
+(when nil
+  (defface hax/org-speech
+    `((t (:foreground ,(doom-lighten (doom-color 'base7) 0.6)
+          :weight light
+          :slant italic))) "Face for keystrokes"
+    :group 'org-faces)
+
+  (font-lock-replace-keywords
+   'org-mode
+   `((,(rx (group "\"" (+ (not "\"")) "\"")) (0 'hax/org-speech t)))))
