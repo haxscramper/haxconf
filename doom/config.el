@@ -155,6 +155,7 @@ more nitpickery about stuff I write in my configuration files."
      (format "git push --force origin %s"
              (magit-get-current-branch))))
 
+
   (map! :leader
         :desc "new commit"
         :nv "gcc" (cmd! (magit-stage-modified)
@@ -174,8 +175,20 @@ more nitpickery about stuff I write in my configuration files."
         ;; the squash at the very end.
         :desc "extend commit"
         :nv "gce" (cmd! (magit-stage-modified) (magit-commit-extend))
+        :desc "extend commit and force push"
+        :nv "gcE" (cmd!
+                   (magit-stage-modified)
+                   (magit-git-command
+                    (format "git commit --amend --no-edit && git push --force origin %s"
+                            (magit-get-current-branch)))
+                   ;; (push 'amend-published magit-no-confirm)
+                   ;; (magit-commit-extend)
+                   ;; (pop magit-no-confirm)
+                   ;; (hax/magit-force-push-current)
+                   )
         :desc "force push current to origin"
         :nv "gcP" #'hax/magit-force-push-current))
+
 
 (after! xref
   (setq-default xref-backend-functions '(etags--xref-backend t)))

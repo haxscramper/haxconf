@@ -1,6 +1,5 @@
 ;;; -*- lexical-binding: t; -*-
 
-
 (defun hax/org-update-all-cookies ()
   (interactive)
   (let ((current-prefix-arg '(4)))
@@ -253,15 +252,16 @@ interactive function call"
          ((string= selected "quit") (setq run-again nil)))))))
 
 (defun org-wrapping-subtree (&optional tree)
-  (if (eq 'headline (car tree))
+  (if (or (eq 'headline (car tree)) (not tree))
       tree
     (org-wrapping-subtree (org-element-property :parent tree))))
 
 (defun hax/org-insert-footnote (footnote)
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
-  (goto-char (org-element-property
-              :end (org-wrapping-subtree (org-element-at-point))))
+  (goto-char (or (org-element-property
+                  :end (org-wrapping-subtree (org-element-at-point)))
+                 (point-max)))
   (insert (format "[fn:%s] " footnote))
   (evil-insert-state)
   (save-excursion (insert "\n\n")))
@@ -313,6 +313,23 @@ interactive function call"
           (org-insert-time-stamp time (or org-time-was-given arg) inactive)
           (if (not (or dedl shed))
               (insert "\n")))))))
+
+;; (defun hax/org-extend-timestamp ()
+;;   "Extend timestamp under cursor"
+;;   (interactive)
+;;   (when (org-at-timestamp-p 'lax)
+;;     (let* ((time (org-element-context))
+;;            (new (org-read-date
+;;                  nil
+;;                  nil
+;;                  nil
+;;                  nil
+;;                  (ts-unix (ts-parse-org-element time))
+;;                  nil
+;;                  (eq (org-element-property :type time) 'inactive)
+;;                  )))
+;;       (message "Selected %s" new))))
+
 
 ;; (defvar hax/internal::org-refile-refiled-from-params nil "Parameters of ")
 
@@ -655,6 +672,8 @@ interactive function call"
 
 (advice-add 'org-capture :before #'hax/org-pre-capture-hook)
 
+(require 'uuidgen)
+
 (defun hax/capture-location ()
   "Get formatted string about capture location"
   (let ((orig (org-capture-get :original-file))
@@ -689,6 +708,74 @@ contextual information."
   (format "<text:span text:style-name=\"%s\">%s</text:span>"
           "OrgCode" (org-odt--encode-plain-text
                      (org-element-property :value _inline-src-block))))
+
+(progn
+  (cl-defun org-note-insert-at-time+date
+      (text second minute hour day month year &optional (tags '()))
+
+    (let ((org-overriding-default-time
+           (encode-time second minute hour day month year)))
+      (setq hax/immediate-note-tags tags)
+      (setq hax/immediate-note-content text)
+      (org-capture nil "@")
+      (setq hax/immediate-note-content "")
+      (setq hax/immediate-note-tags '())))
+
+  (defun hax/tg-extract-date (msg)
+    (with-temp-buffer
+      (insert msg)
+      (goto-char 0)
+      (re-search-forward (rx "["
+                             (group (1+ digit)) "/" ;; 1 month
+                             (group (1+ digit)) "/" ;; 2 day
+                             (group (1+ digit)) " " ;; 3 year
+                             (group (1+ digit)) ":" ;; 4 hour
+                             (group (1+ digit)) " " ;; 5 minute
+                             (group (| "PM" "AM"))  ;; 6 AM/PM
+                             "]"))
+      (let ((hour (string-to-number (match-string 4))))
+        (list
+         ;; sec
+         0
+         ;; min
+         (string-to-number (match-string 5))
+         ;; hour
+         (if (string= (match-string 6) "AM") (+ hour 12) hour)
+         ;; day
+         (string-to-number (match-string 2))
+         ;; mon
+         (string-to-number (match-string 1))
+         ;; year
+         (+ 2000 (string-to-number (match-string 3)))))))
+
+  (defun hax/tg-extract-tags (msg)
+    (with-temp-buffer
+      (insert msg)
+      (goto-char 0)
+      (-distinct (matches-in-buffer
+                  (rx "#" (group (1+ (| word "_" "#"))))
+                  (lambda () (match-string 1))))))
+  (defun hax/tg-insert-note (msg)
+    (interactive)
+    (pcase (hax/tg-extract-date msg)
+      (`(,sec ,min ,hour ,day ,month ,year)
+       (message
+        "Inserted note with sec:%s min:%s hour:%s day:%s month:%s year:%s"
+        sec min hour day month year)
+       ;; (calendar-gregorian-from-absolute
+       ;;  (time-to-days (encode-time sec min hour day month year))
+       ;;  )
+       (org-note-insert-at-time+date
+        (s-delete-lines (s-trim msg) 1) sec min hour day month year
+        (append '("from_tg") (hax/tg-extract-tags msg)))
+       )))
+
+  (defun hax/tg-insert-selected-note (beginning end)
+    (interactive "r")
+    (hax/tg-insert-note (buffer-substring beginning end))
+    (kill-region beginning end)
+    (message (propertize "inserted note" 'face
+                         `(:foreground ,(doom-color 'red))))))
 
 (defun hax/org-mode-configure()
   (interactive)
@@ -1021,66 +1108,10 @@ specifying the depth of the table."
 
 (hax/immediate-note-tags)
 
-(cl-defun org-note-insert-at-time+date
-    (text second minute hour day month year &optional (tags '()))
-
-  (let ((org-overriding-default-time
-         (funcall
-          (lambda () (encode-time second minute hour day month year)))))
-    (setq hax/immediate-note-tags tags)
-    (setq hax/immediate-note-content text)
-    (org-capture nil "@")
-    (setq hax/immediate-note-content "")
-    (setq hax/immediate-note-tags '())))
 
 
-(progn
-  (defun hax/tg-extract-date (msg)
-    (with-temp-buffer
-      (insert msg)
-      (goto-char 0)
-      (re-search-forward (rx "["
-                             (group (1+ digit)) "/" ;; 1 month
-                             (group (1+ digit)) "/" ;; 2 day
-                             (group (1+ digit)) " " ;; 3 year
-                             (group (1+ digit)) ":" ;; 4 hour
-                             (group (1+ digit)) " " ;; 5 minute
-                             (group (| "PM" "AM"))  ;; 6 AM/PM
-                             "]"))
-      (let ((hour (string-to-number (match-string 4))))
-        (list
-         ;; sec
-         0
-         ;; min
-         (string-to-number (match-string 5))
-         ;; hour
-         (if (string= (match-string 6) "PM") (+ hour 12) hour)
-         ;; day
-         (string-to-number (match-string 2))
-         ;; mon
-         (string-to-number (match-string 1))
-         ;; year
-         (+ 2000 (string-to-number (match-string 3)))))))
 
-  (defun hax/tg-extract-tags (msg)
-    (with-temp-buffer
-      (insert msg)
-      (goto-char 0)
-      (-distinct (matches-in-buffer
-                  (rx "#" (group (1+ (| word "_" "#"))))
-                  (lambda () (match-string 1))))))
-  (defun hax/tg-insert-note (msg)
-    (interactive)
-    (pcase (hax/tg-extract-date msg)
-      (`(,sec ,min ,hour ,day ,month ,year)
-       (org-note-insert-at-time+date
-        (s-delete-lines (s-trim msg) 1) sec min hour day month year
-        (append '("from_tg") (hax/tg-extract-tags msg))))))
-  (defun hax/tg-insert-selected-note (beginning end)
-    (interactive "r")
-    (hax/tg-insert-note (buffer-substring beginning end))
-    (kill-region beginning end)
-    (message (propertize "inserted note" 'face `(:foreground ,(doom-color 'red))))))
+
 
 
 (when nil

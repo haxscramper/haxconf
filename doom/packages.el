@@ -99,3 +99,5 @@
 (package! org-ref)
 
 (package! mini-frame)
+
+(package! ts)
