@@ -314,24 +314,80 @@ interactive function call"
           (if (not (or dedl shed))
               (insert "\n")))))))
 
-;; (defun hax/org-extend-timestamp ()
-;;   "Extend timestamp under cursor"
-;;   (interactive)
-;;   (when (org-at-timestamp-p 'lax)
-;;     (let* ((time (org-element-context))
-;;            (new (org-read-date
-;;                  nil
-;;                  nil
-;;                  nil
-;;                  nil
-;;                  (ts-unix (ts-parse-org-element time))
-;;                  nil
-;;                  (eq (org-element-property :type time) 'inactive)
-;;                  )))
-;;       (message "Selected %s" new))))
+(defun org-is-completed-state (state)
+  "Check if STATE is a complete org-mode todo state (todo entry has
+been completed - DONE, CANCELLED etc.)"
+  (let* ((result nil))
+    (catch 'done
+      (dolist (line org-todo-keywords)
+        (dolist (it line)
+          (if (s-starts-with-p state it) (throw 'done t)
+            (when (s-equals-p it "|")
+              (setq result t)
+              (throw 'done t))))))
+    result))
 
+(defun org-is-incomplete-state (state)
+  "Check if STATE is an active org-mode todo state (todo entry has
+not been completed yet - TODO, WIP, REVIEW etc.)"
+  (let ((result nil))
+    (catch 'done
+      (dolist (line org-todo-keywords)
+        (dolist (it line)
+          (if (s-starts-with-p state it) (progn (setq result t) (throw 'done t))
+            (when (s-equals-p it "|") (throw 'done))))))
+    result))
 
-;; (defvar hax/internal::org-refile-refiled-from-params nil "Parameters of ")
+(defun org-at-active-timestamp ()
+  "Check if currently at the active timestamp"
+  (when (org-at-timestamp-p 'lax)
+    (save-excursion
+      (goto-char (match-beginning 0))
+      ;; There is no dedicated function to check if current timestamp is
+      ;; active or not, so using direct character checking here
+      (eq (char-after) ?<))))
+
+(defun org-toggle-timestamp-or-range-type ()
+  "Change type of the org-mode timestamp under cursor"
+  (interactive)
+  (org-at-timestamp-p 'lax)
+  (let* (;; Timestamp range checking uses regex and
+         ;; implicitly fills in necessary data to use
+         ;; for later matching. The same approach is
+         ;; used in `org-toggle-timestamp-type', so I
+         ;; hope it won't be replaced later on.
+         (beg (match-beginning 0))
+         (end (match-end 0))
+         (active (org-at-active-timestamp))
+         )
+    (save-excursion
+      (goto-char beg)
+      ;; `<' or `[' at the start of the time range does not trigger
+      ;; `org-at-date-range-p', so move one character forward here
+      (forward-char)
+      (if (org-at-date-range-p)
+          (progn
+            (org-toggle-timestamp-type)
+            (goto-char end)
+            (forward-char 4)
+            (org-toggle-timestamp-type))
+        (org-toggle-timestamp-type)))))
+
+(defun hax/org-after-todo-change-hook ()
+  "Execute after TODO change state in the org-mode tree"
+  (interactive)
+  (when (org-is-completed-state org-state)
+    (save-excursion
+      (org-back-to-heading)
+      (let* ((tree (org-element-at-point))
+             (old (org-entry-get nil "TIMESTAMP")))
+        (when old
+          ;; Search for active timestamp range
+          (search-forward "TIMESTAMP")
+          (if (search-forward "<")
+              (org-toggle-timestamp-or-range-type)))))))
+
+(add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
 
 (defun hax/org-save-source-id-and-header ()
   "Saves refile's source entry's id and header name to
@@ -964,8 +1020,7 @@ contextual information."
         ;; I don't use most of these keywords as well, and sometimes they
         ;; overlap with GTD management. You can think of them as "yes" and
         ;; "yes, but in green"
-        '((sequence
-           "TODO(t!/!)"         ;; Must be done now
+        '(("TODO(t!/!)"         ;; Must be done now
            "LATER(l!)"          ;; Can be done sometimes later
            "NEXT(n!)"           ;; Next task after current
            "POSTPONED(P!/!)"    ;; Work is temporarily paused
@@ -973,10 +1028,10 @@ contextual information."
            "STALLED(s!)"        ;; External event is preventing further work
            "MAYBE(m!)"          ;; Not Guaranteed to happen
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
+           "|"
            "TIMEOUT(T)"         ;; Cannot be done due to time limits
            "FAILED(f@/!)"       ;; Tried to finish the task but failed
            "CANCELED(C@/!)"
-           "|"
            "DONE(d!/@)"         ;; Task completed
            "COMPLETED(c!/@)"    ;; Task completed
            "NUKED(N@/!)"        ;; Completed but angry

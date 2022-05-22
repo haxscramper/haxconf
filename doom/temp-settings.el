@@ -248,21 +248,29 @@
     (interactive "r")
     (copy-text (hax/randomize-restyle (buffer-substring begin end) style-cb)))
 
-  (copy-text
-   (hax/randomize-restyle
-    "Ok, Matrix does not support coloring for formatting, so I can only destroy regular text"
-    (lambda (str)
-      (format
-       (case (random 10)
-         ;; (0 "<span style=\"color:#FF0000\">%s</span>")
-         (t "%s"))
-       (format
-        (case (random 5)
-          (0 "<b>%s</b>")
-          (1 "<i>%s</i>")
-          (2 "<u>%s</u>")
-          (3 "<sub>%s</sub>")
-          (4 "<sup>%s</sup>")
-          (t "%s")
-          )
-        str))))))
+  (when nil
+    (copy-text
+     (hax/randomize-restyle
+      "or the foregoing reasons the Plaintiffs’ Motion to Dismiss the Amended Counterclaims
+of Defendant Ronald F. Cornelison is GRANTED"
+      (lambda (str)
+        (format
+         (case (random 10)
+           ;; (0 "<span style=\"color:#FF0000\">%s</span>")
+           (t "%s"))
+         (format
+          (case (random 5)
+            (0 "<b>%s</b>")
+            (1 "<i>%s</i>")
+            (2 "<u>%s</u>")
+            (3 "<sub>%s</sub>")
+            (4 "<sup>%s</sup>")
+            (t "%s"))
+          str)))))))
+
+(after!
+  org-sidebar
+  (setq org-sidebar-tree-jump-fn
+        (cmd!
+         (org-sidebar-tree-jump-source)
+         (evil-scroll-line-to-center (line-number-at-pos)))))
