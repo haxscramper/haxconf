@@ -292,6 +292,21 @@ interactive function call"
 (defvar hax/org-refile-refiled-from-header nil)
 
 
+(defun diary-day (daylist)
+  (memq (calendar-day-of-week date) daylist))
+
+(defun diary-block-d (year month d-before d-after)
+  "Diary block that accepts humane time ranges - year if first,
+then month, they day. Like every other sane person would do -
+like ISO standard does."
+  (diary-block month d-before year month d-after year))
+
+(defun diary-block-m (year m-before m-after d-before d-after)
+  "Diary block in the same year, but with different month and day.
+Also uses *STANDARD* time part arrangement, instead of the
+default org-mode abomination."
+  (diary-block m-before d-before year m-after d-after year))
+
 (defun hax/org-subtree-timestamp (arg &optional inactive)
   "Insert active timestamp in current subtree"
   ;; TODO Implement insertion of the time ranges
