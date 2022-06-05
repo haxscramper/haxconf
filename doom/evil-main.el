@@ -2,6 +2,19 @@
 
 (setq evil-want-fine-undo t)
 
+
+(evil-define-operator hax/surround-region (beg end type char)
+  "Call surround-region, toggling force-new-line"
+  (interactive (evil-surround-input-region-char))
+  (let* ((pair (evil-surround-pair char)))
+    (save-excursion
+      (goto-char end)
+      (insert (cdr pair))
+      (goto-char beg)
+      (insert (car pair))))
+  ;; (evil-surround-region beg end type char t)
+  )
+
 (map!
  ;; Use to move around ';lkj'
  :nv "j" 'evil-next-line
@@ -11,11 +24,8 @@
 
  :nv "r" 'undo-fu-only-redo
  :n "s" 'evil-change
- :v "s" 'evil-surround-region
- :nv "f" 'evil-find-char
- :nv "F" 'evil-find-char-backward
- :nv "K" nil
- )
+ :v "s" 'hax/surround-region
+ :nv "K" nil)
 
 ;; (map!
 ;;  :nv ".." #'evil-repeat

@@ -122,7 +122,8 @@ it in the persistent list of tags, and update current list of tags"
            (selected (ivy-read (counsel-org-tag-prompt)
                                (lambda (str _pred _action)
                                  (delete-dups
-                                  (all-completions str #'org-tags-completion-function)))
+                                  (all-completions
+                                   str #'org-tags-completion-function)))
                                :history 'org-tags-history
                                :action #'counsel-org-tag-action
                                :caller 'hax/org-assign-tag)))
@@ -256,12 +257,29 @@ interactive function call"
       tree
     (org-wrapping-subtree (org-element-property :parent tree))))
 
+
+
+(defun hax/org-before-logical-end ()
+  (let* ((wrap (org-wrapping-subtree (org-element-at-point)))
+         (end (org-element-property :end wrap))
+         (level (org-element-property :level wrap)))
+    (if end
+        (save-excursion
+          (if (re-search-forward
+               (rx-to-string `(and bol ,(s-repeat (+ 1 level) "*")))
+               nil ;; bound
+               t ;; noerror
+               )
+              (progn (backward-char (+ 1 level)) (point))
+            end))
+      (point-max))))
+
+
+
 (defun hax/org-insert-footnote (footnote)
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
-  (goto-char (or (org-element-property
-                  :end (org-wrapping-subtree (org-element-at-point)))
-                 (point-max)))
+  (goto-char (hax/org-before-logical-end))
   (insert (format "[fn:%s] " footnote))
   (evil-insert-state)
   (save-excursion (insert "\n\n")))
@@ -332,26 +350,28 @@ default org-mode abomination."
 (defun org-is-completed-state (state)
   "Check if STATE is a complete org-mode todo state (todo entry has
 been completed - DONE, CANCELLED etc.)"
-  (let* ((result nil))
-    (catch 'done
-      (dolist (line org-todo-keywords)
-        (dolist (it line)
-          (if (s-starts-with-p state it) (throw 'done t)
-            (when (s-equals-p it "|")
-              (setq result t)
-              (throw 'done t))))))
-    result))
+  (and state
+       (let* ((result nil))
+         (catch 'done
+           (dolist (line org-todo-keywords)
+             (dolist (it line)
+               (if (s-starts-with-p state it) (throw 'done t)
+                 (when (s-equals-p it "|")
+                   (setq result t)
+                   (throw 'done t))))))
+         result)))
 
 (defun org-is-incomplete-state (state)
   "Check if STATE is an active org-mode todo state (todo entry has
 not been completed yet - TODO, WIP, REVIEW etc.)"
-  (let ((result nil))
-    (catch 'done
-      (dolist (line org-todo-keywords)
-        (dolist (it line)
-          (if (s-starts-with-p state it) (progn (setq result t) (throw 'done t))
-            (when (s-equals-p it "|") (throw 'done))))))
-    result))
+  (and state
+       (let ((result nil))
+         (catch 'done
+           (dolist (line org-todo-keywords)
+             (dolist (it line)
+               (if (s-starts-with-p state it) (progn (setq result t) (throw 'done t))
+                 (when (s-equals-p it "|") (throw 'done))))))
+         result)))
 
 (defun org-at-active-timestamp ()
   "Check if currently at the active timestamp"
@@ -373,8 +393,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
          ;; hope it won't be replaced later on.
          (beg (match-beginning 0))
          (end (match-end 0))
-         (active (org-at-active-timestamp))
-         )
+         (active (org-at-active-timestamp)))
     (save-excursion
       (goto-char beg)
       ;; `<' or `[' at the start of the time range does not trigger
@@ -430,7 +449,11 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   "Add log entry for current subtree"
   (save-excursion
     (goto-char (- (org-log-beginning t) 1))
-    (insert (concat "\n" (s-repeat (current-indentation) " ") "- " text))))
+    (let ((ind (current-indentation)))
+      (dolist (line (s-lines text))
+        (insert "\n")
+        (indent-line-to ind)
+        (insert line)))))
 
 (defun hax/org-refile-add-refiled-from-note ()
   "Adds a note to entry at point on where the entry was refiled
@@ -445,7 +468,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
            (time-stamp (format-time-string time-format (current-time))))
       (org-add-log-entry
        (format
-        "Refiled on [%s] from [[%s][%s]]"
+        "- Refiled on [%s] from [[%s][%s]]"
         time-stamp
         (if (eq kind 'id) (format "id:%s" src)
           (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
@@ -811,7 +834,7 @@ contextual information."
          ;; min
          (string-to-number (match-string 5))
          ;; hour
-         (if (string= (match-string 6) "AM") (+ hour 12) hour)
+         (if (string= (match-string 6) "PM") (+ hour 12) hour)
          ;; day
          (string-to-number (match-string 2))
          ;; mon
@@ -848,8 +871,13 @@ contextual information."
     (message (propertize "inserted note" 'face
                          `(:foreground ,(doom-color 'red))))))
 
+(defun org-coords-open (path _)
+  "Open org-mode link with coordinates"
+  (browse-url (format "https://www.openstreetmap.org/#map=16/%s" path)))
+
 (defun hax/org-mode-configure()
   (interactive)
+  (org-link-set-parameters "coords" :follow #'org-coords-open)
   (require 'org-expiry)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("anon" "anonymous")
@@ -927,7 +955,7 @@ contextual information."
            "%i%?"
            :empty-lines-before 1
            :empty-lines-after 1)
-          ("c" "Clock" entry (clock)
+          ("c" "Clock" entry (function hax/goto-top-clock)
            "** %U %(hax/capture-location)
   :PROPERTIES:
   :CREATED: %U
@@ -936,8 +964,18 @@ contextual information."
 
 %?"
            :empty-lines-before 1
+           :empty-lines-after 1)
+          ("s" "Subtask-now" entry (function hax/goto-top-clock)
+           "** TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+           :clock-in t
+           :empty-lines-before 1
            :empty-lines-after 1)))
-
   (setq
    ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
@@ -1011,7 +1049,8 @@ contextual information."
          (org-agenda-start-day "-7d")
          (org-deadline-warning-days 35)))))
      ("*" "All"
-      ((todo "TODO|WIP" ((org-agenda-files '(,hax/notes.org))))
+      ((todo "WIP" ((org-agenda-files '(,hax/notes.org))))
+       (todo "TODO" ((org-agenda-files '(,hax/notes.org))))
        (agenda
         ""
         ((org-agenda-span 14)
@@ -1036,6 +1075,11 @@ contextual information."
         ;; overlap with GTD management. You can think of them as "yes" and
         ;; "yes, but in green"
         '(("TODO(t!/!)"         ;; Must be done now
+           "TODO(t!/!)"         ;; Some other function breaks
+           ;; org-todo-keywords, and I need to add
+           ;; TODO twice here. I don't know what is
+           ;; the cause, but this is a FIXME, although
+           ;; with low priority.
            "LATER(l!)"          ;; Can be done sometimes later
            "NEXT(n!)"           ;; Next task after current
            "POSTPONED(P!/!)"    ;; Work is temporarily paused
@@ -1070,6 +1114,13 @@ contextual information."
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-join hax/todo.d "tags"))
+  (when (f-exists? (f-join hax/cache.d "org-clock-stack"))
+    (setq hax/org-clock-stack
+          (read-from-file (f-join hax/cache.d "org-clock-stack"))))
+
+  (when (f-exists? (f-join hax/cache.d "org-clock-history"))
+    (setq hax/org-clock-history
+          (read-from-file (f-join hax/cache.d "org-clock-history"))))
   (setq org-tag-alist
         (concatenate
          'list
@@ -1181,9 +1232,6 @@ specifying the depth of the table."
 
 
 
-
-
-
 (when nil
   (defface hax/org-speech
     `((t (:foreground ,(doom-lighten (doom-color 'base7) 0.6)
@@ -1194,3 +1242,201 @@ specifying the depth of the table."
   (font-lock-replace-keywords
    'org-mode
    `((,(rx (group "\"" (+ (not "\"")) "\"")) (0 'hax/org-speech t)))))
+
+;;; Reimplementation of the built-in org-mode clock system with something
+;;; that works properly instead of failing on every corner. Fixes following
+;;; (and other) bugs and misfeatures: (*) Clocks are not truly persistent,
+;;; I need to re-enable current clock to restore the time when emacs was
+;;; turned off. (*) Undoing clock activation breaks emacs' brain and need
+;;; to manually discard all the active clock time. (*) Clocking does not
+;;; support nested tasks - I'm more than capable of subdividing current
+;;; activity into shorter todo items as I go, clocking them in and finaly
+;;; finishing everything. (*) cannot "pause and resume" clock - no
+;;; immediate history of activity.
+
+(defvar hax/org-clock-stack '() "Stack of currently active tasks")
+(defvar hax/org-clock-history '() "History of the clocked task activation")
+
+(defun read-from-file (file)
+  "Parse FILE as a serialized elisp value and return the result of
+parsing."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (goto-char (point-min))
+    (read (current-buffer))))
+
+(defun write-to-file (file data)
+  "Write DATA to FILE"
+  (with-temp-file file
+    (prin1 data (current-buffer))))
+
+(defconst hax/cache.d (expand-file-name "$HOME/.cache/haxscramper"))
+
+
+
+(defun org-element-subtree-by-id (id)
+  "Get parsed org-element for entry with `id', or `nil' if no such
+subtree can be found."
+  (with-temp-buffer
+    (org-id-open id nil)
+    (org-element-at-point)))
+
+(defun hax/dbg/looking-at ()
+  (interactive)
+  (message
+   "looking at: %s:%s..%s = [%s]"
+   (line-number-at-pos)
+   (point)
+   (line-end-position)
+   (propertize
+    (buffer-substring (point) (line-end-position))
+    'face 'font-lock-warning-face)))
+
+(defun org-get-logbook-extent ()
+  "Get start and end position of the `:LOGBOOK:' drawer for current
+subtree."
+  (save-excursion
+    (unless (org-at-heading-p) (outline-previous-heading))
+    (goto-char (- (org-log-beginning t) 2))
+    ;; For unknown reasons `org-log-BEGINNING' puts cursor on the END of
+    ;; the logbook. Super intuitive, I know.
+    (search-backward ":LOGBOOK:")
+    (let* ((elt (org-element-property-drawer-parser nil))
+           (beg (org-element-property :contents-begin elt))
+           (end (org-element-property :contents-end elt)))
+      (cons beg end))))
+
+(defun org-get-logbook-notes ()
+  "Get text of the org-mode logbook drawer notes"
+  (let ((range (org-get-logbook-extent)))
+    (buffer-substring-no-properties (car range) (cdr range))))
+
+(defun hax/tmp ()
+  (interactive)
+  (let ((con (org-get-logbook-extent)))
+    (hax/org-last-active-clock (car con) (cdr con))))
+
+(defun org-element-parse-string (str)
+  "Parse input string as org-mode buffer and return result"
+  (with-temp-buffer
+    (insert str)
+    (org-element-parse-buffer)))
+
+(defun hax/org-get-active-clock-timestamp-position ()
+  "Get position of the active clock in current logbook, if any.
+Create new `:LOGBOOK:' if one"
+  (save-excursion
+    (cl-block main
+      (org-back-to-heading)
+      (forward-line)
+      (let ((pair (org-get-logbook-extent))
+            (ind (current-indentation)))
+        (goto-char (car pair))
+        (while (< (point) (cdr pair))
+          (when (org-at-clock-log-p)
+            (forward-char
+             (+
+              ;; indentation
+              ind
+              ;; `CLOCK:' and space
+              7
+              ;; Bug in the `org-at-date-range' that prevents proper
+              ;; checking if the cursor is placed on the starting `['
+              ;; requires extra positioning
+              1
+              ))
+            (unless (org-at-date-range-p t)
+              (backward-char 1)
+              (cl-return-from main (point))))
+          (forward-line))))))
+
+(defun hax/org-finish-timestamp ()
+  (when (and (re-search-forward (rx "]") nil t)
+             (not (org-at-date-range-p t)))
+    (insert "--")
+    (org-insert-time-stamp (org-current-time) 'with-hm 'inactive)
+    (org-evaluate-time-range)))
+
+(defun hax/maybe-finish-active-clock ()
+  "Finsh last active clock if current subtree has any. If any
+changes where made, return `t', otherwise return nil."
+  (save-excursion
+    (let ((active (hax/org-get-active-clock-timestamp-position)))
+      (when active
+        (goto-char active)
+        (hax/dbg/looking-at)
+        (hax/org-finish-timestamp)
+        t))))
+
+(defun hax/org-clock-out-this-task ()
+  "Clock out task under cursor if logbook contains any active
+items. If logbook is does not exist, might create new one."
+  (interactive)
+  ;; Find timestamp position in the current active clock of the entry
+  (hax/maybe-finish-active-clock))
+
+(defun hax/org-clock-in-this-task (&optional select start-time)
+  "Add current task the clock stack"
+  (interactive)
+  (save-excursion
+    (push (org-id-get-create) hax/org-clock-history)
+    (push (org-id-get-create) hax/org-clock-stack)
+    (org-back-to-heading)
+    (forward-line)
+    (hax/maybe-finish-active-clock)
+    (org-add-log-entry
+     (format
+      "CLOCK: %s"
+      (with-temp-buffer
+        (org-insert-time-stamp (org-current-time) 'with-hm 'inactive)
+        (buffer-substring (point-min) (point-max)))))))
+
+
+
+
+(defun hax/org-clock-out-task (id)
+  "Clock out the task with ID from the stack and all
+subsequent (nested) ones"
+  (when (not id) (error "Cannot clock out `nil' task."))
+  (save-excursion
+    (message "Finished task %s" id)
+    (org-id-open id nil)
+    (hax/dbg/looking-at)
+    (hax/org-clock-out-this-task)))
+
+(defun hax/org-clock-out-top-task
+    (&optional SWITCH-TO-STATE FAIL-QUIETLY AT-TIME)
+  "Clock out the topmost task from the stack."
+  (interactive)
+  (hax/org-clock-out-task (pop hax/org-clock-stack)))
+
+
+(defun hax/around-org-clock-in (fun &rest args)
+  (interactive)
+  (funcall-interactively 'hax/org-clock-in-this-task args))
+
+(defun hax/around-org-clock-out (fun &rest args)
+  (interactive)
+  (funcall-interactively 'hax/org-clock-out-top-task args))
+
+(defun advice-remove-all (sym)
+  "AUTOMATICALLY remove all advice from a function symbol, without
+having to go through repeated invocations of the same function
+over and over as suggested in the
+https://lists.gnu.org/archive/html/emacs-devel/2017-04/msg00767.html (the
+use case is 'I want to automate the logic and this is a basic
+function for cleaning up in case the 'smart' advice system shits
+itself once again')"
+  (interactive "aFunction symbol: ")
+  (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
+
+(when nil
+  (advice-add 'org-clock-in :around #'hax/around-org-clock-in)
+  (advice-add 'org-clock-out :around #'hax/around-org-clock-out))
+
+(defun hax/goto-top-clock ()
+  (interactive)
+  (let ((top (car (last hax/org-clock-stack))))
+    (if top
+        (org-id-open top nil)
+      (error "No active clocked item - cannot add subtask"))))

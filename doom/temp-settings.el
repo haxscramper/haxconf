@@ -274,3 +274,41 @@ of Defendant Ronald F. Cornelison is GRANTED"
         (cmd!
          (org-sidebar-tree-jump-source)
          (evil-scroll-line-to-center (line-number-at-pos)))))
+
+(defun hax/scratch-notes-on-selection (beg end)
+  (interactive "r")
+  (let* ((text (buffer-substring beg end))
+         (note (read-from-minibuffer "Note: "))
+         (file (buffer-file-name))
+         (line (line-number-at-pos)))
+    (with-current-buffer "*scratch*"
+      (goto-char 0)
+      (insert
+       (format "file: %s line: %s note: %s\n  text: \"%s\" \n"
+               file line (s-trim text) note)))))
+
+(defun hax/close-popup-buffer-callback nil)
+(defvar hax/read-from-popup-buffer-mode-map nil)
+(setq hax/read-from-popup-buffer-mode-map
+      (let ((map (make-sparse-keymap)))
+        (define-key map (kbd "C-c C-c")
+          (cmd!
+           (let* ((text (with-current-buffer "*footnote*"
+                          (buffer-substring (point-min) (point-max)))))
+             (kill-buffer "*footnote*")
+             (funcall hax/close-popup-buffer-callback text))))
+        map))
+
+(define-minor-mode hax/read-from-popup-buffer-mode
+  "Minor mode to read from popup buffer")
+
+(defun hax/read-from-popup-buffer (on-commit)
+  (interactive)
+  (switch-to-buffer-other-window "*footnote*")
+  (setq hax/close-popup-buffer-callback on-commit)
+  (hax/read-from-popup-buffer-mode))
+
+(defun hax/tmp/insert-footnote ()
+  (interactive)
+  (hax/read-from-popup-buffer
+   (lambda (text) (message "triggered current buffer callback. text was '%s'" text))))
