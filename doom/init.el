@@ -41,7 +41,7 @@
        json yaml xml
        ;; Markup languages
        latex markdown rst (org +dragndrop)
-       (python +lsp)
+       python
 
        :config (default +bindings +smartparens))
 

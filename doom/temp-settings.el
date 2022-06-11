@@ -312,3 +312,4 @@ of Defendant Ronald F. Cornelison is GRANTED"
   (interactive)
   (hax/read-from-popup-buffer
    (lambda (text) (message "triggered current buffer callback. text was '%s'" text))))
+

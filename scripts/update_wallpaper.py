@@ -17,7 +17,7 @@ for line in res.splitlines():
         name: str = f"{dir}/bg-{count}"
         if os.path.isfile(name):
             count += 1
-            args.append("--bg-max")
+            args.append("--bg-fill")
             args.append(name)
             print(f"assignmed {name} to {split[-1]}")
             hasFile = True

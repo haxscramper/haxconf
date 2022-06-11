@@ -147,11 +147,7 @@ interactive function call"
 
 (map! :n "M-s-d" (cmd! (hax/?? (hax/maybe-numeric-prefix))))
 
-(defun hax/org-insert-link-to-subtree (&optional description last-n)
-  "Insert link to any subtree in any org file, using
-  `[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
-  name, otherwise use description."
-  (interactive)
+(defun org-collect-known-entries ()
   (let (entries)
     (dolist (b (buffer-list))
       (with-current-buffer b
@@ -161,34 +157,67 @@ interactive function call"
                        (counsel-outline-candidates
                         (cdr (assq 'org-mode counsel-outline-settings))
                         (counsel-org-goto-all--outline-path-prefix)))))))
+    entries))
+
+(defun hax/org-select-subtree-callback (prompt callback caller)
+  "Select subtree"
+  (interactive)
+  (let (result)
     (ivy-read
-     "Goto: " entries
+     prompt
+     (org-collect-known-entries)
      :history 'counsel-org-goto-history
-     :action (lambda (x)
-               ;; If function is called with prefix value
-               (let* ((name (with-current-buffer (marker-buffer (cdr x))
-                              (save-excursion
-                                (goto-char (marker-position (cdr x)))
-                                ;; If full path is requested, return it
-                                ;; formatted directly, otherwise fall back to
-                                ;; default formatting logic.
-                                (let* ((loc (-slice (org-get-outline-path t)
-                                                    (if last-n (- 0 last-n) 0))))
-                                  (org-format-outline-path loc)))))
-                      ;; Go to position of the found entry, get IT's id (creating
-                      ;; one if it is missing), and then insert result into the
-                      ;; final output
-                      (id (with-current-buffer (marker-buffer (cdr x))
-                            ;; Save excursion to avoid moving cursor in
-                            ;; other buffers (or in the same buffer if
-                            ;; linking within one file)
-                            (save-excursion
-                              (goto-char (marker-position (cdr x)))
-                              (org-id-get-create)))))
-                 (insert (format " [[id:%s][%s]]" id
-                                 (hax/org-cleanup-subtree-name
-                                  (if description description name))))))
-     :caller 'hax/org-insert-link-to-heading)))
+     :action callback)))
+
+(defun hax/org-select-subtree ()
+  "Interactively select subtree and return cons with `(description . marker)'"
+  (interactive)
+  (let (result)
+    (hax/org-select-subtree-callback
+     "Select: "
+     (lambda (x) (setq result x))
+     'hax/org-select-subtree)
+    result))
+
+(defun hax/org-goto-select-subtree ()
+  "Interactively select subtree and return position of the marker for it"
+  (interactive)
+  (let ((marker (cdr (hax/org-select-subtree))))
+    (switch-to-buffer (marker-buffer marker))
+    (goto-char (marker-position marker))))
+
+(defun hax/org-insert-link-to-subtree (&optional description last-n)
+  "Insert link to any subtree in any org file, using
+  `[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
+  name, otherwise use description."
+  (interactive)
+  (hax/org-select-subtree-callback
+   "Goto: "
+   (lambda (x)
+     ;; If function is called with prefix value
+     (let* ((name (with-current-buffer (marker-buffer (cdr x))
+                    (save-excursion
+                      (goto-char (marker-position (cdr x)))
+                      ;; If full path is requested, return it
+                      ;; formatted directly, otherwise fall back to
+                      ;; default formatting logic.
+                      (let* ((loc (-slice (org-get-outline-path t)
+                                          (if last-n (- 0 last-n) 0))))
+                        (org-format-outline-path loc)))))
+            ;; Go to position of the found entry, get IT's id (creating
+            ;; one if it is missing), and then insert result into the
+            ;; final output
+            (id (with-current-buffer (marker-buffer (cdr x))
+                  ;; Save excursion to avoid moving cursor in
+                  ;; other buffers (or in the same buffer if
+                  ;; linking within one file)
+                  (save-excursion
+                    (goto-char (marker-position (cdr x)))
+                    (org-id-get-create)))))
+       (insert (format " [[id:%s][%s]]" id
+                       (hax/org-cleanup-subtree-name
+                        (if description description name))))))
+   'hax/org-insert-link-to-heading))
 
 (cl-defun www-get-page-title (url &optional (timeout 15))
   "Return title of the URL page, or if not found the page's
@@ -259,6 +288,7 @@ interactive function call"
 
 
 
+
 (defun hax/org-before-logical-end ()
   (let* ((wrap (org-wrapping-subtree (org-element-at-point)))
          (end (org-element-property :end wrap))
@@ -267,9 +297,7 @@ interactive function call"
         (save-excursion
           (if (re-search-forward
                (rx-to-string `(and bol ,(s-repeat (+ 1 level) "*")))
-               nil ;; bound
-               t ;; noerror
-               )
+               end t)
               (progn (backward-char (+ 1 level)) (point))
             end))
       (point-max))))
@@ -875,6 +903,124 @@ contextual information."
   "Open org-mode link with coordinates"
   (browse-url (format "https://www.openstreetmap.org/#map=16/%s" path)))
 
+(defun hax/org-end-of-the-day-stamp ()
+  (format-time-string "<%Y-%m-%d %a 23:59:59>"))
+
+(setq
+ org-capture-templates
+ ;; agenda just includes everything that contains an "active time
+ ;; stamp". An active time stamp is any time stamp in angular
+ ;; brackets. That's why all templates use `%U' instead of `%T' for
+ ;; timestamps - creation date should not be inserted in the agenda.
+ '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
+   ;; just dump everything in it, refile later.
+   ("t" "GTD todo inbox" entry (file hax/inbox.org)
+    "* TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("I" "Idea" entry (file hax/inbox.org)
+    "* %? :idea:
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("d" "Daily" entry (file+olp+datetree hax/notes.org)
+    "** %U %(hax/capture-location)
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :END:
+
+%?"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("@" "Daily" entry (file+olp+datetree hax/notes.org)
+    "** %U %(hax/capture-location) %(hax/immediate-note-tags)
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :END:
+
+%(hax/get-immediate-note-content)
+"
+    :immediate-finish t
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ;; Immediate plans for today. Similar to GTD inbox, but reserved for
+   ;; very minor items used to organize the thoughts. Items from here can
+   ;; duplicate others (heading might be a direct link), and they are not
+   ;; refiled anywhere else.
+   ("i" "Immediate" entry (file+olp+datetree hax/notes.org)
+    "* TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :prepend t
+    :empty-lines-after 1
+    :empty-lines-before 1)
+   ("D" "Daily start" plain (file+olp+datetree hax/notes.org)
+    "%i%?"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("c" "Clock" entry (clock)
+    ;; (function hax/goto-top-clock)
+    "** %U %(hax/capture-location)
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :END:
+
+%?"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("s" "Subtask-now" entry (clock)
+    ;; (function hax/goto-top-clock)
+    "** TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :clock-in t
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("u" "Subtask under; Deadline today" entry (function hax/org-goto-select-subtree)
+    "** TODO %?
+  DEADLINE: %(hax/org-end-of-the-day-stamp)
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :empty-lines-before 1
+    :empty-lines-after 1)
+   ("U" "Subtask under" entry (function hax/org-goto-select-subtree)
+    "** TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :ID: %(org-id-new)
+  :ORIGIN: %(hax/capture-location)
+  :END:
+"
+    :empty-lines-before 1
+    :empty-lines-after 1
+    )))
+
 (defun hax/org-mode-configure()
   (interactive)
   (org-link-set-parameters "coords" :follow #'org-coords-open)
@@ -886,96 +1032,6 @@ contextual information."
       ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
-
-  (setq org-capture-templates
-        ;; agenda just includes everything that contains an "active time
-        ;; stamp". An active time stamp is any time stamp in angular
-        ;; brackets. That's why all templates use `%U' instead of `%T' for
-        ;; timestamps - creation date should not be inserted in the agenda.
-        '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
-          ;; just dump everything in it, refile later.
-          ("t" "GTD todo inbox" entry (file hax/inbox.org)
-           "* TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :ORIGIN: %(hax/capture-location)
-  :END:
-"
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ("I" "Idea" entry (file hax/inbox.org)
-           "* %? :idea:
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :ORIGIN: %(hax/capture-location)
-  :END:
-"
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-           "** %U %(hax/capture-location)
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :END:
-
-%?"
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ("@" "Daily" entry (file+olp+datetree hax/notes.org)
-           "** %U %(hax/capture-location) %(hax/immediate-note-tags)
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :END:
-
-%(hax/get-immediate-note-content)
-"
-           :immediate-finish t
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ;; Immediate plans for today. Similar to GTD inbox, but reserved for
-          ;; very minor items used to organize the thoughts. Items from here can
-          ;; duplicate others (heading might be a direct link), and they are not
-          ;; refiled anywhere else.
-          ("i" "Immediate" entry (file+olp+datetree hax/notes.org)
-           "* TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :ORIGIN: %(hax/capture-location)
-  :END:
-"
-           :prepend t
-           :empty-lines-after 1
-           :empty-lines-before 1)
-          ("D" "Daily start" plain (file+olp+datetree hax/notes.org)
-           "%i%?"
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ("c" "Clock" entry (function hax/goto-top-clock)
-           "** %U %(hax/capture-location)
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :END:
-
-%?"
-           :empty-lines-before 1
-           :empty-lines-after 1)
-          ("s" "Subtask-now" entry (function hax/goto-top-clock)
-           "** TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :ID: %(org-id-new)
-  :ORIGIN: %(hax/capture-location)
-  :END:
-"
-           :clock-in t
-           :empty-lines-before 1
-           :empty-lines-after 1)))
   (setq
    ;; Main notes directory
    org-directory "~/defaultdirs/notes/personal"
@@ -1051,6 +1107,15 @@ contextual information."
      ("*" "All"
       ((todo "WIP" ((org-agenda-files '(,hax/notes.org))))
        (todo "TODO" ((org-agenda-files '(,hax/notes.org))))
+       ;; Show unfinished tasks for the last week, without filling all the
+       ;; days - only show todo items.
+       (agenda
+        ""
+        ((org-agenda-span 7)
+         (org-agenda-start-day "-7d")
+         (org-agenda-show-all-dates nil)
+         (org-deadline-warning-days 0)))
+       ;; Show all todo items for the next two weeks with filled days.
        (agenda
         ""
         ((org-agenda-span 14)
@@ -1289,8 +1354,13 @@ subtree can be found."
    (point)
    (line-end-position)
    (propertize
-    (buffer-substring (point) (line-end-position))
+    (buffer-substring-no-properties (point) (line-end-position))
     'face 'font-lock-warning-face)))
+
+(defun hax/dbg/point (p)
+  (save-excursion
+    (goto-char p)
+    (hax/dbg/looking-at)))
 
 (defun org-get-logbook-extent ()
   "Get start and end position of the `:LOGBOOK:' drawer for current
