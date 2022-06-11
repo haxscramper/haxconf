@@ -159,32 +159,82 @@ interactive function call"
                         (counsel-org-goto-all--outline-path-prefix)))))))
     entries))
 
-(defun hax/org-select-subtree-callback (prompt callback caller)
-  "Select subtree"
+(defun hax/org-collect-targetable-entiries (&optional with-todo)
+  "Get list of the 'targetable' entries - WIP todo items, ones that
+have active timestamp in the -7/+7 day range, or ones that were
+created today."
+  (--map
+   ;; it
+   (let ((outline (hax/org-outline-path-at-marker (org-element-property :org-marker it))))
+     (cons
+      (if with-todo
+          (format "%s %s" (org-element-property :todo-keyword it) outline)
+        outline)
+      (org-element-property :org-marker it)))
+   (let ((begin (ts-adjust 'day -7 (ts-now)))
+         (end (ts-adjust 'day +7 (ts-now))))
+     (org-ql-select (org-agenda-files)
+       `(or
+         (todo "POSTPONED" "STALLED")
+         (and (todo "WIP" "TODO")
+              (or
+               (deadline :from ,begin :to ,end)
+               (ts :from ,begin :to ,end))))
+       :action 'element-with-markers))))
+
+(cl-defun hax/org-select-subtree-callback
+    (prompt callback caller &optional (entries (org-collect-known-entries)))
+  "Select subtree from ENTRIES and execute CALLBACK on the
+selection result. Provide PROMPT for selection input"
   (interactive)
   (let (result)
     (ivy-read
      prompt
-     (org-collect-known-entries)
+     entries
      :history 'counsel-org-goto-history
      :action callback)))
 
-(defun hax/org-select-subtree ()
+
+(cl-defun hax/org-select-subtree (&optional (entries (org-collect-known-entries)))
   "Interactively select subtree and return cons with `(description . marker)'"
   (interactive)
   (let (result)
     (hax/org-select-subtree-callback
      "Select: "
      (lambda (x) (setq result x))
-     'hax/org-select-subtree)
+     'hax/org-select-subtree
+     entries)
     result))
+
+(defun goto-marker (marker)
+  (switch-to-buffer (marker-buffer marker))
+  (goto-char (marker-position marker)))
+
+(defun hax/org-clock-in-interactively ()
+  "Interactively select target to clock in using
+`hax/org-collect-targetable-entiries'"
+  (interactive)
+  (save-excursion
+    (goto-marker (cdr (hax/org-select-subtree
+                       (hax/org-collect-targetable-entiries t))))
+    (org-clock-in)))
+
 
 (defun hax/org-goto-select-subtree ()
   "Interactively select subtree and return position of the marker for it"
   (interactive)
-  (let ((marker (cdr (hax/org-select-subtree))))
-    (switch-to-buffer (marker-buffer marker))
-    (goto-char (marker-position marker))))
+  (goto-marker (cdr (hax/org-select-subtree))))
+
+(defun hax/org-outline-path-at-marker (marker &optional last-n)
+  (with-current-buffer (marker-buffer marker)
+    (save-excursion
+      (goto-char (marker-position marker))
+      ;; If full path is requested, return it
+      ;; formatted directly, otherwise fall back to
+      ;; default formatting logic.
+      (let* ((loc (-slice (org-get-outline-path t)
+                          (if last-n (- 0 last-n) 0))))
+        (org-format-outline-path loc)))))
 
 (defun hax/org-insert-link-to-subtree (&optional description last-n)
   "Insert link to any subtree in any org file, using
@@ -195,15 +245,7 @@ interactive function call"
    "Goto: "
    (lambda (x)
      ;; If function is called with prefix value
-     (let* ((name (with-current-buffer (marker-buffer (cdr x))
-                    (save-excursion
-                      (goto-char (marker-position (cdr x)))
-                      ;; If full path is requested, return it
-                      ;; formatted directly, otherwise fall back to
-                      ;; default formatting logic.
-                      (let* ((loc (-slice (org-get-outline-path t)
-                                          (if last-n (- 0 last-n) 0))))
-                        (org-format-outline-path loc)))))
+     (let* ((name (hax/org-outline-path-at-marker (cdr x) last-n))
             ;; Go to position of the found entry, get IT's id (creating
             ;; one if it is missing), and then insert result into the
             ;; final output
