@@ -159,16 +159,27 @@ interactive function call"
                         (counsel-org-goto-all--outline-path-prefix)))))))
     entries))
 
+
+;; (advice-add
+;;  'counsel-outline-candidates
+;;  :filter-return #'hax/org-add-filename-to-counsel-outline-candidates)
+
+
 (defun hax/org-collect-targetable-entiries (&optional with-todo)
   "Get list of the 'targetable' entries - WIP todo items, ones that
 have active timestamp in the -7/+7 day range, or ones that were
 created today."
   (--map
    ;; it
-   (let ((outline (hax/org-outline-path-at-marker (org-element-property :org-marker it))))
+   (let* ((marker (org-element-property :org-marker it))
+          (outline (hax/org-outline-path-at-marker marker)))
      (cons
       (if with-todo
-          (format "%s %s" (org-element-property :todo-keyword it) outline)
+          (format "%s %s %s"
+                  ;; TODO make buffer file name optional formatting parameter
+                  (f-base (buffer-file-name (marker-buffer marker)))
+                  (org-element-property :todo-keyword it)
+                  outline)
         outline)
       (org-element-property :org-marker it)))
    (let ((begin (ts-adjust 'day -7 (ts-now)))
@@ -223,8 +234,9 @@ selection result. Provide PROMPT for selection input"
   "Interactively select target to clock in using
 `hax/org-collect-targetable-entiries'"
   (interactive)
-  (hax/org-action-interactively
-   (lambda () (org-clock-in) (org-todo "WIP"))))
+  (save-excursion
+    (hax/org-action-interactively
+     (lambda () (org-clock-in) (org-todo "WIP")))))
 
 (map!
  :leader
@@ -242,7 +254,8 @@ selection result. Provide PROMPT for selection input"
   "Interactively select target to complete using
 `hax/org-collect-targetable-entiries'"
   (interactive)
-  (hax/org-action-interactively (lambda () (org-todo state))))
+  (save-excursion
+    (hax/org-action-interactively (lambda () (org-todo state)))))
 
 
 (defun hax/org-goto-select-subtree ()
@@ -265,7 +278,7 @@ selection result. Provide PROMPT for selection input"
       ;; default formatting logic.
       (let* ((loc (-slice (org-get-outline-path t)
                           (if last-n (- 0 last-n) 0))))
-        (org-format-outline-path loc)))))
+        (org-format-outline-path loc 256)))))
 
 (defun hax/insert-subtree-link-cb (tree-car description last-n)
   ;; If function is called with prefix value
@@ -401,6 +414,8 @@ selection result. Provide PROMPT for selection input"
    (line-number-at-pos)))
 
 (defun hax/org-insert-footnote-link (footnote)
+  "Interactively insert trailing footnote and link with specified
+FOOTNOTE as a name"
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
   (let* ((at (org-element-at-point))
@@ -989,7 +1004,24 @@ contextual information."
 (defun hax/org-end-of-the-day-stamp ()
   (format-time-string "<%Y-%m-%d %a 23:59:59>"))
 
+(require 'f)
 
+(setq
+ ;; Main notes directory
+ org-directory "~/defaultdirs/notes/personal"
+ ;; File with locations of the org-id entries
+ org-id-locations-file (f-join org-directory ".org-id-locations")
+ ;; Directory for todo management
+ hax/todo.d (f-join org-directory "todo")
+ ;; GTD inbox
+ hax/inbox.org (f-join hax/todo.d "inbox.org")
+ ;; Main GTD organizer
+ hax/main.org (f-join hax/todo.d "main.org")
+ ;; Random junk notes that I generate, copy from other places etc.
+ hax/notes.org (f-join hax/todo.d "notes.org")
+ hax/fic.org (f-join hax/todo.d "fic.org")
+ ;; Project configuration
+ hax/projects.org (f-join hax/todo.d "projects.org"))
 
 (defun hax/org-mode-configure()
   (interactive)
@@ -1150,21 +1182,6 @@ contextual information."
      ))
 
   (setq
-   ;; Main notes directory
-   org-directory "~/defaultdirs/notes/personal"
-   ;; File with locations of the org-id entries
-   org-id-locations-file (f-join org-directory ".org-id-locations")
-   ;; Directory for todo management
-   hax/todo.d (f-join org-directory "todo")
-   ;; GTD inbox
-   hax/inbox.org (f-join hax/todo.d "inbox.org")
-   ;; Main GTD organizer
-   hax/main.org (f-join hax/todo.d "main.org")
-   ;; Random junk notes that I generate, copy from other places etc.
-   hax/notes.org (f-join hax/todo.d "notes.org")
-   hax/fic.org (f-join hax/todo.d "fic.org")
-   ;; Project configuration
-   hax/projects.org (f-join hax/todo.d "projects.org")
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org)
    org-refile-targets `((nil :maxlevel . 3)
@@ -1181,6 +1198,7 @@ contextual information."
    org-log-states-order-reversed nil
    ;; Log when deadline changed
    org-log-redeadline 'time
+   org-clock-modeline-total 'today
    ;; Not using default configuration - instead more informative version is
    ;; implemented using custom hooks.
    org-log-refile nil
@@ -1626,3 +1644,58 @@ itself once again')"
     (if top
         (org-id-open top nil)
       (error "No active clocked item - cannot add subtask"))))
+
+(defun hax/open-org ()
+  (interactive)
+  (find-file hax/inbox.org)
+  (hax/org-mode-configure)
+  (hax/org-mode-hook)
+  (find-file hax/inbox.org)
+  (find-file hax/main.org)
+  (find-file hax/notes.org))
+
+
+(defun hax/org-element-get-logbook ()
+  "Get org-element of the `:LOGBOOK:' entry for a current tree if
+any."
+  (save-excursion
+    (org-back-to-heading)
+    (when (re-search-forward ":LOGBOOK:" nil t)
+      (let* ((elem (org-element-at-point))
+             (min-pos (org-element-property :contents-begin elem))
+             (max-pos (org-element-property :contents-end elem)))
+        (org-element-parse-string
+         (buffer-substring-no-properties min-pos max-pos))))))
+
+(defun hax/org-get-logbook-ranges ()
+  (org-element-map
+      (hax/org-element-get-logbook)
+      'clock
+    (lambda (item) (org-element-property :value item))))
+
+(defun hax/org-get-entry-activations ()
+  "Return (TODO, now prints) full list of the activation ranges for
+all known agenda entries."
+  (let* ((now (ts-now))
+         (year (ts-year now))
+         (month (ts-month now))
+         (day (ts-day now)))
+    (--each (org-map-entries
+             (lambda ()
+               (let* ((ranges (hax/org-get-logbook-ranges))
+                      (filtered
+                       (when ranges
+                         (--filter
+                          (and
+                           (eq (org-element-property :year-end it) year)
+                           (eq (org-element-property :month-end it) month)
+                           (eq (org-element-property :day-end it) day))
+                          ranges))))
+                 (when (and ranges (< 0 (length filtered)))
+                   (cons (org-get-outline-path t) ranges))))
+             nil
+             `(,hax/main.org))
+      (when it
+        (message "%s" (org-format-outline-path (-slice (car it) -2) 256))
+        (dolist (time (cdr it))
+          (message "  %s" (org-element-property :raw-value time)))))))

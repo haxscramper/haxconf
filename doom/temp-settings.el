@@ -59,7 +59,7 @@
      (left . 0.5))))
 
 (add-to-list 'auto-mode-alist '("\\.ASM" . asm-mode))
-
+(add-to-list 'auto-mode-alist '("\\.pro" . qt-pro-mode))
 
 (defun hax/asm-mode-hook ()
   (interactive)
@@ -242,8 +242,7 @@
   (defun copy-text (text)
     (with-temp-buffer
       (insert text)
-      (copy-region-as-kill (point-min) (point-max)))
-    )
+      (copy-region-as-kill (point-min) (point-max))))
   (defun hax/copy-random-restyled-ascii (begin end &optional style-cb)
     (interactive "r")
     (copy-text (hax/randomize-restyle (buffer-substring begin end) style-cb)))

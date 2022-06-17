@@ -36,6 +36,8 @@
 (set-file-template! "/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
 (set-file-template! "\\.el$" :trigger "__" :mode 'emacs-lisp-mode)
 (set-file-template! "\\.sh$" :trigger "__" :mode 'sh-mode)
+(set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
+(set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
 
 
 (defun tree-repr (item)
