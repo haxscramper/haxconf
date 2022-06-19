@@ -7,7 +7,12 @@
  '(package-selected-packages '(helm-dash))
  '(safe-local-variable-values '((eval load! "notes-conf.el") (eval load "notes-conf.el")))
  '(warning-suppress-log-types '((org-babel-after-execute-hook)))
- '(warning-suppress-types '((org-babel-after-execute-hook))))
+ '(warning-suppress-types
+   '((org-element-cache)
+     (org-element-cache)
+     (org-element-cache)
+     (org-element-cache)
+     (org-babel-after-execute-hook))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

@@ -165,7 +165,7 @@ interactive function call"
 ;;  :filter-return #'hax/org-add-filename-to-counsel-outline-candidates)
 
 
-(defun hax/org-collect-targetable-entiries (&optional with-todo)
+(defun hax/org-collect-active-entries (&optional with-todo)
   "Get list of the 'targetable' entries - WIP todo items, ones that
 have active timestamp in the -7/+7 day range, or ones that were
 created today."
@@ -182,15 +182,23 @@ created today."
                   outline)
         outline)
       (org-element-property :org-marker it)))
-   (let ((begin (ts-adjust 'day -7 (ts-now)))
-         (end (ts-adjust 'day +7 (ts-now))))
+   (let ((begin-7 (ts-adjust 'day -7 (ts-now)))
+         (end+7 (ts-adjust 'day +7 (ts-now)))
+         (begin-1 (ts-adjust 'day -1 (ts-now)))
+         (end+1 (ts-adjust 'day +1 (ts-now))))
      (org-ql-select (org-agenda-files)
        `(or
-         (todo "POSTPONED" "STALLED")
+         (todo "POSTPONED" "WIP")
          (and (todo "WIP" "TODO")
               (or
-               (deadline :from ,begin :to ,end)
-               (ts :from ,begin :to ,end))))
+               ;; Explicitly marked as an inbox entry
+               (tags "@inbox")
+               ;; track activity in daily notes for one week before and after
+               (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
+               ;; Track general planning in 14-day frame
+               (planning :from ,begin-7 :to ,end+7)
+               ;; Track any entries that were created/stamped today
+               (ts :on today))))
        :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
@@ -227,12 +235,12 @@ selection result. Provide PROMPT for selection input"
     (goto-marker (cdr (hax/org-select-subtree
                        (if select-all
                            (org-collect-known-entries)
-                         (hax/org-collect-targetable-entiries t)))))
+                         (hax/org-collect-active-entries t)))))
     (funcall action)))
 
 (defun hax/org-clock-in-interactively ()
   "Interactively select target to clock in using
-`hax/org-collect-targetable-entiries'"
+`hax/org-collect-active-entries'"
   (interactive)
   (save-excursion
     (hax/org-action-interactively
@@ -252,7 +260,7 @@ selection result. Provide PROMPT for selection input"
 
 (cl-defun hax/org-complete-interactively (&optional (state "COMPLETED"))
   "Interactively select target to complete using
-`hax/org-collect-targetable-entiries'"
+`hax/org-collect-active-entries'"
   (interactive)
   (save-excursion
     (hax/org-action-interactively (lambda () (org-todo state)))))
@@ -267,18 +275,20 @@ selection result. Provide PROMPT for selection input"
   "Interactively select active subtree and return position of the marker for it"
   (interactive)
   (goto-marker (cdr (hax/org-select-subtree
-                     (hax/org-collect-targetable-entiries t)))))
+                     (hax/org-collect-active-entries t)))))
 
 (defun hax/org-outline-path-at-marker (marker &optional last-n)
+  "Get formatted outline entry at position specified by MARKER"
   (with-current-buffer (marker-buffer marker)
     (save-excursion
       (goto-char (marker-position marker))
       ;; If full path is requested, return it
       ;; formatted directly, otherwise fall back to
       ;; default formatting logic.
-      (let* ((loc (-slice (org-get-outline-path t)
+      (let* ((tags (org-get-tags-string))
+             (loc (-slice (org-get-outline-path t)
                           (if last-n (- 0 last-n) 0))))
-        (org-format-outline-path loc 256)))))
+        (concat (org-format-outline-path loc 256) tags)))))
 
 (defun hax/insert-subtree-link-cb (tree-car description last-n)
   ;; If function is called with prefix value
@@ -428,6 +438,7 @@ FOOTNOTE as a name"
 
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
+(defvar hax/org-refile-refiled-from-file nil)
 
 
 (defun diary-day (daylist)
@@ -551,6 +562,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   respectively."
   (interactive)
   (save-excursion
+    (setq hax/org-refile-refiled-from-file (buffer-file-name))
     (if (org-up-heading-safe)
         ;; If we are in some outline, assign
         (progn
@@ -558,10 +570,15 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
           (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
           ;; Get original heading path, without tags, todo, priority elements
           (setq hax/org-refile-refiled-from-header
-                (counsel-org-goto-all--outline-path-prefix)))
+                (org-format-outline-path (org-get-outline-path t))))
       (setq hax/org-refile-refiled-from-id
             (cons 'file (buffer-file-name)))
-      (setq hax/org-refile-refiled-from-header (buffer-name)))))
+      (setq hax/org-refile-refiled-from-header (buffer-name))))
+  ;; (message
+  ;;  "Save source ID and header '%s' '%s'"
+  ;;  hax/org-refile-refiled-from-header
+  ;;  hax/org-refile-refiled-from-id)
+  )
 
 ;; IDEA add more complex log entries too: make this function accept
 ;; org-mode subtree in elisp form (parsed from org-elements)
@@ -588,16 +605,20 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
            (time-stamp (format-time-string time-format (current-time))))
       (org-add-log-entry
        (format
-        "- Refiled on [%s] from [[%s][%s]]"
+        "- Refiled on [%s] from [[%s][%s:%s]]"
         time-stamp
-        (if (eq kind 'id) (format "id:%s" src)
+        (if (eq kind 'id)
+            (format "id:%s" src)
           (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
+        (f-base hax/org-refile-refiled-from-file)
         hax/org-refile-refiled-from-header)))
+    (setq hax/org-refile-refiled-from-file nil)
     (setq hax/org-refile-refiled-from-id nil)
     (setq hax/org-refile-refiled-from-header nil)))
 
 (add-hook
- 'org-after-refile-insert-hook #'hax/org-refile-add-refiled-from-note)
+ 'org-after-refile-insert-hook
+ #'hax/org-refile-add-refiled-from-note)
 
 (advice-add
  'org-refile :before #'hax/org-save-source-id-and-header)
@@ -716,7 +737,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
    :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
                             nil
                             nil
-                            (hax/org-collect-targetable-entiries)))
+                            (hax/org-collect-active-entries)))
 
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
    :ni "M-i M-l M-d" (lambda (description)
@@ -868,7 +889,11 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
     (substring str (- (length str) len) (length str))))
 
 (setq
- org-agenda-prefix-format '((agenda . " %i %-12t%-12s %(hax/parent-subtrees) ")
+ org-agenda-prefix-format '(;; For regular agenda items, show (?whatever?)
+                            ;; first, then align time to five characters,
+                            ;; then 12 for scheduled information. Title and
+                            ;; all the other data will be placed afterwards.
+                            (agenda . " %i   %5t %-12s ")
                             (todo . " %i %(hax/parent-subtrees) ")
                             (tags . " %i %(hax/parent-subtrees) ")
                             (search . " %i %(hax/parent-subtrees) "))
@@ -879,8 +904,15 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
  org-agenda-skip-scheduled-if-done t
  org-agenda-repeating-timestamp-show-all nil
  org-deadline-warning-days 14
- org-agenda-start-day "-0d"
- )
+ org-agenda-time-grid '(;; Unconditionally show time grid for today
+                        (daily today)
+                        ;; Show data for 8, 10, 12 hours etc.
+                        (800 1000 1200 1400 1600 1800 2000)
+                        ;; No trailing dots after hour
+                        ""
+                        ;; Unconditionally show time grid for today
+                        "")
+ org-agenda-start-day "-0d")
 
 
 ;; Store capture location *before* the capture happens, this way location
@@ -1183,8 +1215,8 @@ contextual information."
 
   (setq
    ;; Agenda is a main todo file and inbox
-   org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org)
-   org-refile-targets `((nil :maxlevel . 3)
+   org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org hax/projects.org)
+   org-refile-targets `(;; (nil :maxlevel . 3)
                         (,hax/fic.org :maxlevel . 4)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
@@ -1211,6 +1243,9 @@ contextual information."
    ;; together.
    org-blank-before-new-entry '((heading . t) (plain-list-item . nil))
    org-hierarchical-todo-statistics t
+   ;; Override of the default agenda date formatting with customized
+   ;; function
+   org-agenda-format-date 'hax/org-agenda-format-date
    org-goto-interface 'outline-path-completionp
    org-image-actual-width (list 300)
    ;; Store seconds in the timestamp format
@@ -1280,9 +1315,12 @@ contextual information."
            ;; TODO twice here. I don't know what is
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
-           "LATER(l!)"          ;; Can be done sometimes later
+           "LATER(l!)"          ;; Can be done sometimes later. Like
+           ;; POSTPONED but without any idea when the
+           ;; work can start again
            "NEXT(n!)"           ;; Next task after current
-           "POSTPONED(P!/!)"    ;; Work is temporarily paused
+           "POSTPONED(P!/!)"    ;; Work is temporarily paused, but I have a
+           ;; vague idea about next restart time.
            "WIP(w!)"            ;; Working on it
            "STALLED(s!)"        ;; External event is preventing further work
            "MAYBE(m!)"          ;; Not Guaranteed to happen
@@ -1699,3 +1737,35 @@ all known agenda entries."
         (message "%s" (org-format-outline-path (-slice (car it) -2) 256))
         (dolist (time (cdr it))
           (message "  %s" (org-element-property :raw-value time)))))))
+
+(defun hax/org-agenda-format-date (date)
+  "Format a DATE string for display in the daily/weekly agenda.
+This function makes sure that dates are aligned for easy reading.
+Mostly reimplements `org-agenda-format-date-aligned', but also
+displays relative (from the current time) hour and minute range."
+  (require 'cal-iso)
+  (let* ((dayname (calendar-day-name date))
+         (day (cadr date))
+         (day-of-week (calendar-day-of-week date))
+         (month (car date))
+         (monthname (calendar-month-name month))
+         (year (nth 2 date))
+         (time-diff (ts-difference
+                     (ts-apply
+                      :year year
+                      :month month
+                      :day day
+                      :hour 0
+                      :minute 0
+                      (ts-now))
+                     (ts-now)))
+         (iso-week (org-days-to-iso-week (calendar-absolute-from-gregorian date)))
+         (weekstring (if (= day-of-week 1) (format " W%02d" iso-week) "")))
+    (format
+     "%3d %-10s %2d %s %4d%s"
+     (/ time-diff 3600)
+     dayname
+     day
+     monthname
+     year
+     weekstring)))

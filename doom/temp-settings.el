@@ -312,3 +312,13 @@ of Defendant Ronald F. Cornelison is GRANTED"
   (hax/read-from-popup-buffer
    (lambda (text) (message "triggered current buffer callback. text was '%s'" text))))
 
+
+(defun hax/rst-mode-hook ()
+  (interactive)
+  (flyspell-mode 1)
+  (map!
+   :map rst-mode-map
+   :ni "C-;" #'flyspell-correct-wrapper))
+
+
+(add-hook! 'rst-mode-hook #'hax/rst-mode-hook)
