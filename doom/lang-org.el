@@ -888,15 +888,34 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
          (str (s-pad-left len " " (s-join "." (org-get-outline-path)))))
     (substring str (- (length str) len) (length str))))
 
+(defun hax/maybe-relative-time ()
+  "Insert relative time (in hours) between current time and target
+subtree deadline/sheduled/timestamp if any."
+  (save-excursion
+    (if (org-current-level)
+        (let* ((time (org-entry-get nil "TIMESTAMP"))
+               (dead (org-entry-get nil "DEADLINE"))
+               (shed (org-entry-get nil "SCHEDULED")))
+          (if (or time dead shed)
+              ;; TODO Ensure prioritization of the deadline/sheduled time
+              ;; happens properly.
+              (let* ((parsed (ts-parse-org (or dead shed time)))
+                     (time-diff (ts-difference parsed (ts-now))))
+                (if (< -999 time-diff)
+                    (format "%03d" (/ time-diff 3600))
+                  "   "))
+            "   "))
+      "   ")))
+
 (setq
  org-agenda-prefix-format '(;; For regular agenda items, show (?whatever?)
                             ;; first, then align time to five characters,
                             ;; then 12 for scheduled information. Title and
                             ;; all the other data will be placed afterwards.
-                            (agenda . " %i   %5t %-12s ")
-                            (todo . " %i %(hax/parent-subtrees) ")
-                            (tags . " %i %(hax/parent-subtrees) ")
-                            (search . " %i %(hax/parent-subtrees) "))
+                            (agenda . "%(hax/maybe-relative-time) %5t %-12s ")
+                            (todo . "%(hax/parent-subtrees) ")
+                            (tags . "%(hax/parent-subtrees) ")
+                            (search . "%(hax/parent-subtrees) "))
  org-agenda-start-on-weekday nil
  org-agenda-ndays 14
  org-agenda-show-all-dates t
@@ -1738,34 +1757,22 @@ all known agenda entries."
         (dolist (time (cdr it))
           (message "  %s" (org-element-property :raw-value time)))))))
 
+(defun calendar-day-abbrev-array)
+
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.
 This function makes sure that dates are aligned for easy reading.
 Mostly reimplements `org-agenda-format-date-aligned', but also
 displays relative (from the current time) hour and minute range."
   (require 'cal-iso)
-  (let* ((dayname (calendar-day-name date))
-         (day (cadr date))
-         (day-of-week (calendar-day-of-week date))
+  (let* ((day (cadr date))
          (month (car date))
-         (monthname (calendar-month-name month))
          (year (nth 2 date))
-         (time-diff (ts-difference
-                     (ts-apply
-                      :year year
-                      :month month
-                      :day day
-                      :hour 0
-                      :minute 0
-                      (ts-now))
-                     (ts-now)))
-         (iso-week (org-days-to-iso-week (calendar-absolute-from-gregorian date)))
-         (weekstring (if (= day-of-week 1) (format " W%02d" iso-week) "")))
+         ;; Immediately convert to the `ts` time format, because regular
+         ;; emacs time formatting is an absolutely nauseating trash.
+         (ts (ts-apply :year year :month month :day day :hour 0 :minute 0 (ts-now)))
+         (time-diff (ts-difference ts (ts-now))))
     (format
-     "%3d %-10s %2d %s %4d%s"
+     "%03d %s"
      (/ time-diff 3600)
-     dayname
-     day
-     monthname
-     year
-     weekstring)))
+     (ts-format "%m-%d %a" ts))))
