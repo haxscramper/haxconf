@@ -40,7 +40,7 @@
        ;; Configuration, serialization
        json yaml xml
        ;; Markup languages
-       latex markdown rst (org +dragndrop)
+       latex markdown rst (org +dragndrop +roam2)
        python
 
        :config (default +bindings +smartparens))

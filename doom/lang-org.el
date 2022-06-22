@@ -13,6 +13,7 @@ the current one."
   (interactive)
   (org-end-of-subtree)
   (insert "\n\n" (make-string (or (org-current-level) 1) ?*) " TODO ")
+  (setq org-expiry-inactive-timestamps t)
   (org-expiry-insert-created)
   (evil-insert-state)
   (hax/org-update-all-cookies))
@@ -59,7 +60,7 @@ mode"
   (let ((base
          (if (buffer-file-name) (buffer-file-name)
            (let ((buf (org-capture-get :buffer)))
-             (if buf (buffer-file-name buf)) (f-join hax/todo.d "images")))))
+             (if buf (buffer-file-name buf)) (f-join hax/indexed.d "images")))))
     (setq org-download-image-dir
           (f-join (f-dirname base) (concat (f-base base) ".images")))
     (setq org-download-timestamp (concat (f-filename base) "_%Y%m%d-%H%M%S_" ))
@@ -135,12 +136,12 @@ it in the persistent list of tags, and update current list of tags"
          (propertize selected 'face `(:foreground ,(doom-color 'red)))))
       selected)))
 
-(defun hax/maybe-numeric-prefix ()
+(defun hax/maybe-numeric-prefix (else)
   "Return optional numeric prefix, if one was supplied for current
 interactive function call"
   (if (and current-prefix-arg (not (consp current-prefix-arg)))
       (prefix-numeric-value current-prefix-arg)
-    nil))
+    else))
 
 (defun hax/?? (&optional last-n)
   (message "[%s]" last-n))
@@ -188,8 +189,8 @@ created today."
          (end+1 (ts-adjust 'day +1 (ts-now))))
      (org-ql-select (org-agenda-files)
        `(or
-         (todo "POSTPONED" "WIP")
-         (and (todo "WIP" "TODO")
+         (todo "POSTPONED" "WIP" "NEXT")
+         (and (todo "TODO")
               (or
                ;; Explicitly marked as an inbox entry
                (tags "@inbox")
@@ -277,7 +278,10 @@ selection result. Provide PROMPT for selection input"
   (goto-marker (cdr (hax/org-select-subtree
                      (hax/org-collect-active-entries t)))))
 
-(defun hax/org-outline-path-at-marker (marker &optional last-n)
+(defun hax/org-unformat-title (title)
+  (s-replace-all '(("=" . "") ("*" . "") ("~" . "")) title))
+
+(defun hax/org-outline-path-at-marker (marker &optional last-n with-tags cleanup-name-formatting)
   "Get formatted outline entry at position specified by MARKER"
   (with-current-buffer (marker-buffer marker)
     (save-excursion
@@ -287,12 +291,19 @@ selection result. Provide PROMPT for selection input"
       ;; default formatting logic.
       (let* ((tags (org-get-tags-string))
              (loc (-slice (org-get-outline-path t)
-                          (if last-n (- 0 last-n) 0))))
-        (concat (org-format-outline-path loc 256) tags)))))
+                          (if last-n (- 0 last-n) 0)))
+             (path (org-format-outline-path loc 256)))
+        (concat (if cleanup-name-formatting (hax/org-unformat-title path) path)
+                (if with-tags tags ""))))))
 
-(defun hax/insert-subtree-link-cb (tree-car description last-n)
+(defun hax/insert-subtree-link-cb
+    (tree-car description last-n with-tags cleanup-name-formatting)
   ;; If function is called with prefix value
-  (let* ((name (hax/org-outline-path-at-marker (cdr tree-car) last-n))
+  (let* ((name (hax/org-outline-path-at-marker
+                (cdr tree-car)
+                last-n
+                with-tags
+                cleanup-name-formatting))
          ;; Go to position of the found entry, get IT's id (creating
          ;; one if it is missing), and then insert result into the
          ;; final output
@@ -303,19 +314,22 @@ selection result. Provide PROMPT for selection input"
                (save-excursion
                  (goto-char (marker-position (cdr tree-car)))
                  (org-id-get-create)))))
-    (insert (format " [[id:%s][%s]]" id
-                    (hax/org-cleanup-subtree-name
-                     (if description description name))))))
+    (insert (format " [[id:%s][%s]]" id (if description description name)))))
 
 (cl-defun hax/org-insert-link-to-subtree
-    (&optional description last-n (entries (org-collect-known-entries)))
+    (&key description
+          last-n
+          (entries (org-collect-known-entries))
+          (with-tags nil)
+          (cleanup-name-formatting t))
   "Insert link to any subtree in any org file, using
   `[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
   name, otherwise use description."
   (interactive)
   (hax/org-select-subtree-callback
    "Goto: "
-   (lambda (x) (hax/insert-subtree-link-cb x description last-n))
+   (lambda (x) (hax/insert-subtree-link-cb
+                x description last-n with-tags cleanup-name-formatting))
    'hax/org-insert-link-to-heading
    entries))
 
@@ -712,6 +726,12 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
    :n ",tc" #'org-toggle-checkbox
    :n ",ta" #'hax/org-assign-tag
    :ni "M-i M-i" #'hax/org-paste-clipboard
+   :desc "separator and time"
+   :ni "M-i M-s" (cmd! (insert
+                        (format "%s\n%s "
+                                (s-repeat fill-column "-")
+                                (ts-format (concat (cdr org-time-stamp-formats))
+                                           (ts-now)))))
    :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
                          (save-excursion (hax/org-paste-clipboard)))
 
@@ -729,15 +749,19 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
                             (delete-region (get-selected-region-start) (get-selected-region-end))
                             (hax/org-insert-clipboard-link text)))
 
-   :desc "link subtree, last name"
-   :ni "M-i M-l M-T" (cmd! (hax/org-insert-link-to-subtree nil (hax/maybe-numeric-prefix)))
    :desc "link subtree, full name"
-   :ni "M-i M-l M-t" (cmd! (hax/org-insert-link-to-subtree nil nil))
+   :ni "M-i M-l M-t M-f" (cmd! (hax/org-insert-link-to-subtree))
+   :desc "link subtree, short name"
+   :ni "M-i M-l M-t M-s" (cmd! (hax/org-insert-link-to-subtree :last-n 1))
+   :desc "subtree, only short name"
+   :ni "M-i M-l M-t M-n" (cmd! (hax/org-select-subtree-callback
+                                "Insert: "
+                                (lambda (x) (insert (hax/org-outline-path-at-marker (cdr x) 1)))
+                                'hax/org-insert-link-to-heading))
+
    :desc "link active subtree, full name"
    :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
-                            nil
-                            nil
-                            (hax/org-collect-active-entries)))
+                            :entries (hax/org-collect-active-entries)))
 
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
    :ni "M-i M-l M-d" (lambda (description)
@@ -901,7 +925,7 @@ subtree deadline/sheduled/timestamp if any."
               ;; happens properly.
               (let* ((parsed (ts-parse-org (or dead shed time)))
                      (time-diff (ts-difference parsed (ts-now))))
-                (if (< -999 time-diff)
+                (if (< -99 time-diff)
                     (format "%03d" (/ time-diff 3600))
                   "   "))
             "   "))
@@ -965,12 +989,6 @@ subtree deadline/sheduled/timestamp if any."
         (format
          "from ~%s~ (=%s=)"
          (s-replace "~" "∼" hax/fullscreen-client-name) uuid)))))
-
-(defun hax/org-cleanup-subtree-name (name)
-  "Remove trailing UUID helper if present"
-  (if (s-match (rx "(=" (= 8 (any alnum digit)) "=)" eol) name)
-      (substring name 0 (- (length name) (+ 8 2 2 1)))
-    name))
 
 (defun org-odt-inline-src-block (_inline-src-block _contents _info)
   "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
@@ -1057,25 +1075,77 @@ contextual information."
 
 (require 'f)
 
+(defvar org-roam-db-update-queue
+  (list) "List of the files for delayed org-roam update")
+
+(defun org-roam-db-schedule-update-file (&optional file-path)
+  ;; do same logic as original to determine current file-path if not
+  ;; passed as arg
+  (setq file-path (or file-path (buffer-file-name (buffer-base-buffer))))
+  (message "org-roam: scheduling update of %s" file-path)
+  (if (not (memq file-path org-roam-db-update-queue))
+      (push file-path org-roam-db-update-queue)))
+
+;; this function will be called when emacs is idle for a few seconds
+(defun org-roam-db-idle-update-files ()
+  ;; go through queued filenames one-by-one and update db
+  ;; if we're not idle anymore, stop. will get rest of queue next idle.
+  (while (and org-roam-db-update-queue (current-idle-time))
+    (let ((file (pop org-roam-db-update-queue)))
+      (message "org-roam: running update of %s" file)
+      ;; apply takes function var and list
+      (org-roam-db-update-file file))))
+
+;; we'll only start updating db if we've been idle for this many seconds
+(run-with-idle-timer 5 t #'org-roam-db-idle-update-files)
+
+(defun hax/org-after-save ()
+  (when (derived-mode-p 'org-mode)
+    (org-roam-db-schedule-update-file (buffer-file-name))))
+
+(add-hook! 'after-save-hook #'hax/org-after-save)
+
 (setq
  ;; Main notes directory
  org-directory "~/defaultdirs/notes/personal"
  ;; File with locations of the org-id entries
  org-id-locations-file (f-join org-directory ".org-id-locations")
- ;; Directory for todo management
- hax/todo.d (f-join org-directory "todo")
+ ;; Directory for todo management and other indexed entries
+ hax/indexed.d (f-join org-directory "indexed")
+ ;; Directory to store org-roam topic files. Because I can both write
+ ;; standalone conceptual notes and reference them in daily captures I see
+ ;; no reason to separate those two.
+ org-roam-directory hax/indexed.d
+ ;; I implemented custom update on save + idle refresh, so no need to use
+ ;; built-in implementation
+ org-roam-db-update-on-save nil
+ ;; Main index file for org-roamm
+ org-roam-index-file (f-join org-roam-directory "roam-index.org")
+ ;; Allow exclusion of certain singular files that are tagged with
+ ;; `DO_NOT_ORG_ROAM' filetag.
+ org-roam-db-node-include-function (lambda () (if (member "DO_NOT_ORG_ROAM" (org-get-tags)) nil t))
+ ;; Remove all formatting from titles - bold, italic, verbatim etc. are not
+ ;; shown in the roam UI anyway, and I mostly view the graph/database using
+ ;; it.
+ org-roam-node-formatter (lambda (node) (hax/org-unformat-title
+                                         (org-roam-node-title node)))
  ;; GTD inbox
- hax/inbox.org (f-join hax/todo.d "inbox.org")
+ hax/inbox.org (f-join hax/indexed.d "inbox.org")
  ;; Main GTD organizer
- hax/main.org (f-join hax/todo.d "main.org")
+ hax/main.org (f-join hax/indexed.d "main.org")
  ;; Random junk notes that I generate, copy from other places etc.
- hax/notes.org (f-join hax/todo.d "notes.org")
- hax/fic.org (f-join hax/todo.d "fic.org")
+ hax/notes.org (f-join hax/indexed.d "notes.org")
+ hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
- hax/projects.org (f-join hax/todo.d "projects.org"))
+ hax/projects.org (f-join hax/indexed.d "projects.org"))
 
 (defun hax/org-mode-configure()
   (interactive)
+  ;; Because one of the main roam configuration variables it not good
+  ;; enough of an authority to warrant implicit directory creation *if it
+  ;; is missing*.
+  (if (not (f-exists-p org-roam-directory))
+      (f-mkdir-full-path org-roam-directory))
   (org-link-set-parameters "coords" :follow #'org-coords-open)
   (require 'ts)
   (require 'org-expiry)
@@ -1098,7 +1168,6 @@ contextual information."
       "* TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1108,7 +1177,6 @@ contextual information."
       "* %? :idea:
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1118,7 +1186,6 @@ contextual information."
       "** %U %(hax/capture-location)
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :END:
 
 %?"
@@ -1128,7 +1195,6 @@ contextual information."
       "** %U %(hax/capture-location) %(hax/immediate-note-tags)
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :END:
 
 %(hax/get-immediate-note-content)
@@ -1144,7 +1210,6 @@ contextual information."
       "* TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1160,7 +1225,6 @@ contextual information."
       "** %U %(hax/capture-location)
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :END:
 
 %?"
@@ -1171,7 +1235,6 @@ contextual information."
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1187,7 +1250,6 @@ contextual information."
   DEADLINE: %(hax/org-end-of-the-day-stamp)
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1200,7 +1262,6 @@ contextual information."
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1213,7 +1274,6 @@ contextual information."
   DEADLINE: %(hax/org-end-of-the-day-stamp)
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1224,7 +1284,6 @@ contextual information."
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ID: %(org-id-new)
   :ORIGIN: %(hax/capture-location)
   :END:
 "
@@ -1233,10 +1292,17 @@ contextual information."
      ))
 
   (setq
+   ;; Don not open org-roam buffer automatically
+   +org-roam-open-buffer-on-find-file nil
+   ;; Don't implicitly enable the super-distracting,
+   ;; almost-never-needed-unless-explicitly requested automatic UI follow
+   ;; mode that zooms to closely no nodes that you instantly loose all the
+   ;; context of what you are working with.
+   org-roam-ui-follow nil
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org hax/projects.org)
    org-refile-targets `(;; (nil :maxlevel . 3)
-                        (,hax/fic.org :maxlevel . 4)
+                        (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 2))
@@ -1370,7 +1436,7 @@ contextual information."
           ("FAILED" . ,(doom-color 'red))
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
-  (setq hax/tags-file (f-join hax/todo.d "tags"))
+  (setq hax/tags-file (f-join org-directory "tags"))
   (when (f-exists? (f-join hax/cache.d "org-clock-stack"))
     (setq hax/org-clock-stack
           (read-from-file (f-join hax/cache.d "org-clock-stack"))))
@@ -1756,8 +1822,6 @@ all known agenda entries."
         (message "%s" (org-format-outline-path (-slice (car it) -2) 256))
         (dolist (time (cdr it))
           (message "  %s" (org-element-property :raw-value time)))))))
-
-(defun calendar-day-abbrev-array)
 
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.
