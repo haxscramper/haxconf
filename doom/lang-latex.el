@@ -27,8 +27,8 @@
   ;;;#== Document viewers
   (setq TeX-view-program-list '(("zathura" "zathura %o")))
   (setq TeX-view-program-selection '((output-pdf "zathura")))
-  (yasnippet-snippets-initialize)
-  (highlight-parentheses-mode 1)
+  ;; (yasnippet-snippets-initialize)
+  ;; (highlight-parentheses-mode 1)
   (LaTeX-add-environments
    '("Remark" LaTeX-env-with-preset "" ""))
   (map!

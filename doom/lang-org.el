@@ -926,7 +926,9 @@ subtree deadline/sheduled/timestamp if any."
               (let* ((parsed (ts-parse-org (or dead shed time)))
                      (time-diff (ts-difference parsed (ts-now))))
                 (if (< -99 time-diff)
-                    (format "%03d" (/ time-diff 3600))
+                    (format "%03d%s" (/ time-diff 3600)
+                            (hax/closest-unicode-fraction
+                             (hax/relative-hour-fraction time-diff)))
                   "   "))
             "   "))
       "   ")))
@@ -1105,9 +1107,14 @@ contextual information."
 
 (add-hook! 'after-save-hook #'hax/org-after-save)
 
+
+
 (setq
+ org-highlight-latex-and-related '(latex script entities)
  ;; Main notes directory
  org-directory "~/defaultdirs/notes/personal"
+ ;; Do not fontify super/sub-scripts differently from the rest of the text.
+ tex-fontify-script nil
  ;; File with locations of the org-id entries
  org-id-locations-file (f-join org-directory ".org-id-locations")
  ;; Directory for todo management and other indexed entries
@@ -1123,7 +1130,8 @@ contextual information."
  org-roam-index-file (f-join org-roam-directory "roam-index.org")
  ;; Allow exclusion of certain singular files that are tagged with
  ;; `DO_NOT_ORG_ROAM' filetag.
- org-roam-db-node-include-function (lambda () (if (member "DO_NOT_ORG_ROAM" (org-get-tags)) nil t))
+ org-roam-db-node-include-function
+ (lambda () (if (member "DO_NOT_ORG_ROAM" (org-get-tags)) nil t))
  ;; Remove all formatting from titles - bold, italic, verbatim etc. are not
  ;; shown in the roam UI anyway, and I mostly view the graph/database using
  ;; it.
@@ -1137,10 +1145,28 @@ contextual information."
  hax/notes.org (f-join hax/indexed.d "notes.org")
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
- hax/projects.org (f-join hax/indexed.d "projects.org"))
+ hax/projects.org (f-join hax/indexed.d "projects.org")
+ org-structure-template-alist '(("f" . "formula\n")
+                                ("a" . "export ascii\n")
+                                ("d" . "definition\n")
+                                ("c" . "center\n")
+                                ("C" . "comment\n")
+                                ("e" . "example\n")
+                                ("E" . "export\n")
+                                ("h" . "export html\n")
+                                ("l" . "export latex\n")
+                                ("q" . "quote\n")
+                                ("s" . "src\n")
+                                ("v" . "verse\n")))
 
 (defun hax/org-mode-configure()
   (interactive)
+  ;; Default inline latex highlighting is a bold white text, which is too
+  ;; similar to a regular text.
+  (set-face-attribute
+   'org-latex-and-related nil
+   :foreground "dim gray")
+
   ;; Because one of the main roam configuration variables it not good
   ;; enough of an authority to warrant implicit directory creation *if it
   ;; is missing*.
@@ -1775,7 +1801,8 @@ itself once again')"
   (hax/org-mode-hook)
   (find-file hax/inbox.org)
   (find-file hax/main.org)
-  (find-file hax/notes.org))
+  (find-file hax/notes.org)
+  (org-roam-db))
 
 
 (defun hax/org-element-get-logbook ()
@@ -1823,6 +1850,25 @@ all known agenda entries."
         (dolist (time (cdr it))
           (message "  %s" (org-element-property :raw-value time)))))))
 
+(defun hax/closest-unicode-fraction (value)
+  (let* ((values '((1 . "⅟")
+                   (0.25 . "¼")
+                   (0.5 . "½")
+                   (0.75 . "¾")
+                   (0.33 . "⅓")
+                   (0.66 . "⅔")
+                   (0.2 . "⅕")
+                   (0.4 . "⅖")
+                   (0.6 . "⅗")
+                   (0.8 . "⅘"))))
+    (cdr (first (sort (--map (cons (abs (- (abs value) (car it))) (cdr it)) values)
+                      (lambda (lhs rhs) (< (car lhs) (car rhs))))))))
+
+;; (hax/closest-unicode-fraction 0.5)
+
+(defun hax/relative-hour-fraction (tdiff)
+  (/ (if (< 0 tdiff) (mod (/ tdiff 60) 60) (- 60 (mod (/ tdiff 60) 60))) 60))
+
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.
 This function makes sure that dates are aligned for easy reading.
@@ -1835,8 +1881,9 @@ displays relative (from the current time) hour and minute range."
          ;; Immediately convert to the `ts` time format, because regular
          ;; emacs time formatting is an absolutely nauseating trash.
          (ts (ts-apply :year year :month month :day day :hour 0 :minute 0 (ts-now)))
-         (time-diff (ts-difference ts (ts-now))))
+         (tdiff (ts-difference ts (ts-now))))
     (format
-     "%03d %s"
-     (/ time-diff 3600)
+     "%03d%s %s"
+     (/ tdiff 3600)
+     (hax/closest-unicode-fraction (hax/relative-hour-fraction tdiff))
      (ts-format "%m-%d %a" ts))))
