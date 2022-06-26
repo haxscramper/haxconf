@@ -660,7 +660,11 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   ;; what exactly is going on with ordering. But that implementation allows
   ;; me to override the default checkbox highlighting for checkboxes.
 
+  (require 'evil-surround)
   (message "Org-mode hook executed")
+
+  (push '(?$ . ("\\(" . "\\)")) evil-surround-pairs-alist)
+
   (abbrev-mode 1)
   (flyspell-mode 1)
   (org-indent-mode -1)
@@ -925,20 +929,21 @@ subtree deadline/sheduled/timestamp if any."
               ;; happens properly.
               (let* ((parsed (ts-parse-org (or dead shed time)))
                      (time-diff (ts-difference parsed (ts-now))))
-                (if (< -99 time-diff)
-                    (format "%03d%s" (/ time-diff 3600)
+                (if (< -99 (/ time-diff 3600))
+                    (format "%03d%s"
+                            (/ time-diff 3600)
                             (hax/closest-unicode-fraction
                              (hax/relative-hour-fraction time-diff)))
-                  "   "))
-            "   "))
-      "   ")))
+                  "    "))
+            "    "))
+      "    ")))
 
 (setq
  org-agenda-prefix-format '(;; For regular agenda items, show (?whatever?)
                             ;; first, then align time to five characters,
                             ;; then 12 for scheduled information. Title and
                             ;; all the other data will be placed afterwards.
-                            (agenda . "%(hax/maybe-relative-time) %5t %-12s ")
+                            (agenda . "%(hax/maybe-relative-time) %-12t ")
                             (todo . "%(hax/parent-subtrees) ")
                             (tags . "%(hax/parent-subtrees) ")
                             (search . "%(hax/parent-subtrees) "))
@@ -1801,8 +1806,8 @@ itself once again')"
   (hax/org-mode-hook)
   (find-file hax/inbox.org)
   (find-file hax/main.org)
-  (find-file hax/notes.org)
-  (org-roam-db))
+  (org-roam-db)
+  (find-file hax/notes.org))
 
 
 (defun hax/org-element-get-logbook ()
@@ -1852,6 +1857,7 @@ all known agenda entries."
 
 (defun hax/closest-unicode-fraction (value)
   (let* ((values '((1 . "⅟")
+                   (0 . "⁰")
                    (0.25 . "¼")
                    (0.5 . "½")
                    (0.75 . "¾")
@@ -1860,14 +1866,18 @@ all known agenda entries."
                    (0.2 . "⅕")
                    (0.4 . "⅖")
                    (0.6 . "⅗")
-                   (0.8 . "⅘"))))
+                   (0.8 . "⅘")
+                   (0.16 . "⅙")
+                   (0.83 . "⅚"))))
     (cdr (first (sort (--map (cons (abs (- (abs value) (car it))) (cdr it)) values)
                       (lambda (lhs rhs) (< (car lhs) (car rhs))))))))
 
 ;; (hax/closest-unicode-fraction 0.5)
 
 (defun hax/relative-hour-fraction (tdiff)
-  (/ (if (< 0 tdiff) (mod (/ tdiff 60) 60) (- 60 (mod (/ tdiff 60) 60))) 60))
+(/ (if (< 0 tdiff)
+       (mod (/ tdiff 60) 60)
+     (- 60 (mod (/ tdiff 60) 60))) 60))
 
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.

@@ -322,3 +322,19 @@ of Defendant Ronald F. Cornelison is GRANTED"
 
 
 (add-hook! 'rst-mode-hook #'hax/rst-mode-hook)
+
+(defun self-insert-no-abbrev ()
+  (interactive)
+  (let ((abbrev-mode nil))
+    (call-interactively 'self-insert-command)))
+
+(map!
+ :leader
+ :desc "insert \\" "ii\\" #'self-insert-no-abbrev
+ :desc "insert SPC" "ii SPC" #'self-insert-no-abbrev
+ :desc "insert ." "ii." #'self-insert-no-abbrev
+ :desc "insert, " "ii," #'self-insert-no-abbrev
+ :desc "insert?" "ii?" #'self-insert-no-abbrev
+ :desc "insert-" "ii-" #'self-insert-no-abbrev
+ :desc "insert=" "ii=" #'self-insert-no-abbrev
+ )

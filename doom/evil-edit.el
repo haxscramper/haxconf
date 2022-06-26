@@ -138,7 +138,7 @@ occurrence of symbol"
 (setq evil-snipe-scope 'visible)
 
 (map!
- :n  "c"  #'evil-change-without-register
+ ;; :n  "c"  #'evil-change-without-register
  :n  "C"  #'evil-change-line-without-register
  :n  "p"  #'evil-paste-after-without-register
  :n  "P"  #'evil-paste-before-without-register
@@ -270,3 +270,13 @@ either be 1, -1 or nil. Nil defaults to 1 (below)"
 (map!
  :n "C-S-k" 'hax/mc-make-cursor-above-move-next-line
  :n "C-S-j" 'hax/mc-make-cursor-below-move-prev-line)
+
+
+(evil-define-text-object evil-inner-dollar (count &optional beg end type)
+  "Select inner parenthesis."
+  :extend-selection nil
+  (evil-select-quote ?$ beg end type count))
+
+(define-key evil-inner-text-objects-map "$" 'evil-inner-dollar)
+
+;; https://stackoverflow.com/questions/18102004/emacs-evil-mode-how-to-create-a-new-text-object-to-select-words-with-any-non-sp

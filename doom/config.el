@@ -276,47 +276,101 @@ more nitpickery about stuff I write in my configuration files."
 
 (fset 'save-buffers-kill-emacs 'hax/save-buffers-kill-emacs)
 
+
+(defmacro defface-derive (name base doc &rest content)
+  `(defface ,name '((t :inherit ,base ,@content)) ,doc))
+
+(defmacro defface-t (name doc &rest content)
+  (list 'defface name (list '\` (list (append (list 't) content))) doc))
+
+(defface-t hl-todo-STYLE "STYLE"
+  :foreground ,(doom-color 'yellow)
+  :underline t)
+
+
+(defface-derive hl-todo-TODO warning "TODO"
+  :weight bold :underline t)
+(defface-derive hl-todo-FIXME error "FIXME"
+  :weight bold :underline t)
+(defface-derive hl-todo-HACK font-lock-constant-face "HACK"
+  :weight bold :underline t)
+(defface-derive hl-todo-REVIEW font-lock-keyword-face "REVIEW"
+  :weight bold :underline t)
+(defface-derive hl-todo-IDEA success "IDEA"
+  :weight bold :underline t)
+(defface-derive hl-todo-NOTE success "NOTE"
+  :weight bold :underline t)
+(defface-derive hl-todo-DEPRECATED font-lock-doc-face "DEPRECATED"
+  :weight bold :underline t)
+(defface-derive hl-todo-REFACTOR font-lock-comment-face "REFACTOR"
+  :underline t)
+(defface-derive hl-todo-BUG error "BUG"
+  :weight bold :underline t)
+(defface-derive hl-todo-MAYBE warning "MAYBE"
+  :weight bold :underline t)
+(defface-derive hl-todo-XXX font-lock-constant-face "XXX"
+  :weight bold :underline t)
+
+(defface-derive hl-todo-IMPLEMENT warning "IMPLEMENT"
+  :underline t :slant italic)
+
+(defface-derive hl-todo-DOC hl-todo-TODO "DOC")
+(defface-derive hl-todo-ERROR error "ERROR")
+(defface-derive hl-todo-WARNING warning "WARNING")
+(defface-derive hl-todo-TEMP hl-todo-IDEA "TEMP")
+(defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
+(defface-derive hl-todo-TEST hl-todo-TODO "TEST")
+
+
 (after! hl-todo
   (setq hl-todo-keyword-faces
-        `(("TODO" warning bold)
-          ("FIXME" error bold)
-          ("HACK" font-lock-constant-face bold)
-          ("REVIEW" font-lock-keyword-face bold)
-          ("IDEA" success bold)
-          ("NOTE" success bold)
-          ("DEPRECATED" font-lock-doc-face bold)
-          ("REFACTOR" font-lock-comment-face)
-          ("STYLE" ,(doom-color 'yellow))
-          ("BUG" error bold)
-          ("MAYBE" warning bold)
-          ("XXX" font-lock-constant-face bold))))
+        '(("TODO" . hl-todo-TODO)
+          ("DOC" . hl-todo-DOC)
+          ("FIXME" . hl-todo-FIXME)
+          ("HACK" . hl-todo-HACK)
+          ("REVIEW" . hl-todo-REVIEW)
+          ("IDEA" . hl-todo-IDEA)
+          ("NOTE" . hl-todo-NOTE)
+          ("DEPRECATED" . hl-todo-DEPRECATED)
+          ("REFACTOR" . hl-todo-REFACTOR)
+          ("STYLE" . hl-todo-STYLE)
+          ("BUG" . hl-todo-BUG)
+          ("MAYBE" . hl-todo-MAYBE)
+          ("XXX" . hl-todo-XXX)
+          ("xxx" . hl-todo-XXX)
+          ("IMPLEMENT" . hl-todo-IMPLEMENT)
+          ("NEXT" . hl-todo-NEXT)
+          ("TEST" . hl-todo-TEST)
+          ("WARNING" . hl-todo-WARNING)
+          ("ERROR" . hl-todo-ERROR)
+          ("TEMP" . hl-todo-TEMP))))
 
-   ;; '(("TODO" . "#dc752f")
-   ;;   ("NEXT" . "#dc752f")
-   ;;   ("THEM" . "#2d9574")
-   ;;   ("PROG" . "#4f97d7")
-   ;;   ("OKAY" . "#4f97d7")
-   ;;   ("REVIEW" . "#4f97d7")
-   ;;   ("IDEA" . "#4f97d7")
-   ;;   ("REFACTOR" . "#4f97d7")
-   ;;   ("DONT" . "#f2241f")
-   ;;   ("DOC" . "#f2241f")
-   ;;   ;; ("FAIL" quote hax/face::nuclear)
-   ;;   ("ERROR" . "#f2241f")
-   ;;   ("TEST" quote hax/face::boxed::orange-bold-boxed)
-   ;;   ("WARNING" quote hax/face::boxed::red-bold-boxed)
-   ;;   ("IMPLEMENT" . "#f2241f")
-   ;;   ("DONE" . "#86dc2f")
-   ;;   ("NOTE" quote hax/face::boxed::green-bold-boxed)
-   ;;   ("QUESTION" quote hax/face::boxed::dim-yellow-bold-boxed)
-   ;;   ("MAYBE" quote hax/face::boxed::dim-yellow-bold-boxed)
-   ;;   ("STYLE" quote hax/face::boxed::dim-yellow-bold-boxed)
-   ;;   ("KLUDGE" quote hax/face::boxed::dim-yellow-bold-boxed)
-   ;;   ("HACK" quote hax/face::boxed::dim-yellow-bold-boxed)
-   ;;   ("TEMP" . "#9932cc")
-   ;;   ("FIXME" quote hax/face::boxed::orange-bold-boxed)
-   ;;   ("XXX" . "#a52a2a")
-   ;;   ("XXXX" quote hax/face::boxed::red-bold-boxed)))
+;; '(("TODO" . "#dc752f")
+;;   ("NEXT" . "#dc752f")
+;;   ("THEM" . "#2d9574")
+;;   ("PROG" . "#4f97d7")
+;;   ("OKAY" . "#4f97d7")
+;;   ("REVIEW" . "#4f97d7")
+;;   ("IDEA" . "#4f97d7")
+;;   ("REFACTOR" . "#4f97d7")
+;;   ("DONT" . "#f2241f")
+;;   ("DOC" . "#f2241f")
+;;   ;; ("FAIL" quote hax/face::nuclear)
+;;   ("ERROR" . "#f2241f")
+;;   ("TEST" quote hax/face::boxed::orange-bold-boxed)
+;;   ("WARNING" quote hax/face::boxed::red-bold-boxed)
+;;   ("IMPLEMENT" . "#f2241f")
+;;   ("DONE" . "#86dc2f")
+;;   ("NOTE" quote hax/face::boxed::green-bold-boxed)
+;;   ("QUESTION" quote hax/face::boxed::dim-yellow-bold-boxed)
+;;   ("MAYBE" quote hax/face::boxed::dim-yellow-bold-boxed)
+;;   ("STYLE" quote hax/face::boxed::dim-yellow-bold-boxed)
+;;   ("KLUDGE" quote hax/face::boxed::dim-yellow-bold-boxed)
+;;   ("HACK" quote hax/face::boxed::dim-yellow-bold-boxed)
+;;   ("TEMP" . "#9932cc")
+;;   ("FIXME" quote hax/face::boxed::orange-bold-boxed)
+;;   ("XXX" . "#a52a2a")
+;;   ("XXXX" quote hax/face::boxed::red-bold-boxed)))
 
 (winum-mode t)
 
