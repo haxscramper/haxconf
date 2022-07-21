@@ -16,16 +16,12 @@ the current one."
   (setq org-expiry-inactive-timestamps t)
   (org-expiry-insert-created)
   (evil-insert-state)
-  (hax/org-update-all-cookies))
+  (hax/org-update-all-cookies)
+  (org-todo "TODO"))
 
 (defun hax/popup-mode-hook ()
   (interactive)
   (message "Evil insertt state triggered"))
-
-;; (add-hook! '+popup-mode-hook 'hax/popup-mode-hook)
-
-;; (after!
-;;   )
 
 (defun font-lock-replace-keywords (mode keyword-list)
   "Use `font-lock-remove-keywords' on each keyword and then add
@@ -96,6 +92,8 @@ mode"
         (org-download-clipboard file)
       (evil-paste-after-without-register 1))))
 
+
+(load! "lang-org-tags.el")
 (defun hax/org-assign-tag ()
   "Add or remove tags in `org-mode'. If new tag is added, store
 it in the persistent list of tags, and update current list of tags"
@@ -221,6 +219,8 @@ selection result. Provide PROMPT for selection input"
   (let (result)
     (hax/org-select-subtree-callback
      "Select: "
+     ;; IMPORTANT in order for this hack to work, lexical binding must be
+     ;; enabled.
      (lambda (x) (setq result x))
      'hax/org-select-subtree
      entries)
@@ -280,6 +280,7 @@ selection result. Provide PROMPT for selection input"
 
 (defun hax/org-unformat-title (title)
   (s-replace-all '(("=" . "") ("*" . "") ("~" . "")) title))
+
 
 (defun hax/org-outline-path-at-marker (marker &optional last-n with-tags cleanup-name-formatting)
   "Get formatted outline entry at position specified by MARKER"
@@ -404,27 +405,47 @@ selection result. Provide PROMPT for selection input"
 
 
 (defun hax/org-before-logical-end ()
+  (interactive)
   (let* ((wrap (org-wrapping-subtree (org-element-at-point)))
          (end (org-element-property :end wrap))
-         (level (org-element-property :level wrap)))
-    (if end
-        (save-excursion
-          (if (re-search-forward
-               (rx-to-string `(and bol ,(s-repeat (+ 1 level) "*")))
-               end t)
-              (progn (backward-char (+ 1 level)) (point))
-            end))
-      (point-max))))
+         (level (org-element-property :level wrap))
+         (result (if end
+                     (save-excursion
+                       (if (re-search-forward
+                            (rx-to-string `(and bol ,(s-repeat (+ 1 level) "*")))
+                            end t)
+                           (progn (backward-char (+ 1 level)) (point))
+                         end))
+                   (point-max)))
+         (with-newline (save-excursion
+                         (goto-char result)
+                         (if (eq result (line-beginning-position))
+                             result
+                           (progn (insert "\n") (point))))))
+    with-newline))
+
+(defun hax/back-until-content ()
+  "Move cursor backwards until a non-empty line is found"
+  (while (eq (line-beginning-position) (point)) (backward-char))
+  (forward-char))
 
 
-
-(defun hax/org-insert-footnote (footnote)
+(cl-defun hax/org-insert-footnote (footnote &optional (goto-created t))
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
+  (let* ((real-start (point)))
+    (goto-char (hax/org-before-logical-end))
+    (insert (format "[fn:%s] " footnote))
+    (evil-insert-state)
+    (save-excursion (insert "\n\n"))
+    (when (not goto-created) (goto-char real-start))))
+
+(defun hax/org-add-trailing-note ()
+  (interactive)
   (goto-char (hax/org-before-logical-end))
-  (insert (format "[fn:%s] " footnote))
-  (evil-insert-state)
-  (save-excursion (insert "\n\n")))
+  (hax/back-until-content)
+  (insert (format "- %s " (hax/org-current-timestamp)))
+  (save-excursion (insert "\n")))
 
 (defun hax/org-gen-footnote-name ()
   (interactive)
@@ -439,11 +460,13 @@ selection result. Provide PROMPT for selection input"
 
 (defun hax/org-insert-footnote-link (footnote)
   "Interactively insert trailing footnote and link with specified
-FOOTNOTE as a name"
+  FOOTNOTE as a name"
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))
   (let* ((at (org-element-at-point))
-         (tree (if (eq 'headline (car at)) at (org-element-property :parent at))))
+         (tree (if (eq 'headline (car at))
+                   at
+                 (org-element-property :parent at))))
     (save-excursion
       (goto-char (org-element-property :end tree))
       (insert (format "\n[fn:%s] " footnote))
@@ -452,6 +475,7 @@ FOOTNOTE as a name"
 
 (defvar hax/org-refile-refiled-from-id nil)
 (defvar hax/org-refile-refiled-from-header nil)
+(defvar hax/org-refile-refiled-from-mark nil)
 (defvar hax/org-refile-refiled-from-file nil)
 
 
@@ -460,14 +484,14 @@ FOOTNOTE as a name"
 
 (defun diary-block-d (year month d-before d-after)
   "Diary block that accepts humane time ranges - year if first,
-then month, they day. Like every other sane person would do -
-like ISO standard does."
+  then month, they day. Like every other sane person would do -
+  like ISO standard does."
   (diary-block month d-before year month d-after year))
 
 (defun diary-block-m (year m-before m-after d-before d-after)
   "Diary block in the same year, but with different month and day.
-Also uses *STANDARD* time part arrangement, instead of the
-default org-mode abomination."
+  Also uses *STANDARD* time part arrangement, instead of the
+  default org-mode abomination."
   (diary-block m-before d-before year m-after d-after year))
 
 (defun hax/org-subtree-timestamp (arg &optional inactive)
@@ -494,7 +518,7 @@ default org-mode abomination."
 
 (defun org-is-completed-state (state)
   "Check if STATE is a complete org-mode todo state (todo entry has
-been completed - DONE, CANCELLED etc.)"
+                                                          been completed - DONE, CANCELLED etc.)"
   (and state
        (let* ((result nil))
          (catch 'done
@@ -508,7 +532,7 @@ been completed - DONE, CANCELLED etc.)"
 
 (defun org-is-incomplete-state (state)
   "Check if STATE is an active org-mode todo state (todo entry has
-not been completed yet - TODO, WIP, REVIEW etc.)"
+                                                          not been completed yet - TODO, WIP, REVIEW etc.)"
   (and state
        (let ((result nil))
          (catch 'done
@@ -576,6 +600,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   respectively."
   (interactive)
   (save-excursion
+    (setq hax/org-refile-refiled-from-mark (point-marker))
     (setq hax/org-refile-refiled-from-file (buffer-file-name))
     (if (org-up-heading-safe)
         ;; If we are in some outline, assign
@@ -587,12 +612,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
                 (org-format-outline-path (org-get-outline-path t))))
       (setq hax/org-refile-refiled-from-id
             (cons 'file (buffer-file-name)))
-      (setq hax/org-refile-refiled-from-header (buffer-name))))
-  ;; (message
-  ;;  "Save source ID and header '%s' '%s'"
-  ;;  hax/org-refile-refiled-from-header
-  ;;  hax/org-refile-refiled-from-id)
-  )
+      (setq hax/org-refile-refiled-from-header (buffer-name)))))
 
 ;; IDEA add more complex log entries too: make this function accept
 ;; org-mode subtree in elisp form (parsed from org-elements)
@@ -611,24 +631,30 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   from using the org ID from `hax/org-refile-refiled-from-id'
   and `hax/org-refile-refiled-from-header' variables."
   (interactive)
-  (when (and hax/org-refile-refiled-from-id
-             hax/org-refile-refiled-from-header)
-    (let* ((time-format (substring (cdr org-time-stamp-formats) 1 -1))
-           (kind (car hax/org-refile-refiled-from-id))
-           (src (cdr hax/org-refile-refiled-from-id))
-           (time-stamp (format-time-string time-format (current-time))))
-      (org-add-log-entry
-       (format
-        "- Refiled on [%s] from [[%s][%s:%s]]"
-        time-stamp
-        (if (eq kind 'id)
-            (format "id:%s" src)
-          (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
-        (f-base hax/org-refile-refiled-from-file)
-        hax/org-refile-refiled-from-header)))
-    (setq hax/org-refile-refiled-from-file nil)
-    (setq hax/org-refile-refiled-from-id nil)
-    (setq hax/org-refile-refiled-from-header nil)))
+  (save-excursion
+    (when (and hax/org-refile-refiled-from-id
+               hax/org-refile-refiled-from-header)
+      (let* ((time-format (substring (cdr org-time-stamp-formats) 1 -1))
+             (kind (car hax/org-refile-refiled-from-id))
+             (src (cdr hax/org-refile-refiled-from-id))
+             (time-stamp (format-time-string time-format (current-time))))
+        (org-add-log-entry
+         (format
+          "- Refiled on [%s] from [[%s][%s:%s]]"
+          time-stamp
+          (if (eq kind 'id)
+              (format "id:%s" src)
+            (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
+          (f-base hax/org-refile-refiled-from-file)
+          hax/org-refile-refiled-from-header)))
+      (when hax/org-refile-refiled-from-mark
+        (goto-marker hax/org-refile-refiled-from-mark)
+        (setq hax/org-refile-refiled-from-mark nil))
+
+      (setq hax/org-refile-refiled-from-file nil)
+      (setq hax/org-refile-refiled-from-id nil)
+      (setq hax/org-refile-refiled-from-header nil))))
+
 
 (add-hook
  'org-after-refile-insert-hook
@@ -653,6 +679,19 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   (lambda (name action) (and (s-starts-with? "*Org Src" name) hax/org-src-use-full))
   :ignore t)
 
+(defun hax/org-current-timestamp ()
+  "Return current time as formatted inactive org timestamp"
+  (s-replace-all '(("<" . "[") (">" . "]"))
+                 (ts-format (concat (cdr org-time-stamp-formats))
+                            (ts-now))))
+
+(defun hax/goto-list-end ()
+  (interactive)
+  (let* ((elt (org-element-at-point))
+         (item (org-element-property :parent elt)))
+    (when (eq (car item) 'item)
+      (goto-char (org-element-property :end item)))))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -662,9 +701,11 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
 
   (require 'evil-surround)
   (message "Org-mode hook executed")
+  (hl-todo-mode 1)
 
   (push '(?$ . ("\\(" . "\\)")) evil-surround-pairs-alist)
 
+  (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
   (flyspell-mode 1)
   (org-indent-mode -1)
@@ -694,7 +735,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
 
   (map!
    :map org-mode-map
-   [M-return] #'org-add-note
+   [M-return] #'hax/org-add-trailing-note
    [C-S-return] #'hax/org-insert-todo-entry
    [C-return] #'+org/insert-item-below)
 
@@ -703,7 +744,8 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
    :map org-mode-map
    :localleader
    :nv "dt" #'hax/org-subtree-timestamp
-   )
+   :desc "sort, todo state order"
+   :nv "soo" #'hax/sort-subtree-contextually)
 
   (map!
    :map evil-org-mode-map
@@ -713,7 +755,7 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
    :ni "C-S-k" nil
 
    :ni "C-;" #'flyspell-correct-wrapper
-   :nvi [M-return] #'org-add-note
+   :nvi [M-return] #'hax/org-add-trailing-note
    :ni [C-S-return] #'hax/org-insert-todo-entry
    :ni [C-return] #'+org/insert-item-below
 
@@ -727,15 +769,24 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
    :nv ",eo" 'org-odt-export-to-odt
    :nv ",eh" 'org-html-export-to-html
    :nv ",in" #'org-add-note
-   :n ",tc" #'org-toggle-checkbox
+   :n ",tc" (cmd! (when (org-in-item-p)
+                    (save-excursion
+                      (goto-char (org-in-item-p))
+                      (org-toggle-checkbox))))
    :n ",ta" #'hax/org-assign-tag
    :ni "M-i M-i" #'hax/org-paste-clipboard
-   :desc "separator and time"
+   :desc "math"
+   :ni "M-i M-m" (lambda (text)
+                   (interactive "sMath: ")
+                   (insert (format "\\(%s\\)" text)))
+   :ni "M-i M-c" (lambda (text)
+                   (interactive "sCode: ")
+                   (insert (format "~%s~" text)))
+   :desc "separator"
    :ni "M-i M-s" (cmd! (insert
-                        (format "%s\n%s "
-                                (s-repeat fill-column "-")
-                                (ts-format (concat (cdr org-time-stamp-formats))
-                                           (ts-now)))))
+                        (format "%s\n" (s-repeat fill-column "-"))))
+   :desc "timestamped element timestamp"
+   :ni "M-i M-e M-t" (cmd! (insert (hax/org-current-timestamp)))
    :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
                          (save-excursion (hax/org-paste-clipboard)))
 
@@ -772,10 +823,11 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
                        (interactive "sLink description: ")
                        (hax/org-insert-clipboard-link description))
 
-   :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link
-                            (hax/org-gen-footnote-name)))
-   :ni "M-i M-f" (cmd! (hax/org-insert-footnote
-                        (hax/org-gen-footnote-name)))
+   :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link (hax/org-gen-footnote-name)))
+   :desc "footnote & standby"
+   :ni "M-i M-F" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name) nil))
+   :desc "footnote & goto"
+   :ni "M-i M-f" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name)))
    :desc "insert {{{macro}}}"
    :ni "M-i M-{" (cmd! (insert "{{{") (save-excursion (insert "}}}")))
    :desc "insert #+begin_src"
@@ -920,6 +972,9 @@ not been completed yet - TODO, WIP, REVIEW etc.)"
   "Insert relative time (in hours) between current time and target
 subtree deadline/sheduled/timestamp if any."
   (save-excursion
+    ;; (with-no-warnings (defvar date) (defvar entry))
+    ;; (message "%s" (calendar-absolute-from-gregorian date))
+
     (if (org-current-level)
         (let* ((time (org-entry-get nil "TIMESTAMP"))
                (dead (org-entry-get nil "DEADLINE"))
@@ -1089,9 +1144,13 @@ contextual information."
   ;; do same logic as original to determine current file-path if not
   ;; passed as arg
   (setq file-path (or file-path (buffer-file-name (buffer-base-buffer))))
-  (message "org-roam: scheduling update of %s" file-path)
-  (if (not (memq file-path org-roam-db-update-queue))
-      (push file-path org-roam-db-update-queue)))
+  (with-temp-buffer
+    (find-file file-path)
+    (if (-contains-p (org-get-tags) "DO_NOT_ORG_ROAM")
+        (message "org-roam: skipping update of %s" file-path)
+      (progn (message "org-roam: scheduling update of %s" file-path)
+             (if (not (memq file-path org-roam-db-update-queue))
+                 (push file-path org-roam-db-update-queue))))))
 
 ;; this function will be called when emacs is idle for a few seconds
 (defun org-roam-db-idle-update-files ()
@@ -1184,6 +1243,10 @@ contextual information."
     '(("anon" "anonymous")
       ("inf" "infinite")
       ("vm" "VM")
+      ("Flugel" "Fl\\Uuml{}gel")
+      ("ofthe" "of the")
+      ("onthe" "on the")
+      ("teh" "the")
       ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
@@ -1331,17 +1394,24 @@ contextual information."
    ;; context of what you are working with.
    org-roam-ui-follow nil
    ;; Agenda is a main todo file and inbox
-   org-agenda-files (list hax/main.org hax/inbox.org hax/notes.org hax/projects.org)
-   org-refile-targets `(;; (nil :maxlevel . 3)
-                        (,hax/fic.org :maxlevel . 9)
+   org-agenda-files (list hax/main.org
+                          hax/inbox.org
+                          hax/notes.org
+                          hax/projects.org)
+   org-refile-targets `((,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
+                        (,hax/inbox.org :maxlevel . 1)
                         (,hax/inbox.org :maxlevel . 2))
-
+   ;; Yes, you can in fact consider the entry completed with some of the
+   ;; `TODO' left over, this happens, in real life not all tasks must be
+   ;; closed with 100% accuracy.
+   org-enforce-todo-dependencies nil
    ;; Add `COMPLETED' timestamp property
    org-log-done 'time
    ;; Log when schedule changed
    org-log-reschedule 'time
+   org-tags-column -1
    ;; Notes should go from top to bottom
    org-log-states-order-reversed nil
    ;; Log when deadline changed
@@ -1646,6 +1716,21 @@ subtree can be found."
     (buffer-substring-no-properties (point) (line-end-position))
     'face 'font-lock-warning-face)))
 
+
+(defun hax/dbg/looking-around ()
+  (interactive)
+  (message
+   "looking at: %s:%s..%s = [%s%s]"
+   (line-number-at-pos)
+   (line-beginning-position)
+   (line-end-position)
+   (propertize
+    (buffer-substring-no-properties (line-beginning-position) (point)))
+   'face 'font-lock-variable-name-face)
+  (propertize
+   (buffer-substring-no-properties (point) (line-end-position))
+   'face 'font-lock-warning-face))
+
 (defun hax/dbg/point (p)
   (save-excursion
     (goto-char p)
@@ -1897,3 +1982,98 @@ displays relative (from the current time) hour and minute range."
      (/ tdiff 3600)
      (hax/closest-unicode-fraction (hax/relative-hour-fraction tdiff))
      (ts-format "%m-%d %a" ts))))
+
+(defun hax/org-company-tags (command &optional arg &rest ignored)
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'hax/org-company-tags))
+    (prefix (progn
+              (when (and (looking-back "#\\w*")
+                         (derived-mode-p 'org-mode))
+                (company-grab-symbol))))
+    (candidates (--filter (and (stringp it) (cl-search arg it))
+                          (--map (car it) org-tag-alist)))
+    (meta (format "This value is named %s" arg))))
+
+(add-to-list 'company-backends 'hax/org-company-tags)
+
+(defun tmp()
+  (interactive)
+  (setq
+   company-backends
+   '(company-capf
+     (:separate hax/org-company-tags company-dabbrev company-yasnippet company-ispell)
+     (:separate hax/org-company-tags company-ispell company-dabbrev company-yasnippet))))
+
+
+(defun hax/after-inline-uppercase ()
+  (interactive)
+  (let* ((word (current-word)))
+    (s-uppercase-p (substring word 0 1))))
+
+(defun hax/flyspell-org-mode-verify ()
+  "Customized wrapper around `org-mode-flyspell-verify' that also
+skips capitalized and upperacsed words (names and abbreviations)"
+  (when (org-mode-flyspell-verify)
+    (not (hax/after-inline-uppercase))))
+
+(defun org-count-subheadings ()
+  "Count the number of direct and recursive subheadings below the current heading. Return cons with `(CHILDREN . DESCENDANTS)'"
+  (interactive)
+  (let ((descendants 0)
+        (children 0)
+        (heading-level (1+ (org-outline-level)))
+        (end (save-excursion
+               (ignore-errors
+                 (outline-end-of-subtree)
+                 (point)))))
+    (when end
+      (save-excursion
+        (while (and (outline-next-heading)
+                    (< (point) end))
+          (progn
+            (setf descendants (1+ descendants))
+            (when (= heading-level (org-outline-level))
+              (setf children (1+ children)))))))
+    (cons children descendants)))
+
+(defun hax/org-has-subtree () (< 0 (car (org-count-subheadings))))
+
+(defun hax/compare-subtrees (t1 t2)
+  (let* ((todo1 (car t1))
+         (todo2 (car t2))
+         (head1 (cdr t1))
+         (head2 (cdr t2))
+         (names (hax/org-todo-only-names))
+         (res (if (and todo1 todo2) (> (-elem-index todo1 names)
+                                       (-elem-index todo2 names))
+                (if todo1 t
+                  (if todo2 t
+                    (string< head1 head2))))))
+    ;; (message ">> %s ? %s = %s" t1 t2 res)
+    res))
+
+(defun hax/getkey-title ()
+  (cons (org-get-todo-state) (org-get-heading)))
+
+(defun hax/sort-subtree-contextually ()
+  (interactive)
+  (if (hax/org-has-subtree)
+      (progn
+        (org-sort-entries nil ?F #'hax/getkey-title #'hax/compare-subtrees)
+        (save-excursion
+          (org-back-to-heading)
+          (org-cycle-internal-local)
+          (org-cycle-internal-local)))
+    (save-excursion
+      (outline-up-heading 1)
+      (org-sort-entries nil ?f #'hax/getkey-title #'hax/compare-subtrees)
+      (org-back-to-heading)
+      (org-cycle-internal-local)
+      (org-cycle-internal-local))))
+
+(put 'org-mode 'flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
+
+(defun hax/org-todo-only-names ()
+  (--map (substring it 0 (s-index-of "(" it)) (car org-todo-keywords)))
+
