@@ -250,8 +250,7 @@
   (when nil
     (copy-text
      (hax/randomize-restyle
-      "or the foregoing reasons the Plaintiffs’ Motion to Dismiss the Amended Counterclaims
-of Defendant Ronald F. Cornelison is GRANTED"
+      "What is wrong with using nodes as IR? 'Works for me' (TM) as they say"
       (lambda (str)
         (format
          (case (random 10)
@@ -338,3 +337,4 @@ of Defendant Ronald F. Cornelison is GRANTED"
  :desc "insert-" "ii-" #'self-insert-no-abbrev
  :desc "insert=" "ii=" #'self-insert-no-abbrev
  )
+

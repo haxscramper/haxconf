@@ -212,7 +212,6 @@ selection result. Provide PROMPT for selection input"
      :history 'counsel-org-goto-history
      :action callback)))
 
-
 (cl-defun hax/org-select-subtree (&optional (entries (org-collect-known-entries)))
   "Interactively select subtree and return cons with `(description . marker)'"
   (interactive)
@@ -404,6 +403,7 @@ selection result. Provide PROMPT for selection input"
 
 
 
+
 (defun hax/org-before-logical-end ()
   (interactive)
   (let* ((wrap (org-wrapping-subtree (org-element-at-point)))
@@ -429,6 +429,12 @@ selection result. Provide PROMPT for selection input"
   (while (eq (line-beginning-position) (point)) (backward-char))
   (forward-char))
 
+(defun hax/back-to-first-footnote ()
+  (interactive)
+  (let ((wrap (org-wrapping-subtree (org-element-at-point))))
+    (while (search-backward-regexp
+            (rx bol "[fn:")
+            (org-element-property :begin wrap) t))))
 
 (cl-defun hax/org-insert-footnote (footnote &optional (goto-created t))
   (interactive "sfootnote name: ")
@@ -443,6 +449,8 @@ selection result. Provide PROMPT for selection input"
 (defun hax/org-add-trailing-note ()
   (interactive)
   (goto-char (hax/org-before-logical-end))
+  (backward-char)
+  (hax/back-to-first-footnote)
   (hax/back-until-content)
   (insert (format "- %s " (hax/org-current-timestamp)))
   (save-excursion (insert "\n")))
@@ -692,6 +700,12 @@ selection result. Provide PROMPT for selection input"
     (when (eq (car item) 'item)
       (goto-char (org-element-property :end item)))))
 
+(defun pop-selection ()
+  (when (use-region-p)
+    (let ((res (buffer-substring-no-properties (region-beginning) (region-end))))
+      (delete-region (region-beginning) (region-end))
+      res)))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -779,9 +793,19 @@ selection result. Provide PROMPT for selection input"
    :ni "M-i M-m" (lambda (text)
                    (interactive "sMath: ")
                    (insert (format "\\(%s\\)" text)))
-   :ni "M-i M-c" (lambda (text)
-                   (interactive "sCode: ")
-                   (insert (format "~%s~" text)))
+   :desc "math"
+   :v "M-i M-m" (cmd! (insert (format "\\(%s\\)" (pop-selection))))
+   :desc "insert ~code~"
+   :ni "M-i M-`" (cmd! (insert (format "~%s~" (read-string "Code: "))))
+   :desc "insert src_code{}"
+   :ni "M-i M-c M-s" (cmd!
+                      (insert
+                       (format
+                        "src_%s{%s}"
+                        (ivy-read "Language: "
+                                  '("asm" "cpp" "sh")
+                                  :history 'hax/insert-stc-code-history)
+                        (read-string "Code: "))))
    :desc "separator"
    :ni "M-i M-s" (cmd! (insert
                         (format "%s\n" (s-repeat fill-column "-"))))
@@ -824,8 +848,11 @@ selection result. Provide PROMPT for selection input"
                        (hax/org-insert-clipboard-link description))
 
    :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link (hax/org-gen-footnote-name)))
-   :desc "footnote & standby"
-   :ni "M-i M-F" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name) nil))
+   :desc "footnote & prompt"
+   :ni "M-i M-F" (cmd! (save-excursion
+                         (hax/org-insert-footnote (hax/org-gen-footnote-name))
+                         (insert (read-string "Footnote: "))
+                         (org-fill-paragraph)))
    :desc "footnote & goto"
    :ni "M-i M-f" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name)))
    :desc "insert {{{macro}}}"
@@ -1091,7 +1118,7 @@ contextual information."
          ;; min
          (string-to-number (match-string 5))
          ;; hour
-         (if (string= (match-string 6) "PM") (+ hour 12) hour)
+         (if (string= (match-string 6) "AM") (+ hour 12) hour)
          ;; day
          (string-to-number (match-string 2))
          ;; mon
@@ -1244,8 +1271,12 @@ contextual information."
       ("inf" "infinite")
       ("vm" "VM")
       ("Flugel" "Fl\\Uuml{}gel")
+      ;; Yes, I can't type for shit
       ("ofthe" "of the")
       ("onthe" "on the")
+      ("forthe" "for the")
+      ("athe" "at the")
+      ("inthe" "in the")
       ("teh" "the")
       ("im" "I'm")
       ("ambig" "ambiguous")

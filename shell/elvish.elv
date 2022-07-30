@@ -276,6 +276,32 @@ edit:add-var nr~ {|file|
   e:entr -rc sh -c "time nim c -r -o:"$result".bin --nimcache:/tmp/nimcache/"$cache" "$file
 }
 
+fn cpp-rebuild {|file|
+  var cpp-content = '
+#include <iostream>
+
+int main() {
+  std::cout << "1\\n";
+  return 0;
+}'
+  if (not (prompt-create-file $file $cpp-content)) {
+    return
+  }
+
+  var opt-file = (str:trim-suffix $file ".cpp")".cfg"
+  var res-file = (str:trim-suffix $file ".cpp")".bin"
+
+  if ?(test -e $opt-file) {
+    set opt-file = "@"$opt-file
+  } else {
+    set opt-file = ""
+  }
+
+  emacs-open (realpath $file)
+  var opts = "-ferror-limit=2"
+  fd | e:entr -rc sh -c "clang++ '"$file"' "$opts" -o '"$res-file"' '"$opt-file"' && ./"$res-file
+}
+
 fn dot-rebuild {|file|
   var dot-content = '
 digraph G {
@@ -458,7 +484,7 @@ fn e {
         [git pull upstream devel]
         [git checkout '$tmp']
         "Show merge conflicts, if any, after executing rebase"
-        ['try { git rebase devel } except { rg "^<<<<<<< "; fail gmerge } ']
+        ['try { git rebase devel } catch { rg "^<<<<<<< "; fail gmerge } ']
       ]
     ]
     [

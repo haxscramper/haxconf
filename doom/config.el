@@ -288,6 +288,8 @@ more nitpickery about stuff I write in my configuration files."
   :underline t)
 
 
+(defface-derive hl-todo-IMPORTANT warning "IMPORTANT"
+  :weight bold :underline t)
 (defface-derive hl-todo-TODO warning "TODO"
   :weight bold :underline t)
 (defface-derive hl-todo-FIXME error "FIXME"
@@ -317,6 +319,7 @@ more nitpickery about stuff I write in my configuration files."
 (defface-derive hl-todo-DOC hl-todo-TODO "DOC")
 (defface-derive hl-todo-ERROR error "ERROR")
 (defface-derive hl-todo-WARNING warning "WARNING")
+(defface-derive hl-todo-QUESTION warning "WARNING")
 (defface-derive hl-todo-TEMP hl-todo-IDEA "TEMP")
 (defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
 (defface-derive hl-todo-TEST hl-todo-TODO "TEST")
@@ -337,8 +340,11 @@ more nitpickery about stuff I write in my configuration files."
           ("BUG" . hl-todo-BUG)
           ("MAYBE" . hl-todo-MAYBE)
           ("XXX" . hl-todo-XXX)
+          ("XXXX" . hl-todo-XXX)
           ("xxx" . hl-todo-XXX)
           ("IMPLEMENT" . hl-todo-IMPLEMENT)
+          ("IMPORTANT" . hl-todo-IMPORTANT)
+          ("QUESTION" . hl-todo-QUESTION)
           ("NEXT" . hl-todo-NEXT)
           ("TEST" . hl-todo-TEST)
           ("WARNING" . hl-todo-WARNING)

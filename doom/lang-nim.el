@@ -58,7 +58,7 @@
 (add-hook! 'nim-mode-hook 'hax/nim-mode-hook)
 
 
-(defun org-babel-eval-maybe-error (command query &optional notify)
+(defun org-babel-eval-maybe-error (command query &optional notify join-outputs)
   "Run COMMAND on QUERY.
 Writes QUERY into a temp-buffer that is processed with
 `org-babel--shell-command-on-region'.  If COMMAND succeeds then return
@@ -76,7 +76,11 @@ its results, otherwise display STDERR with
           (if (not notify)
               ;; Optionally notify user on the code failure, but do not
               ;; enforce it.
-              (with-current-buffer error-buffer (buffer-string))
+              (if join-outputs
+                  (concat (buffer-string)
+                          "\n"
+                          (with-current-buffer error-buffer (buffer-string)))
+                (with-current-buffer error-buffer (buffer-string)))
             (progn
               (with-current-buffer error-buffer
                 (org-babel-eval-error-notify exit-code (buffer-string)))
@@ -132,4 +136,6 @@ and return both compiler output and regular text"
              (org-babel-process-file-name tmp-bin-file)
              (org-babel-process-file-name tmp-src-file)
              libs)
-     "")))
+     ""
+     nil
+     t)))

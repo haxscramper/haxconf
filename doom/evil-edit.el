@@ -277,6 +277,12 @@ either be 1, -1 or nil. Nil defaults to 1 (below)"
   :extend-selection nil
   (evil-select-quote ?$ beg end type count))
 
+(evil-define-text-object evil-inner-tilda (count &optional beg end type)
+  "Select inner tilda."
+  :extend-selection nil
+  (evil-select-quote ?~ beg end type count))
+
 (define-key evil-inner-text-objects-map "$" 'evil-inner-dollar)
+(define-key evil-inner-text-objects-map "~" 'evil-inner-tilda)
 
 ;; https://stackoverflow.com/questions/18102004/emacs-evil-mode-how-to-create-a-new-text-object-to-select-words-with-any-non-sp
