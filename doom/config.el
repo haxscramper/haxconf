@@ -33,12 +33,19 @@
   (set-fontset-font "fontset-default" 'mathematical "Everson Mono"))
 
 (setq +file-templates-dir (expand-file-name "templates" (dir!)))
-(set-file-template! "/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
-(set-file-template! "\\.el$" :trigger "__" :mode 'emacs-lisp-mode)
-(set-file-template! "\\.sh$" :trigger "__" :mode 'sh-mode)
-(set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
-(set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
 
+(defun hax/init-file-templates()
+  (interactive)
+  (setq +file-templates-alist '())
+  (set-file-template! "/readme\\.org$" :trigger "__readme.org" :mode 'org-mode)
+  (set-file-template! "\\.el$" :trigger "__" :mode 'emacs-lisp-mode)
+  (set-file-template! "\\.sh$" :trigger "__" :mode 'sh-mode)
+  (set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
+  (set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
+  (set-file-template! "CMakeLists\\.txt" :trigger "__" :mode 'cmake-mode)
+  (when (boundp 'yas-minor-mode) (when yas-minor-mode (yas-reload-all))))
+
+(hax/init-file-templates)
 
 (defun tree-repr (item)
   "Return tree representation of the item's structure"

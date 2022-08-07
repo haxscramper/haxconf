@@ -277,8 +277,7 @@ edit:add-var nr~ {|file|
 }
 
 fn cpp-rebuild {|file|
-  var cpp-content = '
-#include <iostream>
+  var cpp-content = '#include <iostream>
 
 int main() {
   std::cout << "1\\n";
@@ -298,7 +297,7 @@ int main() {
   }
 
   emacs-open (realpath $file)
-  var opts = "-ferror-limit=2"
+  var opts = "-ferror-limit=2 -std=c++20"
   fd | e:entr -rc sh -c "clang++ '"$file"' "$opts" -o '"$res-file"' '"$opt-file"' && ./"$res-file
 }
 

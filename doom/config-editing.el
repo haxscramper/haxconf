@@ -152,6 +152,7 @@ the right."
 (create-align-repeat-x "left-square-brace" "\\[")
 (create-align-repeat-x "right-square-brace" "\\]" t)
 (create-align-repeat-x "backslash" "\\\\")
+(create-align-repeat-x "quote" "\"")
 (create-align-repeat-x "hash" "#+")
 
 
@@ -167,6 +168,7 @@ the right."
  :v ",a)" #'align-repeat-left-paren
  :v ",a=" #'align-repeat-equal
  :v ",a#" #'align-repeat-hash
+ :v ",a'" #'align-repeat-quote
  )
 
 (defun set-local-abbrevs (abbrevs)

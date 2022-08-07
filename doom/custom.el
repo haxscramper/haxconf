@@ -8,7 +8,9 @@
  '(safe-local-variable-values '((eval load! "notes-conf.el") (eval load "notes-conf.el")))
  '(warning-suppress-log-types '((org-babel-after-execute-hook)))
  '(warning-suppress-types
-   '((org-roam)
+   '((revert-buffer-internal-hook)
+     (revert-buffer-internal-hook)
+     (org-roam)
      (org-element-cache)
      (org-babel-after-execute-hook))))
 (custom-set-faces

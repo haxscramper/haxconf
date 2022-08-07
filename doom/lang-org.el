@@ -1273,6 +1273,7 @@ contextual information."
       ("Flugel" "Fl\\Uuml{}gel")
       ;; Yes, I can't type for shit
       ("ofthe" "of the")
+      ("tothe" "to the")
       ("onthe" "on the")
       ("forthe" "for the")
       ("athe" "at the")

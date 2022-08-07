@@ -36,6 +36,8 @@
        cc qt sh
        arduino
        lua
+       rust
+       zig
        emacs-lisp
        ;; Configuration, serialization
        json yaml xml

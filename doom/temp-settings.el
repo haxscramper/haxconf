@@ -338,3 +338,11 @@
  :desc "insert=" "ii=" #'self-insert-no-abbrev
  )
 
+
+(defun hax/+file-templates-check-h ()
+  "Check if the current buffer is a candidate for file template expansion. It
+must be non-read-only, empty, and there must be a rule in
+`+file-templates-alist' that applies to it."
+  (interactive)
+  (when-let (rule (cl-find-if #'+file-template-p +file-templates-alist))
+    (apply #'+file-templates--expand rule)))
