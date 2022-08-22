@@ -6,6 +6,7 @@
   (setq evil-respect-visual-line-mode t)
   t)
 
+(defconst hax/+roam nil)
 
 (doom! :input
        :completion company (ivy +prescient -childframe +fuzzy +icons)
@@ -38,11 +39,13 @@
        lua
        rust
        zig
+       sql
        emacs-lisp
        ;; Configuration, serialization
        json yaml xml
        ;; Markup languages
-       latex markdown rst (org +dragndrop +roam2)
+       latex markdown rst (org +dragndrop ;; +roam2
+                               )
        python
 
        :config (default +bindings +smartparens))

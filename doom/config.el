@@ -42,6 +42,7 @@
   (set-file-template! "\\.sh$" :trigger "__" :mode 'sh-mode)
   (set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
   (set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
+  (set-file-template! "\\.py$" :trigger "__" :mode 'python-mode)
   (set-file-template! "CMakeLists\\.txt" :trigger "__" :mode 'cmake-mode)
   (when (boundp 'yas-minor-mode) (when yas-minor-mode (yas-reload-all))))
 
@@ -271,6 +272,9 @@ more nitpickery about stuff I write in my configuration files."
     "-sr" ;; Redirect operators will be followed by a space.
     ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
 
+(set-formatter! 'sqlfmt
+  '("sqlformat" "-" "--keywords" "upper" "--identifiers" "lower")
+  )
 
 (setq revert-without-query '(".*"))
 (global-auto-revert-mode 1)

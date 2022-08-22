@@ -1164,41 +1164,66 @@ contextual information."
 
 (require 'f)
 
-(defvar org-roam-db-update-queue
-  (list) "List of the files for delayed org-roam update")
+(when hax/+roam
+  (defvar org-roam-db-update-queue
+    (list) "List of the files for delayed org-roam update")
 
-(defun org-roam-db-schedule-update-file (&optional file-path)
-  ;; do same logic as original to determine current file-path if not
-  ;; passed as arg
-  (setq file-path (or file-path (buffer-file-name (buffer-base-buffer))))
-  (with-temp-buffer
-    (find-file file-path)
-    (if (-contains-p (org-get-tags) "DO_NOT_ORG_ROAM")
-        (message "org-roam: skipping update of %s" file-path)
-      (progn (message "org-roam: scheduling update of %s" file-path)
-             (if (not (memq file-path org-roam-db-update-queue))
-                 (push file-path org-roam-db-update-queue))))))
+  (defun org-roam-db-schedule-update-file (&optional file-path)
+    ;; do same logic as original to determine current file-path if not
+    ;; passed as arg
+    (setq file-path (or file-path (buffer-file-name (buffer-base-buffer))))
+    (with-temp-buffer
+      (find-file file-path)
+      (if (-contains-p (org-get-tags) "DO_NOT_ORG_ROAM")
+          (message "org-roam: skipping update of %s" file-path)
+        (progn (message "org-roam: scheduling update of %s" file-path)
+               (if (not (memq file-path org-roam-db-update-queue))
+                   (push file-path org-roam-db-update-queue))))))
 
-;; this function will be called when emacs is idle for a few seconds
-(defun org-roam-db-idle-update-files ()
-  ;; go through queued filenames one-by-one and update db
-  ;; if we're not idle anymore, stop. will get rest of queue next idle.
-  (while (and org-roam-db-update-queue (current-idle-time))
-    (let ((file (pop org-roam-db-update-queue)))
-      (message "org-roam: running update of %s" file)
-      ;; apply takes function var and list
-      (org-roam-db-update-file file))))
+  ;; this function will be called when emacs is idle for a few seconds
+  (defun org-roam-db-idle-update-files ()
+    ;; go through queued filenames one-by-one and update db
+    ;; if we're not idle anymore, stop. will get rest of queue next idle.
+    (while (and org-roam-db-update-queue (current-idle-time))
+      (let ((file (pop org-roam-db-update-queue)))
+        (message "org-roam: running update of %s" file)
+        ;; apply takes function var and list
+        (org-roam-db-update-file file))))
 
-;; we'll only start updating db if we've been idle for this many seconds
-(run-with-idle-timer 5 t #'org-roam-db-idle-update-files)
+  ;; we'll only start updating db if we've been idle for this many seconds
+  (run-with-idle-timer 5 t #'org-roam-db-idle-update-files)
 
-(defun hax/org-after-save ()
-  (when (derived-mode-p 'org-mode)
-    (org-roam-db-schedule-update-file (buffer-file-name))))
+  (defun hax/org-after-save ()
+    (when (derived-mode-p 'org-mode)
+      (org-roam-db-schedule-update-file (buffer-file-name))))
 
-(add-hook! 'after-save-hook #'hax/org-after-save)
+  (add-hook! 'after-save-hook #'hax/org-after-save))
 
-
+(when hax/+roam
+  (setq
+   ;; Directory to store org-roam topic files. Because I can both write
+   ;; standalone conceptual notes and reference them in daily captures I see
+   ;; no reason to separate those two.
+   org-roam-directory hax/indexed.d
+   ;; I implemented custom update on save + idle refresh, so no need to use
+   ;; built-in implementation
+   org-roam-db-update-on-save nil
+   ;; Main index file for org-roamm
+   org-roam-index-file (f-join org-roam-directory "roam-index.org")
+   ;; Allow exclusion of certain singular files that are tagged with
+   ;; `DO_NOT_ORG_ROAM' filetag.
+   org-roam-db-node-include-function
+   (lambda () (if (member "DO_NOT_ORG_ROAM" (org-get-tags)) nil t))
+   ;; Remove all formatting from titles - bold, italic, verbatim etc. are not
+   ;; shown in the roam UI anyway, and I mostly view the graph/database using
+   ;; it.
+   org-roam-node-formatter (lambda (node) (hax/org-unformat-title
+                                           (org-roam-node-title node))))
+  ;; Because one of the main roam configuration variables it not good
+  ;; enough of an authority to warrant implicit directory creation *if it
+  ;; is missing*.
+  (if (not (f-exists-p org-roam-directory))
+      (f-mkdir-full-path org-roam-directory)))
 
 (setq
  org-highlight-latex-and-related '(latex script entities)
@@ -1210,24 +1235,6 @@ contextual information."
  org-id-locations-file (f-join org-directory ".org-id-locations")
  ;; Directory for todo management and other indexed entries
  hax/indexed.d (f-join org-directory "indexed")
- ;; Directory to store org-roam topic files. Because I can both write
- ;; standalone conceptual notes and reference them in daily captures I see
- ;; no reason to separate those two.
- org-roam-directory hax/indexed.d
- ;; I implemented custom update on save + idle refresh, so no need to use
- ;; built-in implementation
- org-roam-db-update-on-save nil
- ;; Main index file for org-roamm
- org-roam-index-file (f-join org-roam-directory "roam-index.org")
- ;; Allow exclusion of certain singular files that are tagged with
- ;; `DO_NOT_ORG_ROAM' filetag.
- org-roam-db-node-include-function
- (lambda () (if (member "DO_NOT_ORG_ROAM" (org-get-tags)) nil t))
- ;; Remove all formatting from titles - bold, italic, verbatim etc. are not
- ;; shown in the roam UI anyway, and I mostly view the graph/database using
- ;; it.
- org-roam-node-formatter (lambda (node) (hax/org-unformat-title
-                                         (org-roam-node-title node)))
  ;; GTD inbox
  hax/inbox.org (f-join hax/indexed.d "inbox.org")
  ;; Main GTD organizer
@@ -1258,11 +1265,6 @@ contextual information."
    'org-latex-and-related nil
    :foreground "dim gray")
 
-  ;; Because one of the main roam configuration variables it not good
-  ;; enough of an authority to warrant implicit directory creation *if it
-  ;; is missing*.
-  (if (not (f-exists-p org-roam-directory))
-      (f-mkdir-full-path org-roam-directory))
   (org-link-set-parameters "coords" :follow #'org-coords-open)
   (require 'ts)
   (require 'org-expiry)
@@ -1417,14 +1419,17 @@ contextual information."
       :empty-lines-after 1)
      ))
 
+  (when hax/+roam
+    (setq
+     ;; Don not open org-roam buffer automatically
+     +org-roam-open-buffer-on-find-file nil
+     ;; Don't implicitly enable the super-distracting,
+     ;; almost-never-needed-unless-explicitly requested automatic UI follow
+     ;; mode that zooms to closely no nodes that you instantly loose all the
+     ;; context of what you are working with.
+     org-roam-ui-follow nil))
+
   (setq
-   ;; Don not open org-roam buffer automatically
-   +org-roam-open-buffer-on-find-file nil
-   ;; Don't implicitly enable the super-distracting,
-   ;; almost-never-needed-unless-explicitly requested automatic UI follow
-   ;; mode that zooms to closely no nodes that you instantly loose all the
-   ;; context of what you are working with.
-   org-roam-ui-follow nil
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org
                           hax/inbox.org
@@ -1923,7 +1928,7 @@ itself once again')"
   (hax/org-mode-hook)
   (find-file hax/inbox.org)
   (find-file hax/main.org)
-  (org-roam-db)
+  (when hax/+roam (org-roam-db))
   (find-file hax/notes.org))
 
 

@@ -104,5 +104,7 @@
 ;; https://github.com/alphapapa/org-sidebar
 (package! org-sidebar)
 
-(unpin! org-roam)
-(package! org-roam-ui)
+(when hax/+roam
+  (unpin! org-roam)
+  (package! org-roam-ui))
+(package! howdoyou)
