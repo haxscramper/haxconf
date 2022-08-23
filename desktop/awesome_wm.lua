@@ -86,7 +86,6 @@ modkey = "Mod4"
 
 -- Table of layouts to cover with awful.layout.inc, order matters.
 awful.layout.layouts = {
-    awful.layout.suit.floating,
     awful.layout.suit.tile,
     awful.layout.suit.tile.left,
     awful.layout.suit.tile.bottom,
@@ -145,7 +144,7 @@ mykeyboardlayout = awful.widget.keyboardlayout()
 
 -- {{{ Wibar
 -- Create a textclock widget
-mytextclock = wibox.widget.textclock(" %Y-%m-%d %H:%M (%b %a) ")
+mytextclock = wibox.widget.textclock(" %Y-%m-%d %H:%M:%S (%b %a) ", 1)
 
 -- Create a wibox for each screen and add it
 local taglist_buttons =
@@ -433,55 +432,6 @@ globalkeys =
         {description = "open a terminal", group = "launcher"}
     ),
     awful.key({modkey, "Control"}, "r", awesome.restart, {description = "reload awesome", group = "awesome"}),
-    awful.key({modkey, "Shift"}, "q", awesome.quit, {description = "quit awesome", group = "awesome"}),
-    awful.key(
-        {modkey},
-        "l",
-        function()
-            awful.tag.incmwfact(0.05)
-        end,
-        {description = "increase master width factor", group = "layout"}
-    ),
-    awful.key(
-        {modkey},
-        "h",
-        function()
-            awful.tag.incmwfact(-0.05)
-        end,
-        {description = "decrease master width factor", group = "layout"}
-    ),
-    awful.key(
-        {modkey, "Shift"},
-        "h",
-        function()
-            awful.tag.incnmaster(1, nil, true)
-        end,
-        {description = "increase the number of master clients", group = "layout"}
-    ),
-    awful.key(
-        {modkey, "Shift"},
-        "l",
-        function()
-            awful.tag.incnmaster(-1, nil, true)
-        end,
-        {description = "decrease the number of master clients", group = "layout"}
-    ),
-    awful.key(
-        {modkey, "Control"},
-        "h",
-        function()
-            awful.tag.incncol(1, nil, true)
-        end,
-        {description = "increase the number of columns", group = "layout"}
-    ),
-    awful.key(
-        {modkey, "Control"},
-        "l",
-        function()
-            awful.tag.incncol(-1, nil, true)
-        end,
-        {description = "decrease the number of columns", group = "layout"}
-    ),
     awful.key(
         {modkey},
         "space",
@@ -561,12 +511,6 @@ clientkeys =
             c:kill()
         end,
         {description = "close", group = "client"}
-    ),
-    awful.key(
-        {modkey, "Control"},
-        "space",
-        awful.client.floating.toggle,
-        {description = "toggle floating", group = "client"}
     ),
     awful.key({modkey}, "l", awful.client.floating.toggle, {description = "toggle floating", group = "client"}),
     awful.key(
@@ -754,6 +698,8 @@ awful.rules.rules = {
             },
             class = {
                 "Arandr",
+                "telegram-desktop",
+                "TelegramDesktop",
                 "Blueman-manager",
                 "Gpick",
                 "Kruler",
@@ -783,11 +729,12 @@ awful.rules.rules = {
             type = {"normal", "dialog"}
         },
         properties = {titlebars_enabled = true}
-    }
-
+    },
     -- Set Firefox to always map on the tag named "2" on screen 1.
-    -- { rule = { class = "Firefox" },
-    --   properties = { screen = 1, tag = "2" } },
+    {
+        rule_any = {class = {"Firefox", "emacs"}},
+        properties = {floating = false}
+    }
 }
 -- }}}
 

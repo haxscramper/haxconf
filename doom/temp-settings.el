@@ -346,3 +346,11 @@ must be non-read-only, empty, and there must be a rule in
   (interactive)
   (when-let (rule (cl-find-if #'+file-template-p +file-templates-alist))
     (apply #'+file-templates--expand rule)))
+
+(defun hax/transpared-frame ()
+  (interactive)
+  (set-frame-parameter (selected-frame) 'alpha '(85 85)))
+
+(defun hax/opaque-frame ()
+  (interactive)
+  (set-frame-parameter (selected-frame) 'alpha '(100 100)))
