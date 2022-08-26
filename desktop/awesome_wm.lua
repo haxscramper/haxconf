@@ -4,6 +4,10 @@ pcall(require, "luarocks.loader")
 
 -- Standard awesome library
 local gears = require("gears")
+local cpu_widget = require("awesome-wm-widgets.cpu-widget.cpu-widget")
+local net_speed_widget = require("awesome-wm-widgets.net-speed-widget.net-speed")
+local mpdarc_widget = require("awesome-wm-widgets.mpdarc-widget.mpdarc")
+local volume_widget = require("awesome-wm-widgets.volume-widget.volume")
 local awful = require("awful")
 require("awful.autofocus")
 -- Widget and layout library
@@ -144,7 +148,7 @@ mykeyboardlayout = awful.widget.keyboardlayout()
 
 -- {{{ Wibar
 -- Create a textclock widget
-mytextclock = wibox.widget.textclock(" %Y-%m-%d %H:%M:%S (%b %a) ", 1)
+mytextclock = wibox.widget.textclock(" %Y-%m-%d %H:%M:%S (%I:%M %p %b %a) ", 1)
 
 -- Create a wibox for each screen and add it
 local taglist_buttons =
@@ -306,6 +310,42 @@ awful.screen.connect_for_each_screen(
         -- Create the wibox
         s.mywibox = awful.wibar({position = "top", screen = s})
 
+        local rightbox = nil
+        if s.geometry.width == 2560 or screen:count() == 1 then
+            rightbox = {
+                -- Right widgets
+                layout = wibox.layout.fixed.horizontal,
+                net_speed_widget(),
+                cpu_widget(
+                    {
+                        width = 70,
+                        step_width = 2,
+                        step_spacing = 0,
+                        color = "#434c5e"
+                    }
+                ),
+                mykeyboardlayout,
+                wibox.widget.systray(),
+                mytextclock,
+                s.mylayoutbox,
+                volume_widget {
+                    widget_type = "arc"
+                }
+            }
+        else
+            rightbox = {
+                -- Right widgets
+                layout = wibox.layout.fixed.horizontal,
+                mykeyboardlayout,
+                wibox.widget.systray(),
+                mytextclock,
+                s.mylayoutbox,
+                volume_widget {
+                    widget_type = "arc"
+                }
+            }
+        end
+
         -- Add widgets to the wibox
         s.mywibox:setup {
             layout = wibox.layout.align.horizontal,
@@ -317,14 +357,7 @@ awful.screen.connect_for_each_screen(
                 s.mypromptbox
             },
             s.mytasklist, -- Middle widget
-            {
-                -- Right widgets
-                layout = wibox.layout.fixed.horizontal,
-                mykeyboardlayout,
-                wibox.widget.systray(),
-                mytextclock,
-                s.mylayoutbox
-            }
+            rightbox
         }
     end
 )
@@ -434,19 +467,19 @@ globalkeys =
     awful.key({modkey, "Control"}, "r", awesome.restart, {description = "reload awesome", group = "awesome"}),
     awful.key(
         {modkey},
-        "space",
-        function()
-            awful.layout.inc(1)
-        end,
-        {description = "select next", group = "layout"}
-    ),
-    awful.key(
-        {modkey, "Shift"},
-        "space",
+        "-",
         function()
             awful.layout.inc(-1)
         end,
         {description = "select previous", group = "layout"}
+    ),
+    awful.key(
+        {modkey},
+        "=",
+        function()
+            awful.layout.inc(1)
+        end,
+        {description = "select next", group = "layout"}
     ),
     awful.key(
         {modkey, "Control"},
@@ -713,7 +746,11 @@ awful.rules.rules = {
             -- Note that the name property shown in xprop might be set slightly after creation of the client
             -- and the name shown there might not match defined rules here.
             name = {
-                "Event Tester" -- xev.
+                "Event Tester", -- xev.
+                "Open",
+                "Welcome",
+                "Export",
+                "Options"
             },
             role = {
                 "AlarmWindow", -- Thunderbird's calendar.

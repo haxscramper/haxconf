@@ -276,6 +276,26 @@ edit:add-var nr~ {|file|
   e:entr -rc sh -c "time nim c -r -o:"$result".bin --nimcache:/tmp/nimcache/"$cache" "$file
 }
 
+fn inwait-cwd {
+    try {
+        put (inotifywait -q -e modify (fd --strip-cwd-prefix))
+    } catch {
+        put "none"
+    }
+}
+
+fn inwait-cwd-loop {|callback|
+    while (var res = (inwait-cwd)) {
+        if (str:equal-fold $res "none") {
+
+        } else {
+            $callback
+        }
+    }
+}
+
+
+
 fn cpp-rebuild {|file|
   var cpp-content = '#include <iostream>
 
@@ -298,6 +318,15 @@ int main() {
 
   emacs-open (realpath $file)
   var opts = "-ferror-limit=2 -std=c++20"
+  # inwait-cwd-loop {
+  #   clang++ $file -g -ferror-limit=2 -std=c++20 -o $res-file $opt-file
+  #   try {
+  #     ./$res-file
+  #   } catch {
+  #     lldb --batch -s ~/lldb-batch-script -- ./$res-file
+  #   }
+  # }
+
   fd | e:entr -rc sh -c "clang++ '"$file"' "$opts" -o '"$res-file"' '"$opt-file"' && ./"$res-file
 }
 

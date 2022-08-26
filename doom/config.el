@@ -43,6 +43,8 @@
   (set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
   (set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
   (set-file-template! "\\.py$" :trigger "__" :mode 'python-mode)
+  (set-file-template! "Taskfile\\.yaml$"
+    :trigger "__Taskfile.yaml" :mode 'yaml-mode)
   (set-file-template! "CMakeLists\\.txt" :trigger "__" :mode 'cmake-mode)
   (when (boundp 'yas-minor-mode) (when yas-minor-mode (yas-reload-all))))
 

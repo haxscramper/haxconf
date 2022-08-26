@@ -19,10 +19,10 @@ for root, subdirs, files in os.walk(dir):
 while True:
     args: List[str] = ["feh"]
     for image in random.sample(images, 4):
-        args.append("--bg-center")
+        args.append("--bg-max")
         args.append("--scale-down")
         args.append(image)
 
     print(args)
     run(args)
-    time.sleep(15)
+    time.sleep(60)
