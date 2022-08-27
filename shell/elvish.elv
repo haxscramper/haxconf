@@ -544,3 +544,5 @@ fn e {
     ]
   ]
 }
+
+eval (starship init elvish)

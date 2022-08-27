@@ -11,7 +11,7 @@
 
 - link:
     # Shell configuration
-    ~/.elvish/rc.elv: shell/elvish.elv
+    ~/.config/elvish/rc.elv: shell/elvish.elv
 
     # Allows to use multiple emacs profiles at once
     ~/.emacs-profiles.el: emacs/emacs-profiles.el

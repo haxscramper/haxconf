@@ -526,6 +526,21 @@ globalkeys =
     )
 )
 
+for i = 1, 12 do
+    globalkeys =
+        gears.table.join(
+        globalkeys,
+        awful.key(
+            {modkey},
+            "F" .. i,
+            function()
+                focus_nth_client(i)
+            end,
+            {description = "focus client #" .. i, group = "client"}
+        )
+    )
+end
+
 clientkeys =
     gears.table.join(
     awful.key(
@@ -775,7 +790,87 @@ awful.rules.rules = {
 }
 -- }}}
 
+function move_cursor(x, y)
+    local command = "xdotool mousemove " .. tostring(x) .. " " .. tostring(y)
+    awful.spawn(command)
+end
+
+function mouse_on_client(c)
+    if c == nil then
+        print("client is nil")
+    end
+    local geom = c:geometry()
+
+    move_cursor(geom.x + geom.width / 3 + 10, geom.y + geom.height / 3 + 10)
+end
+
+function focus_nth_client(n)
+    for cl, num in pairs(client_numbers) do
+        if num == n then
+            local status, err = pcall(mouse_on_client, cl)
+
+            if status then
+                client.focus = cl
+                cl:raise()
+            else
+                print(err)
+            end
+        end
+    end
+end
+
+number_widgets = {} -- Numbering widgets -> clients
+client_numbers = {} -- Clients -> client numbers
+
+function get_num_widget(cl)
+    if number_widgets[cl] == nil then
+        wgt = wibox.widget.textbox()
+        wgt:set_text("[test]")
+
+        number_widgets[cl] = wgt
+    end
+
+    return number_widgets[cl]
+end
+
+function update_client_numeration()
+    num = 1
+    -- TODO ignore tags that are not currently visible
+    for _, tag in pairs(root.tags()) do
+        for _, cl in ipairs(tag:clients()) do
+            local color = "green"
+            if cl == client.focus then
+                color = "red"
+            end
+
+            local text = '<span foreground="' .. color .. '">' .. "[- " .. num .. " -]</span>"
+
+            if number_widgets[cl] then
+                number_widgets[cl]:set_markup_silently(text)
+                client_numbers[cl] = num
+                num = num + 1
+            end
+        end
+    end
+    -- print("---")
+end
+
+function switch_to_client(client_class)
+    for _, tag in pairs(root.tags()) do
+        for _, cl in ipairs(tag:clients()) do
+        end
+    end
+end
+
 -- {{{ Signals
+
+client.connect_signal(
+    "unmanage",
+    function(c)
+        update_client_numeration()
+    end
+)
+
 -- Signal function to execute when a new client appears.
 client.connect_signal(
     "manage",
@@ -783,7 +878,8 @@ client.connect_signal(
         -- Set the windows at the slave,
         -- i.e. put it at the end of others instead of setting it master.
         -- if not awesome.startup then awful.client.setslave(c) end
-
+        get_num_widget(c)
+        update_client_numeration()
         if awesome.startup and not c.size_hints.user_position and not c.size_hints.program_position then
             -- Prevent clients from being unreachable after screen count changes.
             awful.placement.no_offscreen(c)
@@ -820,6 +916,7 @@ client.connect_signal(
             {
                 -- Left
                 awful.titlebar.widget.iconwidget(c),
+                get_num_widget(c),
                 buttons = buttons,
                 layout = wibox.layout.fixed.horizontal
             },
@@ -844,6 +941,7 @@ client.connect_signal(
             },
             layout = wibox.layout.align.horizontal
         }
+        update_client_numeration()
     end
 )
 
