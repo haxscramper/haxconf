@@ -25,6 +25,9 @@
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
 
+    # gdb configuration
+    ~/.gdbinit: cli/gdb_config.gdbinit
+
     # My user scripts
     ~/hax-scripts: scripts
 
