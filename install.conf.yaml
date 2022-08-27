@@ -39,6 +39,7 @@
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.xbindkeysrc: desktop/xbindkeysrc.sh
+    ~/.config/qutebrowser/config.py: desktop/qutebrowser_config.py
 
     ~/.config/awesome/rc.lua: desktop/awesome_wm.lua
     ~/.config/haxconf: .
