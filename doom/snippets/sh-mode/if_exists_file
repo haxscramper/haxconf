@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# contributor: haxscramper
+# name: If exists
+# key: if_exists
+# condition: t
+# --
+
+# e/f/d/r/w/x
+if [[ -e "$1" ]]; then
+   $0
+fi

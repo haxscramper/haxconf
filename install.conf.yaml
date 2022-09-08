@@ -25,8 +25,19 @@
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
 
+    # Starship shell prompt configuration
+    ~/.config/starship.toml: cli/starship.toml
+
+    # Fish shell configuration
+    ~/.config/fish/config.fish: shell/config.fish
+
+    ~/.config/rsnapshot.conf: cli/rsnapshot.conf
+
     # gdb configuration
     ~/.gdbinit: cli/gdb_config.gdbinit
+
+    # Dictionary for flyspell
+    ~/.config/dict: cli/dict
 
     # My user scripts
     ~/hax-scripts: scripts
@@ -61,3 +72,6 @@
     - ~/defaultdirs/pdf
     # Git repo with all the archived input - mostly archivebox processing
     - ~/defaultdirs/archive
+    # Toplevel repository groups - links to directories that contain
+    # repositories of interest.
+    - ~/defaultdirs/repos

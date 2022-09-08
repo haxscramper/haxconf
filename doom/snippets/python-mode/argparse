@@ -1,0 +1,17 @@
+# -*- mode: snippet -*-
+# name: argparse
+# key: argparse
+# uuid: argparse
+# --
+
+import argparse
+
+parser = argparse.ArgumentParser(description="$1")
+parser.add_argument(
+  "$2",
+  type=$3,
+  help="$4",
+  dest=$5
+)
+
+args = parser.parse_args()

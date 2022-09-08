@@ -753,6 +753,11 @@ selection result. Provide PROMPT for selection input"
    [C-S-return] #'hax/org-insert-todo-entry
    [C-return] #'+org/insert-item-below)
 
+  (map!
+   :map evil-org-mode-map
+   :ni "M-q" #'hax/fill-paragraph
+   )
+
   (hax/org-download-setup)
   (map!
    :map org-mode-map
@@ -1527,6 +1532,7 @@ contextual information."
    '((C . t)
      (nim . t)
      (shell . t)
+     (sqlite . t)
      (python . t)))
   (setq org-todo-keywords
         ;; I don't use most of these keywords as well, and sometimes they
@@ -2114,3 +2120,7 @@ skips capitalized and upperacsed words (names and abbreviations)"
 (defun hax/org-todo-only-names ()
   (--map (substring it 0 (s-index-of "(" it)) (car org-todo-keywords)))
 
+
+(defun hax/fill-paragraph ()
+  (interactive)
+  (funcall-interactively 'fill-paragraph 'full))

@@ -70,7 +70,8 @@
 (add-hook! asm-mode 'hax/asm-mode-hook)
 
 (defun hax/is-temporary-buffer-p ()
-  (s-starts-with-p "*" (buffer-name)))
+  (or (s-starts-with-p "*" (buffer-name))
+      (s-starts-with-p "COMMIT_EDITMSG" (buffer-name))))
 
 (map!
  [s-right] #'evil-window-increase-width

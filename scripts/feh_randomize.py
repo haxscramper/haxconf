@@ -8,13 +8,28 @@ import random
 import os
 import time
 
-res: str = run(["xrandr", "--listmonitors"], stdout=PIPE).stdout.decode("utf-8")
-dir: str = os.path.expanduser("~/defaultdirs/images")
-print(res)
+res: str = run(["xrandr", "--listmonitors"], stdout=PIPE).stdout.decode(
+    "utf-8"
+)
 images = []
-for root, subdirs, files in os.walk(dir):
-    for file in files:
-        images.append(os.path.join(root, file))
+
+sub_args = [
+    "fd",
+    ".",
+    os.path.expanduser("~/defaultdirs/images"),
+    "-t",
+    "file",
+]
+
+sub = run(
+    sub_args,
+    stdout=PIPE,
+)
+
+std = sub.stdout.decode("utf-8")
+
+for image in std.split("\n"):
+    images.append(image)
 
 while True:
     args: List[str] = ["feh"]

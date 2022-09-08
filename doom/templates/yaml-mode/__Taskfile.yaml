@@ -2,6 +2,6 @@ version: 3
 
 tasks:
   $1:
-    summary: $2
+    desc: $2
     cmds:
       - $3

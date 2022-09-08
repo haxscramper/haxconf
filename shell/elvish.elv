@@ -161,7 +161,7 @@ edit:add-var doom-runexec~ {|@args|
 edit:add-var sdsa~ {
   var action = (echo "enable\ndisable\nstop\nstart\nrestart\nstatus" | fzf)
   var module = (systemctl list-unit-files | fzf | awk "{print $1}")
-  set edit:current-command = "sudo systemctl "$action" "$module
+  set edit:current-command = "sudo systemctl "$action" "$module" --no-pager -l"
 }
 
 edit:add-var doom-debug~ {|@extra|

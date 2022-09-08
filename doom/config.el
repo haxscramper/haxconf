@@ -156,9 +156,16 @@
  :map with-editor-mode-map
  :ni "C-c <C-return>" #'hax/return-to-section-location)
 
+(defun hax/git-commit-hook ()
+  (interactive)
+  (set-fill-column 90))
+
+
 (after! magit
   (setq git-commit-major-mode 'org-mode)
   (add-to-list 'magit-no-confirm 'stage-all-changes)
+  (remove-hook 'server-switch-hook 'magit-commit-diff)
+  (add-to-list 'git-commit-setup-hook 'hax/git-commit-hook)
   (defun hax/magit-force-push-current ()
     "random documentation string if krux ever wants to get any
 more nitpickery about stuff I write in my configuration files."
@@ -181,7 +188,9 @@ more nitpickery about stuff I write in my configuration files."
         ;; on the changes you do in the code, instead of trying to come up
         ;; with one large commit message at the end.
         :desc "amend commit"
-        :nv "gca" (cmd! (magit-stage-modified) (magit-commit-amend))
+        :nv "gca" (cmd! (magit-git-command) (magit-commit-amend))
+        :desc "amend commit without staging"
+        :nv "gcA" (cmd! (magit-commit-amend))
         ;; For small feature branches it is easier to repeatedly extend the
         ;; same commit to keep the changes small, instead of having to do
         ;; the squash at the very end.
@@ -232,7 +241,7 @@ more nitpickery about stuff I write in my configuration files."
 (load! "lang-spelling.el")
 (set-popup-rule! "*Telega Root*" :ignore t)
 (set-popup-rule! "*eshell*" :ignore t :modeline t)
-
+(set-popup-rule! "COMMIT_EDITMSG" :height 0.6)
 
 (defun hax/telega-mode-hook ()
   (interactive)
@@ -275,7 +284,11 @@ more nitpickery about stuff I write in my configuration files."
     ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
 
 (set-formatter! 'sqlfmt
-  '("sqlformat" "-" "--keywords" "upper" "--identifiers" "lower")
+  '("sqlformat" "-"
+    "--keywords" "upper"
+    "--identifiers" "lower"
+    "--reindent"
+    )
   )
 
 (setq revert-without-query '(".*"))
