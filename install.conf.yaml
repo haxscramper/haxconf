@@ -13,6 +13,9 @@
     # Shell configuration
     ~/.config/elvish/rc.elv: shell/elvish.elv
 
+    # Kitty terminal
+    ~/.config/kitty/kitty.conf: cli/kitty.conf
+
     # Allows to use multiple emacs profiles at once
     ~/.emacs-profiles.el: emacs/emacs-profiles.el
 
@@ -75,3 +78,4 @@
     # Toplevel repository groups - links to directories that contain
     # repositories of interest.
     - ~/defaultdirs/repos
+    - ~/defaultdirs/videos

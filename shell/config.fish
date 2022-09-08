@@ -170,16 +170,6 @@ function fancy_sleep -a sleep_ticks -a prefix
     echo ""
 end
 
-function do_rsync --argument from_location to_location
-    echo "Peforming rsync copy from $from_location to $to_location"
-    echo "($from_location -> $to_location)"
-    if read_confirm "Is source/target correct?"
-        echo -w "Running rsync"
-        fancy_sleep 40 "wait"
-        rsync -avz -e ssh "$from_location" "$to_location"
-    end
-end
-
 function sshmove \
     -a from \
     -a to \
@@ -255,21 +245,6 @@ function d
             end
         end
     end
-end
-
-function rm
-    echo -ne "\033[1;92m"
-    echo "|###########################################################|"
-    echo "|                                                           |"
-    echo "|       @@@@@@ @    @  @@@@  @    @    @@@@@  @    @        |"
-    echo "|       @      @    @ @    @ @   @     @    @ @@  @@        |"
-    echo "|       @@@@@  @    @ @      @@@@      @    @ @ @@ @        |"
-    echo "|       @      @    @ @      @  @      @@@@@  @    @        |"
-    echo "|       @      @    @ @    @ @   @     @   @  @    @        |"
-    echo "|       @       @@@@   @@@@  @    @    @    @ @    @        |"
-    echo "|                                                           |"
-    echo "|###########################################################|"
-    echo -ne "\033[0m"
 end
 
 # IDEA safer dd wrapper
