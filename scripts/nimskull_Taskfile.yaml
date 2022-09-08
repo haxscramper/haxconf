@@ -1,0 +1,154 @@
+version: 3
+
+vars:
+  USE_INSTALLED: --lib={{.PWD}}/lib
+    --nimcache=/tmp/nimskull-cache
+    --excludePath={{.HOME}}/.choosenim/toolchains/nim-1.6.0
+    --colors=on
+    --declaredlocs=on
+    --filenames=canonical
+    --spellsuggest=3
+    -d=nimDebugUtils
+    --path={{.PWD}}
+
+  USE_DBG: "--define=debug --debugger=native"
+  RES_NIM: ./bin/nim_temp
+  OUT_RES: "--out=bin/nim_temp"
+  USE_PROCESSING: --filenames=canonical
+    --hints=on
+    --processing=filenames
+    --hint=Processing:on
+
+  USE_IDS: --define=useNodeIds
+  # Compile the tool with support for debug utils
+  USE_UTILS: --define=nimDebugUtils --filenames=canonical
+  # Runtime helper options for the tools
+  RUN_UTILS: --filenames=canonical
+  USE_TRACE_FILE: --define=nimCompilerDebugTraceDir=/tmp
+  USE_BRACKET_TRACE: --define=nimCompilerBracketTrace
+
+  RELEASE_FLAGS: --define=release --define=lto
+
+tasks:
+  update_gitignore:
+    desc: "Add junk files to the gitignore"
+    cmds:
+      - git update-index --skip-worktree .gitignore
+      - |
+
+        if ! grep "temporary hacks" .gitignore; then
+            echo -e "\n# temporary hacks\n" >> .gitignore
+            cat .hax-gitignore >> .gitignore
+        fi
+
+  installed_nim:
+    desc: "Build something using the installed compiler"
+    cmds:
+      - >
+        nim
+        compile
+        {{if eq "ON" .RELEASE}}{{.RELEASE_FLAGS}}{{end}}
+        {{.FLAGS}}
+        {{.USE_INSTALLED}}
+        {{.TARGET}}
+
+  nim_temp:
+    desc: "Build a debug compiler instance compiler"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: compiler/nim.nim
+          FLAGS: "{{.OUT_RES}} {{.EXTRA}}"
+
+  nim_temp_c:
+    desc: "Compile a file using debug compiler"
+    cmds:
+      - task: nim_temp
+        vars:
+          EXTRA: "{{.USE_BRACKET_TRACE}} {{.USE_IDS}}"
+          RELEASE: "{{.RELEASE}}"
+
+      - >
+        {{.RES_NIM}}
+        {{default "compile" .COMMAND}}
+        {{.RUN_UTILS}}
+        {{.USE_TRACE_FILE}}
+        {{.FILE}}
+
+  fmt:
+    desc: "Build documentation generator code renderer"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: compiler/tools/docgen_code_renderer.nim
+          FLAGS: "{{.USE_IDS}}"
+
+  cli:
+    desc: "CLI parsing improvements, testing"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: tests/compilerunits/confread/tcli_parsing.nim
+          FLAGS: "-r"
+
+      - task: installed_nim
+        vars:
+          TARGET: tests/compilerapi/tcompilerapi.nim
+
+      - task: installed_nim
+        vars:
+          TARGET: compiler/nim.nim
+
+  lexer:
+    desc: "Lexer improvement tests"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: tests/compilerunits/lexer/tlexer.nim
+          FLAGS: "-r"
+
+  koch_test:
+    desc: "Execute koch test using debug compiler build"
+    cmds:
+      - ./koch.py --nim={{.OUT_RES}} {{.ACT}}
+
+  test_nimsuggest:
+    desc: "Execute nimsuggest tests using debug compiler build or provided one"
+    vars:
+      TMP: "{{if .NIM}}{{.NIM}}{{else}}{{.RES_NIM}}{{end}}"
+      FLAGS: '{{if eq .NIM "nim"}}{{.USE_INSTALLED}}{{else}}{{end}}'
+    cmds:
+      - rm -rf bin/nimsuggest_testing
+      - task: installed_nim
+        vars:
+          TARGET: nimsuggest/nimsuggest.nim
+          FLAGS: --define=release
+            --out={{.PWD}}/bin/nimsuggest_testing
+            {{.USE_UTILS}}
+
+      - task: nim_temp
+      # - >
+      #   {{.TMP}}
+      #   compile
+      #   {{.FLAGS}}
+      #   {{.USE_UTILS}}
+      #   --out=bin/nimsuggest_testing
+      #   nimsuggest/nimsuggest.nim
+      # - >
+      #   bin/nimsuggest_testing
+      #   --epc
+      #   --v2
+      #   --log
+      #   {{.RUN_UTILS}}
+      #   {{.USE_TRACE_FILE}}
+      #   {{.FILE}}
+
+      - "{{.TMP}} r nimsuggest/tester.nim"
+
+  errnew:
+    desc: "New-style error formatting implementation"
+    cmds:
+      - nim c --errormax=4 tfile.nim
+      - task: nim_temp
+        vars:
+          EXTRA: "{{.USE_UTILS}}"
