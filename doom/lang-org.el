@@ -1149,7 +1149,7 @@ contextual information."
        ;;  (time-to-days (encode-time sec min hour day month year))
        ;;  )
        (org-note-insert-at-time+date
-        (s-delete-lines (s-trim msg) 1) sec min hour day month year
+        (s-trim msg) sec min hour day month year
         (append '("from_tg") (hax/tg-extract-tags msg)))
        )))
 
@@ -1249,18 +1249,19 @@ contextual information."
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
  hax/projects.org (f-join hax/indexed.d "projects.org")
- org-structure-template-alist '(("f" . "formula\n")
-                                ("a" . "export ascii\n")
-                                ("d" . "definition\n")
-                                ("c" . "center\n")
-                                ("C" . "comment\n")
-                                ("e" . "example\n")
-                                ("E" . "export\n")
-                                ("h" . "export html\n")
-                                ("l" . "export latex\n")
-                                ("q" . "quote\n")
-                                ("s" . "src\n")
-                                ("v" . "verse\n")))
+ org-structure-template-alist '(;; ("f" . "formula\n")
+                                ;; ("a" . "export ascii\n")
+                                ;; ("d" . "definition\n")
+                                ;; ("c" . "center\n")
+                                ;; ("C" . "comment\n")
+                                ;; ("e" . "example\n")
+                                ;; ("E" . "export\n")
+                                ;; ("h" . "export html\n")
+                                ;; ("l" . "export latex\n")
+                                ;; ("q" . "quote\n")
+                                ;; ("s" . "src\n")
+                                ;; ("v" . "verse\n")
+                                ))
 
 (defun hax/org-mode-configure()
   (interactive)

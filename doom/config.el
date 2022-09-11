@@ -34,6 +34,9 @@
 
 (setq +file-templates-dir (expand-file-name "templates" (dir!)))
 
+(defun hax/in-snippet-file (path)
+  (s-contains? "doom/snippets" path))
+
 (defun hax/init-file-templates()
   (interactive)
   (setq +file-templates-alist '())
@@ -43,6 +46,7 @@
   (set-file-template! "\\.pro$" :trigger "__" :mode 'qt-pro-mode)
   (set-file-template! "\\.cpp$" :trigger "__" :mode 'cpp-mode)
   (set-file-template! "\\.py$" :trigger "__" :mode 'python-mode)
+  (set-file-template! "" :when 'hax/in-snippet-file :trigger "__default" :mode 'snippet-mode)
   (set-file-template! "Taskfile\\.yaml$"
     :trigger "__Taskfile.yaml" :mode 'yaml-mode)
   (set-file-template! "CMakeLists\\.txt" :trigger "__" :mode 'cmake-mode)

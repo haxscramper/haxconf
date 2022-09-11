@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: New git feature
+# key: git-new-feature
+# uuid: git-new-feature
+# --
+
+git feature -b

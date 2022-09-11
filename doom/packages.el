@@ -75,6 +75,11 @@
   :recipe (:type git :host gitlab :repo "OlMon/consult-flyspell"
            :branch "master"))
 
+
+(package! jinja2-mode
+  :recipe (:type git :host github :repo "paradoxxxzero/jinja2-mode"
+           :branch "master"))
+
 ;; Easily setup frame with multiple choice selection at the `(point)'
 ;; location.
 (package! frog-menu)

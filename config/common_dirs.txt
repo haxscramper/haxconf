@@ -1,0 +1,22 @@
+input        $HOME/defaultdirs/input
+notes        $HOME/defaultdirs/notes/notes
+config       $HOME/.config/hax-config
+support      $HOME/.config/hax-config/external/support
+auto         $HOME/defaultdirs/automatic
+sync         $HOME/defaultdirs/autosync
+workspace    /mnt/workspace
+personal     $HOME/defaultdirs/personal
+defaultdirs  $HOME/defaultdirs/
+automatic    $HOME/defaultdirs/automatic
+kernel       /usr/src/linux
+hack         $HOME/workspace/hack
+nim          $HOME/workspace/hack/testing/nim
+
+githib       /mnt/workspace/github
+
+hcparse      /mnt/workspace/github/hcparse
+hmisc        /mnt/workspace/github/hmisc
+nimskull     /mnt/workspace/github/nimskull
+semester6    $HOME/defaultdirs/documents/semester_6/
+git-sandbox  $HOME/workspace/git-sandbox
+telegram     $HOME/.cache/telegram

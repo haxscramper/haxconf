@@ -27,7 +27,7 @@ set E:TERM = xterm
 set E:LANG = en_US.UTF-8
 set E:LC_ALL = en_US.UTF-8
 set E:LC_CTYPE = UTF-8
-set E:HAX_CONFIG_DIR = ~/.config/hax-config
+set E:HAX_CONFIG_DIR = ~/.config/haxconf
 set E:HAX_LOCAL_DIR = ~/.config/hax-local
 set E:HAX_CONFIG_FILES_DIR = $E:HAX_CONFIG_DIR/config
 set E:NPM_PACKAGES = $E:HOME"/.npm-packages"
@@ -470,6 +470,8 @@ fn select-actions {|commands|
 }
 
 fn e {
+  var actions = []
+
   select-actions [
     [
       &key=test-echo
@@ -524,21 +526,6 @@ fn e {
         [git checkout -b '$now"-squashed"']
         [git merge --squash '$now']
         [git commit]
-        [git push --force origin 'HEAD:$now']
-      ]
-    ]
-    [
-      # Helper to force-push from squashed branch to a different target one
-      &key=force-push-squashed
-      &val="Push current XXX-squashed branch to remote again"
-      &cmd=[
-        "Add all unstanged files before pushing"
-        [git add -u]
-        "Extend last commiet"
-        [git commit --amend --no-edit]
-        "Remember current active branch"
-        [var now = { put (str:trim-suffix (git branch --show-current) "-squashed") }]
-        "Push the changes to it"
         [git push --force origin 'HEAD:$now']
       ]
     ]
