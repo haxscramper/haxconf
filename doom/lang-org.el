@@ -1589,6 +1589,7 @@ contextual information."
   (when (f-exists? (f-join hax/cache.d "org-clock-history"))
     (setq hax/org-clock-history
           (read-from-file (f-join hax/cache.d "org-clock-history"))))
+  (when (not (f-exists? hax/tags-file)) (f-touch hax/tags-file))
   (setq org-tag-alist
         (concatenate
          'list

@@ -108,6 +108,9 @@
     - ~/defaultdirs/videos
     - ~/defaultdirs/music
 
+    - ~/defaultdirs/notes/personal
+    - ~/defaultdirs/notes/personal/indexed
+
 - git:
     ~/.config/navi-denisidoro:
       url: https://github.com/denisidoro/navi
