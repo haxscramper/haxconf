@@ -32,6 +32,9 @@
     # Navi cheat configuration
     ~/.config/navi/config.yaml: cli/navi.yaml
 
+    ~/.config/nvim/init.vim: cli/neovim_init.vim
+    ~/.config/nvim/lua/plugins.lua: cli/neovim_plugins.lua
+
     # music player configuration
     ~/.config/cmus/rc: cli/cmus.rc
 
@@ -103,6 +106,7 @@
     # repositories of interest.
     - ~/defaultdirs/repos
     - ~/defaultdirs/videos
+    - ~/defaultdirs/music
 
 - git:
     ~/.config/navi-denisidoro:
