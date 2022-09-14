@@ -28,13 +28,12 @@ set E:LANG = en_US.UTF-8
 set E:LC_ALL = en_US.UTF-8
 set E:LC_CTYPE = UTF-8
 set E:HAX_CONFIG_DIR = ~/.config/haxconf
-set E:HAX_LOCAL_DIR = ~/.config/hax-local
 set E:HAX_CONFIG_FILES_DIR = $E:HAX_CONFIG_DIR/config
 set E:NPM_PACKAGES = $E:HOME"/.npm-packages"
 set E:EDITOR = nvim
 
 set E:PATH = (
-    cat $E:HOME/.config/hax-config/config/path_dirs.txt |
+    cat $E:HAX_CONFIG_FILES_DIR/path_dirs.txt |
     envsubst |
     eawk {|path _| put $path } |
     str:join ":"

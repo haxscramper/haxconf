@@ -1,18 +1,6 @@
 ##= Fish
 set fish_greeting
 
-# if not functions -q fisher
-#     set -q XDG_CONFIG_HOME; or set XDG_CONFIG_HOME ~/.config
-#     curl https://git.io/fisher --create-dirs -sLo $XDG_CONFIG_HOME/fish/functions/fisher.fish
-#     fish -c fisher
-# end
-
-if status --is-login
-    if test -z "$DISPLAY" -a $XDG_VTNR = 1
-#        exec startx
-    end
-end
-
 alias reload="source ~/.config/fish/config.fish"
 set -U fish_cursor_default line
 
@@ -21,9 +9,8 @@ set -g -x VISUAL 'nvim'
 set -g -x TERM "xterm"
 
 ##= Path
-set -l DIR $HOME/.config/hax-config
-set -g HAX_CONFIG_DIR $HOME/.config/hax-config
-set -g HAX_LOCAL_DIR $HOME/.config/hax-local
+set -l DIR $HOME/.config/haxconf
+set -g HAX_CONFIG_DIR $HOME/.config/haxconf
 set -g HAX_CONFIG_FILES_DIR $HAX_CONFIG_DIR/config
 
 set -l cat (which cat)
@@ -31,17 +18,10 @@ set -l envsubst (which envsubst)
 set -g -x PATH "$HOME/bin"
 
 for line in ($cat "$HAX_CONFIG_FILES_DIR/path_dirs.txt" | $envsubst)
-    set -g -x PATH $PATH $line
+    set -gx PATH $PATH $line
 end
 
 set -xg LD_LIBRARY_PATH /usr/local/lib/
-# set -xg PAGER
-
-#for line in ($cat "$HAX_CONFIG_FILES_DIR/path_dirs.txt" 2> /dev/null | $envsubst)
-#    set -g -x PATH $PATH $line
-#end
-
-set -l SUP_DIR $DIR/external/support
 
 alias navi="navi --dir ~/.config/hax-config/cli/navi"
 alias naviadd="nvim (find $HAX_CONFIG_DIR/navi | fzf)"
