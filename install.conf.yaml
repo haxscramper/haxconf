@@ -29,6 +29,9 @@
     # music player settings
     ~/.ncmpcpp/config: cli/ncmpcpp.conf
 
+    # Navi cheat configuration
+    ~/.config/navi/config.yaml: cli/navi.yaml
+
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
 
@@ -67,6 +70,7 @@
     ~/.config/.xkb_symbols: desktop/xkb_symbols
     ~/.XCompose: desktop/xcompose
     ~/.config/qutebrowser/config.py: desktop/qutebrowser_config.py
+    ~/.config/navi-hax: cheats
 
     ~/.config/awesome/rc.lua: desktop/awesome_wm.lua
     ~/.config/haxconf:
@@ -98,6 +102,14 @@
     - ~/defaultdirs/videos
 
 - git:
-    ~/.config/navi-main:
+    ~/.config/navi-denisidoro:
       url: https://github.com/denisidoro/navi
       description: "navi cheat-sheet collection"
+
+    ~/.config/navi-denisidoro-cheats:
+      url: https://github.com/denisidoro/cheats
+      description: "Community-sourced cheatsheets for navi"
+
+    ~/.config/navi-denisidoro-tldr:
+      url: https://github.com/denisidoro/navi-tldr-pages
+      description: "Community-sourced cheatsheets for navi"

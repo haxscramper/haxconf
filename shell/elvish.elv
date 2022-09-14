@@ -532,3 +532,31 @@ fn e {
 }
 
 eval (starship init elvish)
+
+fn call-navi {
+  if (eq $edit:current-command '') {
+    var answer = (str:join "\n" [(navi --print)])
+    edit:replace-input $answer
+  } elif (not (str:contains-any $edit:current-command '|')) {
+    var answer = (str:join "\n" [(navi --print --query $edit:current-command)])
+    if (not-eq $answer '') {
+      edit:replace-input $answer
+    }
+  } else {
+    var @cmds query = (str:split '|' $edit:current-command)
+    var answer = (
+      if (eq $query '') {
+        navi --print
+      } else {
+        navi --print --query $query
+      }
+    )
+
+    if (not-eq $answer '') {
+      set cmds = [$@cmds $answer]
+      edit:replace-input (str:join '| ' $cmds)
+    }
+  }
+}
+
+set edit:insert:binding[Ctrl-g] = { call-navi >/dev/tty 2>&1 }
