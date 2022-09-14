@@ -50,6 +50,7 @@
 
        :config (default +bindings +smartparens))
 
-(when doom-debug-p
-  (require 'benchmark-init)
-  (add-hook 'doom-first-input-hook #'benchmark-init/deactivate))
+(when (boundp 'doom-debug-p)
+  (when doom-debug-p
+    (require 'benchmark-init)
+    (add-hook 'doom-first-input-hook #'benchmark-init/deactivate)))
