@@ -69,7 +69,11 @@
     ~/.config/qutebrowser/config.py: desktop/qutebrowser_config.py
 
     ~/.config/awesome/rc.lua: desktop/awesome_wm.lua
-    ~/.config/haxconf: .
+    ~/.config/haxconf:
+      path: .
+      # Dont' overwrite if configuration was cloned directly into this
+      # location
+      force: false
 
 - create:
     # Default directory
@@ -92,3 +96,8 @@
     # repositories of interest.
     - ~/defaultdirs/repos
     - ~/defaultdirs/videos
+
+- git:
+    ~/.config/navi-main:
+      url: https://github.com/denisidoro/navi
+      description: "navi cheat-sheet collection"

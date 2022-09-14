@@ -1,7 +1,6 @@
 input        $HOME/defaultdirs/input
 notes        $HOME/defaultdirs/notes/notes
-config       $HOME/.config/hax-config
-support      $HOME/.config/hax-config/external/support
+config       $HOME/.config/haxconf
 auto         $HOME/defaultdirs/automatic
 sync         $HOME/defaultdirs/autosync
 workspace    /mnt/workspace
