@@ -185,6 +185,11 @@ occurrence of symbol"
  :map evil-snipe-parent-transient-map
  ";" nil)
 
+;; u/r pair in the normal mode is more than enough, no need to have two
+;; simlar bindings.
+(map! "C-r" nil :nvi "C-r" nil)
+
+
 ;; Additional functionality for the multicursor editing
 
 (defun hax/mc-any-cursors-at-pos? (pos)

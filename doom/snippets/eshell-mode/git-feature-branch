@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: New git feature branch
+# key: git-feature-branch
+# uuid: git-feature-branch
+# --
+
+git checkout devel
+git pull upstream devel
+git checkout -b $1

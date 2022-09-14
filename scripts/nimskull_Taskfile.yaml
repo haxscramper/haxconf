@@ -119,30 +119,29 @@ tasks:
       FLAGS: '{{if eq .NIM "nim"}}{{.USE_INSTALLED}}{{else}}{{end}}'
     cmds:
       - rm -rf bin/nimsuggest_testing
+
       - task: installed_nim
         vars:
           TARGET: nimsuggest/nimsuggest.nim
-          FLAGS: --define=release
-            --out={{.PWD}}/bin/nimsuggest_testing
+          FLAGS: --out={{.PWD}}/bin/nimsuggest_testing
             {{.USE_UTILS}}
-
-      - task: nim_temp
       # - >
       #   {{.TMP}}
       #   compile
       #   {{.FLAGS}}
       #   {{.USE_UTILS}}
-      #   --out=bin/nimsuggest_testing
+      #   --out={{.PWD}}/bin/nimsuggest_testing
       #   nimsuggest/nimsuggest.nim
-      # - >
-      #   bin/nimsuggest_testing
-      #   --epc
-      #   --v2
-      #   --log
-      #   {{.RUN_UTILS}}
-      #   {{.USE_TRACE_FILE}}
-      #   {{.FILE}}
+      - >
+        bin/nimsuggest_testing
+        --epc
+        --v2
+        --log
+        {{.RUN_UTILS}}
+        {{.USE_TRACE_FILE}}
+        {{.FILE}}
 
+      - task: nim_temp
       - "{{.TMP}} r nimsuggest/tester.nim"
 
   errnew:

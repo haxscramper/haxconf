@@ -1,0 +1,75 @@
+# include "%L"
+# TODO generate this table from configuration file that supports &
+# TODO automatically generate definitions for multiple system locales
+#      and keyboard layouts
+
+<Multi_key> <g> <a> : "α"
+<Multi_key> <g> <b> : "β"
+<Multi_key> <g> <g> : "γ"
+<Multi_key> <g> <u> : "μ"
+<Multi_key> <g> <w> : "ω"
+<Multi_key> <g> <t> : "τ"
+<Multi_key> <g> <p> : "π"
+<Multi_key> <g> <f> : "φ"
+<Multi_key> <g> <r> : "√"
+<Multi_key> <g> <P> : "Ψ"
+<Multi_key> <g> <S> : "Σ"
+
+# Set theory symbols
+# *M*ath *S*et
+<Multi_key> <m> <s> <i> : "∈" # *I*n
+<Multi_key> <m> <s> <n> : "∉" # *N*ot in
+<Multi_key> <m> <s> <s> : "⊂" # *s*ubset
+<Multi_key> <m> <s> <S> : "⊃" # *S*uperset
+<Multi_key> <m> <s> <A> : "∩" # c*A*p
+<Multi_key> <m> <s> <U> : "∪" # c*U*p
+
+
+<Multi_key> <A> : "∩"
+<Multi_key> <U> : "∪"
+<Multi_key> <x> : "×"
+
+<Multi_key> <m> <s> <t> : "×"  # *T*times
+<Multi_key> <m> <s> <m> : "↦"  # *M*apsto
+<Multi_key> <m> <s> <N> : "ℕ"
+<Multi_key> <m> <s> <Z> : "ℤ"
+<Multi_key> <m> <s> <Q> : "ℚ"
+<Multi_key> <m> <s> <R> : "ℝ"
+<Multi_key> <m> <s> <C> : "ℂ"
+<Multi_key> <m> <s> <B> : "𝔹"
+
+
+# *S*ymbols
+<Multi_key> <s> <o> <p> : "⊕" # *O* *P*lus
+<Multi_key> <s> <l> <a> : "∀" # *L*ogic for*a*ll
+<Multi_key> <s> <l> <e> : "∃" # *L*ogic *e*xists
+
+<Multi_key> <s> <l> <ampersand> : "∧" # Logical &
+<Multi_key> <s> <l> <bar> : "∨" # Logical |
+<Multi_key> <s> <l> <exclam> : "¬" # Logical !
+
+<Multi_key> <s> <l> <i> : "→" # Logical *i*plication
+<Multi_key> <s> <l> <R> : "⇒" # *R*ightarrow
+<Multi_key> <s> <l> <F> : "⇔" # i*F*F
+<Multi_key> <s> <l> <I> : "⊦" # *I*inference
+<Multi_key> <s> <l> <E> : "⊨" # *E*ntails
+
+<Multi_key> <asciicircum> <k> : "ᵏ"
+<Multi_key> <asciicircum> <n> : "ⁿ"
+<Multi_key> <asciicircum> <x> : "ˣ"
+<Multi_key> <asciicircum> <t> : "ᵗ"
+<Multi_key> <asciicircum> <2> : "²"
+<Multi_key> <asciicircum> <3> : "³"
+
+
+<Multi_key> <underscore> <k> : "ₖ"
+<Multi_key> <underscore> <m> : "ₘ"
+<Multi_key> <underscore> <i> : "ᵢ"
+<Multi_key> <underscore> <j> : "ⱼ"
+<Multi_key> <underscore> <n> : "ₙ"
+<Multi_key> <underscore> <2> : "₂"
+<Multi_key> <underscore> <1> : "₁"
+
+# >=
+# <=
+# !=

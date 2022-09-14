@@ -107,6 +107,7 @@
 (load! "lang-nim.el")
 (load! "lang-elvish.el")
 (load! "lang-lisp.el")
+(load! "lang-eshell.el")
 (load! "lang-base.el")
 (load! "lang-c.el")
 (load! "lang-org.el")
