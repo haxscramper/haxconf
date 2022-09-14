@@ -1,0 +1,8 @@
+% linux, hax
+# Set default shell for user
+sudo chsh -s (which <shellname>) <username>
+
+$ username: cut -d':' -f1 /etc/passwd
+
+# List all users in the system
+cut -d':' -f1 /etc/passwd

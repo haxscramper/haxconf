@@ -32,6 +32,9 @@
     # Navi cheat configuration
     ~/.config/navi/config.yaml: cli/navi.yaml
 
+    # music player configuration
+    ~/.config/cmus/rc: cli/cmus.rc
+
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
 

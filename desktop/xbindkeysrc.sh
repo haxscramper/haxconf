@@ -58,7 +58,7 @@ XF86AudioPrev
 "cmus-remote --next"
 XF86AudioNext
 
-"cmus-remote --shuffle"
+"cmus-remote --raw rand"
 XF86AudioMute
 
 "~/.config/hax-config/scripts/copyq_start.nim.bin"
