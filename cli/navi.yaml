@@ -1,6 +1,3 @@
-# THIS IS EXPERIMENTAL
-# the config file schema may change at any time
-
 style:
   tag:
     color: cyan # text color. possible values: https://bit.ly/3gloNNI
@@ -14,9 +11,7 @@ style:
     color: white
 
 finder:
-  command: fzf # equivalent to the --finder option
-  # overrides: --tac # equivalent to the --fzf-overrides option
-  # overrides_var: --tac # equivalent to the --fzf-overrides-var option
+  command: fzf
 
 cheats:
   paths:
@@ -25,9 +20,5 @@ cheats:
     - ~/.config/navi-denisidoro-cheats
     - ~/.config/navi-denisidoro-tldr
 
-# search:
-# tags: git,!checkout # equivalent to the --tag-rules option
-
 shell:
-  command: bash # shell used for shell out. possible values: bash, zsh, dash, ...
-  # finder_command: bash # similar, but for fzf's internals
+  command: bash

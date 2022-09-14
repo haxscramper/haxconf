@@ -1,10 +1,34 @@
-% git
+% git, hax
 
 # Clear everything
 git clean -dxf
 
-# Sign all commits in a branch based on master
-git rebase master -S -f
+# Rebase to devel/target branch
+var now = (git branch --show-current)
+git checkout <target>
+git pull upstream <target>
+git checkout $now
+try { git rebase devel } catch { rg "^<<<<<<< "; fail gmerge }
+
+$ target: git branch -a
+
+# Create new branch for squashed
+var now = (git branch --show-current)
+git checkout <target>
+git checkout -b $now"-squashed"
+git merge --squash $now
+git commit
+git push --force origin HEAD:$now
+
+$ target: git branch -a
+
+# Create new feature branch
+git checkout <target>
+git pull <remote> <target>
+git checkout -b <name>
+
+$ target: git branch -a
+$ remote: git remote
 
 # Checkout to branch
 # Change branch

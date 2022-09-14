@@ -1,1 +1,6 @@
-% Pacman
+% pacman, hax
+
+# List files in package
+pacman -Ql <package>
+
+$ package: pacman -Qe | cut -d' ' -f1
