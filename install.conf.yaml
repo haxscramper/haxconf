@@ -6,6 +6,10 @@
       relink: true
       # Create parent directories for link targets as needed
       create: true
+      # Forcefully remove old targets for linking - some packages (such as
+      # fish shell) create configuration file on installation which will
+      # cause errors during default install.
+      force: true
 
 - clean: ["~"]
 
@@ -53,7 +57,13 @@
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.xbindkeysrc: desktop/xbindkeysrc.sh
-    ~/.xinitrc: desktop/xinitrc.sh
+    ~/.xinitrc:
+      # WM configuration might be different - configuration might be
+      # deployed on the ubuntu/manjaro that already have everything
+      # configured.
+      force: false
+      path: desktop/xinitrc.sh
+
     ~/.config/.xkb_symbols: desktop/xkb_symbols
     ~/.XCompose: desktop/xcompose
     ~/.config/qutebrowser/config.py: desktop/qutebrowser_config.py
