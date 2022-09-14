@@ -190,3 +190,21 @@ more-helpful local prompt."
   "Open a new instance of eshell."
   (interactive)
   (eshell 'N))
+
+;; Customize all shell color codes, including ones used by the eshell iself.
+(custom-set-faces
+ `(ansi-color-black          ((t (:foreground , (doom-color 'bg)))))
+ `(ansi-color-red            ((t (:foreground , (doom-color 'red)))))
+ `(ansi-color-green          ((t (:foreground , (doom-color 'green)))))
+ `(ansi-color-yellow         ((t (:foreground , (doom-color 'yellow)))))
+ `(ansi-color-blue           ((t (:foreground , (doom-color 'blue)))))
+ `(ansi-color-magenta        ((t (:foreground , (doom-color 'magenta)))))
+ `(ansi-color-cyan           ((t (:foreground , (doom-color 'cyan)))))
+ `(ansi-color-gray           ((t (:foreground , (doom-color 'fg)))))
+ `(ansi-color-bright-black   ((t (:foreground , (doom-color 'bg)))))
+ `(ansi-color-bright-red     ((t (:foreground , (doom-color 'red)))))
+ `(ansi-color-bright-green   ((t (:foreground , (doom-color 'green)))))
+ `(ansi-color-bright-yellow  ((t (:foreground , (doom-color 'yellow)))))
+ `(ansi-color-bright-blue    ((t (:foreground , (doom-color 'blue)))))
+ `(ansi-color-bright-magenta ((t (:foreground , (doom-color 'magenta)))))
+ `(ansi-color-bright-cyan    ((t (:foreground , (doom-color 'cyan))))))

@@ -165,7 +165,7 @@ the right."
  :v ",a)" #'align-repeat-right-paren
  :v ",a[" #'align-repeat-left-square-brace
  :v ",a{" #'align-repeat-left-curly-brace
- :v ",a)" #'align-repeat-left-paren
+ :v ",a(" #'align-repeat-left-paren
  :v ",a=" #'align-repeat-equal
  :v ",a#" #'align-repeat-hash
  :v ",a'" #'align-repeat-quote
