@@ -11,3 +11,11 @@ dig +short myip.opendns.com @resolver1.opendns.com
 
 # Find primary, local IP address
 ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1'
+
+# List all interface names
+ip -j link | jq '.[].ifname'
+
+# Scan and connect to WiFi using IW
+sudo iw dev <device> connect (sudo iw dev <device> scan | grep SSID | cut -f2 -d' ' | fzf)
+
+$ device: ip -j link | jq '.[].ifname'

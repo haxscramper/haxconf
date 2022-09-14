@@ -1,1 +1,3 @@
-#+title: haxscramper's configuration dotifles 
+#+title: haxscramper's configuration dotifles
+
+Dotfile configurations for different applications I used (or still use).

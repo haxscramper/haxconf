@@ -1,0 +1,13 @@
+% systemd, systectl, hax
+
+# Systemctl/systemd execute action on system module
+sudo systemctl <action> <module> --no-pager -l
+
+$ action: echo -en "enable\ndisable\nstop\nstart\nrestart\nstatus"
+$ module: systemctl list-unit-files | cut -f1 -d' '
+
+# Systemctl/systemd execute action on user module
+systemctl --user <action> <module> --no-pager -l
+
+$ action: echo -en "enable\ndisable\nstop\nstart\nrestart\nstatus"
+$ module: systemctl --user list-unit-files | cut -f1 -d' '
