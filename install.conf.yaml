@@ -53,7 +53,8 @@
     ~/.gdbinit: cli/gdb_config.gdbinit
 
     # Dictionary for flyspell
-    ~/.config/dict: cli/dict
+    ~/.config/dict: config/dict
+    ~/.config/tags: config/tags
 
     # My user scripts
     ~/hax-scripts: scripts

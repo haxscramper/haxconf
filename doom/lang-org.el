@@ -1581,7 +1581,7 @@ contextual information."
           ("FAILED" . ,(doom-color 'red))
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
-  (setq hax/tags-file (f-join org-directory "tags"))
+  (setq hax/tags-file (f-full "~/.config/tags"))
   (when (f-exists? (f-join hax/cache.d "org-clock-stack"))
     (setq hax/org-clock-stack
           (read-from-file (f-join hax/cache.d "org-clock-stack"))))
