@@ -17,6 +17,18 @@
     # Shell configuration
     ~/.config/elvish/rc.elv: shell/elvish.elv
 
+    # Starship shell prompt configuration
+    ~/.config/starship.toml: cli/starship.toml
+
+    # Fish shell configuration
+    ~/.config/fish/config.fish: shell/config.fish
+
+    # Bash configuration
+    ~/.bashrc: shell/bashrc.sh
+
+    # Zsh configuration
+    ~/.zshrc: shell/zshrc.sh
+
     # Kitty terminal
     ~/.config/kitty/kitty.conf: cli/kitty.conf
 
@@ -40,12 +52,6 @@
 
     # TAGS file construction configuration
     ~/.config/ctags/default.ctags: cli/default.ctags
-
-    # Starship shell prompt configuration
-    ~/.config/starship.toml: cli/starship.toml
-
-    # Fish shell configuration
-    ~/.config/fish/config.fish: shell/config.fish
 
     ~/.config/rsnapshot.conf: cli/rsnapshot.conf
 

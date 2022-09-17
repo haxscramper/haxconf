@@ -245,7 +245,7 @@ more nitpickery about stuff I write in my configuration files."
 
 (load! "lang-spelling.el")
 (set-popup-rule! "*Telega Root*" :ignore t)
-(set-popup-rule! "*eshell*" :ignore t :modeline t)
+(set-popup-rule! "eshell" :ignore t :modeline t)
 (set-popup-rule! "COMMIT_EDITMSG" :height 0.6)
 
 (defun hax/telega-mode-hook ()

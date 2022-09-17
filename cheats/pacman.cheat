@@ -3,7 +3,7 @@
 # List files in package
 pacman -Ql <package>
 
-$ package: pacman -Qe | cut -d' ' -f1
+$ package: pacman -Q | cut -d' ' -f1
 
 # Enable color in the configuration
 sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf

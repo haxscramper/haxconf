@@ -1,0 +1,4 @@
+% cpp, hax
+
+# Create compile_commands.json for a project
+cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

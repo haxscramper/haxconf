@@ -370,7 +370,7 @@ fn nr1 {|file|
 
 
 fn nd {
-  ~/.config/hax-config/scripts/nimble-rebuild.fish
+  ~/.config/haxconf/scripts/nimble-rebuild.fish
 }
 
 

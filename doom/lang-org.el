@@ -874,8 +874,8 @@ selection result. Provide PROMPT for selection input"
 
 
 
-  (setq company-backends
-        '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
+  (setq-local company-backends
+              '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
 
 (map!
  ;; https://github.com/hlissner/doom-emacs/issues/3978#issuecomment-699004440

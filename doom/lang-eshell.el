@@ -94,13 +94,19 @@ more-helpful local prompt."
   (setq-local hax/last-stored-command-point (eshell/position-in-command))
   (eshell-queue-input))
 
+(load! "completions/systemctl.el")
+(load! "completions/git.el")
+
 (defun hax/eshell-hook ()
   (interactive)
+  (bind-key "<backtab>" #'company-complete eshell-mode-map)
   (abbrev-mode 1)
+  (setq comint-terminfo-terminal "xterm")
+  (setq-local company-minimum-prefix-length 1)
+  (setenv "TERM" comint-terminfo-terminal)
   (define-abbrev-table 'eshell-mode-abbrev-table
     '(("gis" "git status")
-      ("rm" "rm -rf")
-      ))
+      ("rm" "rm -rf")))
 
   (map!
    :leader
@@ -181,7 +187,23 @@ more-helpful local prompt."
     (evil-yank start end)))
 
 (after! eshell
-  (map! "<M-RET>" #'eshell-new)
+  ;; Customize all shell color codes, including ones used by the eshell iself.
+  (custom-set-faces
+   `(ansi-color-black          ((t (:foreground, (doom-color 'bg)))))
+   `(ansi-color-red            ((t (:foreground, (doom-color 'red)))))
+   `(ansi-color-green          ((t (:foreground, (doom-color 'green)))))
+   `(ansi-color-yellow         ((t (:foreground, (doom-color 'yellow)))))
+   `(ansi-color-blue           ((t (:foreground, (doom-color 'blue)))))
+   `(ansi-color-magenta        ((t (:foreground, (doom-color 'magenta)))))
+   `(ansi-color-cyan           ((t (:foreground, (doom-color 'cyan)))))
+   `(ansi-color-gray           ((t (:foreground, (doom-color 'fg)))))
+   `(ansi-color-bright-black   ((t (:foreground, (doom-color 'bg)))))
+   `(ansi-color-bright-red     ((t (:foreground, (doom-color 'red)))))
+   `(ansi-color-bright-green   ((t (:foreground, (doom-color 'green)))))
+   `(ansi-color-bright-yellow  ((t (:foreground, (doom-color 'yellow)))))
+   `(ansi-color-bright-blue    ((t (:foreground, (doom-color 'blue)))))
+   `(ansi-color-bright-magenta ((t (:foreground, (doom-color 'magenta)))))
+   `(ansi-color-bright-cyan    ((t (:foreground, (doom-color 'cyan))))))
   (add-hook! 'eshell-mode-hook 'hax/eshell-hook)
   (add-hook! 'eshell-post-command-hook 'hax/eshell-post-command-hook)
   (add-hook! 'eshell-pre-command-hook 'hax/eshell-pre-command-hook))
@@ -191,20 +213,4 @@ more-helpful local prompt."
   (interactive)
   (eshell 'N))
 
-;; Customize all shell color codes, including ones used by the eshell iself.
-(custom-set-faces
- `(ansi-color-black          ((t (:foreground, (doom-color 'bg)))))
- `(ansi-color-red            ((t (:foreground, (doom-color 'red)))))
- `(ansi-color-green          ((t (:foreground, (doom-color 'green)))))
- `(ansi-color-yellow         ((t (:foreground, (doom-color 'yellow)))))
- `(ansi-color-blue           ((t (:foreground, (doom-color 'blue)))))
- `(ansi-color-magenta        ((t (:foreground, (doom-color 'magenta)))))
- `(ansi-color-cyan           ((t (:foreground, (doom-color 'cyan)))))
- `(ansi-color-gray           ((t (:foreground, (doom-color 'fg)))))
- `(ansi-color-bright-black   ((t (:foreground, (doom-color 'bg)))))
- `(ansi-color-bright-red     ((t (:foreground, (doom-color 'red)))))
- `(ansi-color-bright-green   ((t (:foreground, (doom-color 'green)))))
- `(ansi-color-bright-yellow  ((t (:foreground, (doom-color 'yellow)))))
- `(ansi-color-bright-blue    ((t (:foreground, (doom-color 'blue)))))
- `(ansi-color-bright-magenta ((t (:foreground, (doom-color 'magenta)))))
- `(ansi-color-bright-cyan    ((t (:foreground, (doom-color 'cyan))))))
+(map! "<M-RET>" #'eshell-new)
