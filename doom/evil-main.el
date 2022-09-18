@@ -27,10 +27,16 @@
  :v "s" 'hax/surround-region
  :nv "K" nil)
 
-;; (map!
-;;  :nv ".." #'evil-repeat
-;;  :nv ".f" #'evil-snipe-repeat
-;;  )
+;; Dot is an extremely convenient button for mapping and the 'repeat'
+;; action can be scaled on more targets. `..' is effectively the same wrt.
+;; ease of use.
+(map! :nv "." nil)
+;; Splitting to avoid the "mapped to a non-prefix key" errors that might
+;; sometimes occur.
+(map!
+ :nv ".." #'evil-repeat
+ :nv ".f" #'evil-snipe-repeat
+ )
 
 (map!
  :leader
@@ -43,6 +49,15 @@
  "hdc" 'describe-char
  "hdv" 'describe-variable
  )
+
+(after! origami
+  (global-origami-mode 1)
+  (map!
+   :nv "zc" #'origami-close-node
+   :nv "zo" #'origami-open-node
+   :nv "zC" (cmd! (origami-close-node-recursively (current-buffer) (point))
+                  (origami-open-node (current-buffer) (point)))
+   :nv "zO" (cmd! (origami-open-node-recursively (current-buffer) (point)))))
 
 (map!
  ;;; window management operations

@@ -84,6 +84,8 @@
   :recipe (:type git :host github :repo "kanru/uuidgen-el"
            :branch "master"))
 
+(package! origami)
+
 ;; Easily setup frame with multiple choice selection at the `(point)'
 ;; location.
 (package! frog-menu)

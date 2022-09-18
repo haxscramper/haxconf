@@ -49,17 +49,14 @@ XF86AudioLowerVolume
 "pactl set-sink-volume @DEFAULT_SINK@ 40%"
 XF86AudioStop
 
-"cmus-remote --pause"
+"strawberry --play-pause"
 XF86AudioPlay
 
-"cmus-remote --prev"
+"strawberry --previous"
 XF86AudioPrev
 
-"cmus-remote --next"
+"strawberry --next"
 XF86AudioNext
-
-"cmus-remote --raw rand"
-XF86AudioMute
 
 "~/.config/hax-config/scripts/copyq_start.nim.bin"
 release+Mod2+Mod4 + p

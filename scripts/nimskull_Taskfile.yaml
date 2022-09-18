@@ -71,9 +71,16 @@ tasks:
       - >
         {{.RES_NIM}}
         {{default "compile" .COMMAND}}
+        -o={{.FILE}}.bin
         {{.RUN_UTILS}}
         {{.USE_TRACE_FILE}}
         {{.FILE}}
+
+  nim_temp_r:
+    desc: "Run a file using debug compiler"
+    cmds:
+      - task: nim_temp_c
+      - ./{{.FILE}}.bin
 
   fmt:
     desc: "Build documentation generator code renderer"
