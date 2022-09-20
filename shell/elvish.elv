@@ -118,7 +118,7 @@ alias:new lstl exa --tree --sort type --git --all
 alias:new cp e:cp -r
 fn rm {|@args| e:mv --backup=numbered -vt /tmp/hax-trash $@args }
 
-alias:new ncdu "E:ncdu --color dark -x --exclude .git --exclude node_modules"
+alias:new bat e:bat --no-pager
 alias:new find-lib "ldconfig -p | grep -i"
 alias:new vi nvim
 alias:new ec emacsclient --nw

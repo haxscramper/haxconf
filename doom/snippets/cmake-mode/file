@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Glob source files
+# key: file-source
+# uuid: file-source
+# --
+
+file(GLOB SRC_FILES \${CMAKE_SOURCE_DIR}/src/*.cpp)

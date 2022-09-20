@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: Glob header files
+# key: file-header
+# uuid: file-header
+# --
+
+file(GLOB HEADER_FILES \${CMAKE_SOURCE_DIR}/src/*.hpp)
