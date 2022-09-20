@@ -73,6 +73,7 @@
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.xbindkeysrc: desktop/xbindkeysrc.sh
+    ~/.config/mimeapps.list: desktop/mimeapps.conf
     ~/.xinitrc:
       # WM configuration might be different - configuration might be
       # deployed on the ubuntu/manjaro that already have everything

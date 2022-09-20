@@ -50,14 +50,13 @@
  "hdv" 'describe-variable
  )
 
-(after! origami
-  (global-origami-mode 1)
-  (map!
-   :nv "zc" #'origami-close-node
-   :nv "zo" #'origami-open-node
-   :nv "zC" (cmd! (origami-close-node-recursively (current-buffer) (point))
-                  (origami-open-node (current-buffer) (point)))
-   :nv "zO" (cmd! (origami-open-node-recursively (current-buffer) (point)))))
+(global-origami-mode 1)
+(map!
+ :nv "zc" #'origami-close-node
+ :nv "zo" #'origami-open-node
+ :nv "zC" (cmd! (origami-close-node-recursively (current-buffer) (point))
+                (origami-open-node (current-buffer) (point)))
+ :nv "zO" (cmd! (origami-open-node-recursively (current-buffer) (point))))
 
 (map!
  ;;; window management operations
