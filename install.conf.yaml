@@ -84,6 +84,7 @@
     ~/.config/.xkb_symbols: desktop/xkb_symbols
     ~/.XCompose: desktop/xcompose
     ~/.config/qutebrowser/config.py: desktop/qutebrowser_config.py
+    ~/.config/qutebrowser/qutebrowser_style.css: desktop/qutebrowser_style.css
     ~/.config/navi-hax: cheats
 
     ~/.config/awesome/rc.lua: desktop/awesome_wm.lua

@@ -46,7 +46,7 @@ c.content.pdfjs = True
 
 # c.fonts.tabs = '11pt monospace'
 
-c.content.user_stylesheets = ["override-fonts.css"]
+c.content.user_stylesheets = ["qutebrowser_style.css"]
 
 ##= Key bindings
 ##== Removing unwanted defaults
