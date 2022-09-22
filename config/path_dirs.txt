@@ -1,4 +1,3 @@
-$HOME/.config/hax-config/exec-override
 /usr/lib64/llvm/7/bin
 /usr/lib/jvm/java-8-openjdk/bin
 /usr/lib/jvm/java-11-openjdk/bin
@@ -16,16 +15,6 @@ $HOME/bin
 /mnt/workspace/clean-clone/hmerge/git/bin
 /mnt/workspace/hax-nim/bin
 $HOME/.choosenim/toolchains/nim-1.2.6
-$HOME/.config/hax-config/external/haxscamper-misc/perl
-$HOME/.config/hax-config/external/haxscamper-misc/bash
-$HOME/.config/hax-config/external/haxscamper-misc/fish
-$HOME/.config/hax-config/external/haxscamper-misc/rust/exec
-$HOME/.config/hax-config/external/Nim/bin
-$HOME/.config/hax-config/scripts
-$HOME/.config/hax-config/git/git-extras
-$HOME/.config/hax-config/git/git-toolbelt
-$HOME/.config/hax-config/git/git-scripts
-$HOME/.config/hax-config/bin/exec
 $HOME/.local/bin
 $HOME/.npm-packages/bin
 $HOME/.nimble/bin
@@ -34,7 +23,6 @@ $HOME/perl5/bin
 $HOME/workspace/hax-nim/bin
 $HOME/.opam/default/bin
 $HOME/miniconda3/bin
-$HOME/.config/hax-config/external/navi
 $HOME/.config/fsm-build/
 $HOME/go/bin
 /opt/android-sdk/build-tools/28.0.3/

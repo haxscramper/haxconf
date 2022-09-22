@@ -13,7 +13,7 @@ release+Mod2+Mod4 + r
 "emacsclient-window"
 release+Mod2+Mod4 + e
 
-"$HOME/.config/hax-config/scripts/rofi-select-pdf.sh"
+"$HOME/.config/haxconf/scripts/rofi-select-pdf.sh"
 release+Control+Mod2+Mod4 + p
 
 "res=$(find $HOME/defaultdirs/input -maxdepth 2 -type f \( -name "*.html" -or -name "*.txt" \) | rofi -dmenu) && [[ ! -z res ]] && firefox-developer-edition "$res""
@@ -25,19 +25,19 @@ release+Control+Mod2+Mod4 + s
 "killall -9 xbindkeys && xbindkeys && echo [log][$(date +%T)] xbindkeys reloaded >> ~/.config/hax-local/log/$(date -I) ; notify-send -t 2000 'Reloaded xbindkeys'"
 release+Control+Mod2+Mod4 + F12
 
-"$HOME/.config/hax-config/scripts/screencast.sh"
+"$HOME/.config/haxconf/scripts/screencast.sh"
 release+Control+Mod2+Mod4 + F11
 
 "echo '12' | nc -q0 localhost 12000"
 release+Control+Mod2+Mod4 + F10
 
-"$HOME/.config/hax-config/scripts/fixwacom.sh"
+"$HOME/.config/haxconf/scripts/fixwacom.sh"
 release+Mod2+Mod4 + W
 
-"$HOME/.config/hax-config/scripts/prompt-translate.sh"
+"$HOME/.config/haxconf/scripts/prompt-translate.sh"
 release+Mod2+Mod4 + T
 
-"$HOME/.config/hax-config/scripts/rofi-select-song.sh"
+"$HOME/.config/haxconf/scripts/rofi-select-song.sh"
 release+Control+Mod2+Mod4 + N
 
 "pactl set-sink-volume @DEFAULT_SINK@ +2%"
@@ -58,7 +58,7 @@ XF86AudioPrev
 "strawberry --next"
 XF86AudioNext
 
-"~/.config/hax-config/scripts/copyq_start.nim.bin"
+"~/.config/haxconf/scripts/copyq_start.nim.bin"
 release+Mod2+Mod4 + p
 
 "xbacklight -dec 10"
@@ -67,5 +67,5 @@ XF86MonBrightnessDown
 "xbacklight -inc 10"
 XF86MonBrightnessUp
 
-"~/.config/hax-config/scripts/noctrlq.sh"
+"~/.config/haxconf/scripts/noctrlq.sh"
 Control + q + Release

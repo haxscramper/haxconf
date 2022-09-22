@@ -20,7 +20,7 @@
     bright-magenta: #ff03ff;
     bright-cyan:    #0ef0ff;
     bright-white:   #f8f8f8;
-    font: "Source Code Pro 12";
+    font: "JetBrains Mono 12";
 
     selected-normal-foreground:  @bright-white;
     foreground:                  @bright-yellow;

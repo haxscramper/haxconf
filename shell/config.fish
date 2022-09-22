@@ -357,7 +357,7 @@ end
 
 
 function nd -d "Rebuild nimble project on each file change and run tests"
-    ~/.config/hax-config/scripts/nimble-rebuild.fish
+    ~/.config/haxconf/scripts/nimble-rebuild.fish
 end
 
 function nimc -a 'file' -d "Rebuild nimble file on each change"
@@ -775,7 +775,7 @@ end
 ############################  snapshot/backup  ############################
 
 ## Location of the original configuration file
-set -xg snapshot_orig_file $HOME/.config/hax-config/cli/rsnapshot.conf
+set -xg snapshot_orig_file $HOME/.config/haxconf/cli/rsnapshot.conf
 
 function gen_snapshot_conf -d "Generate snapshot file with env substition applied"
     set -l tmpsnap (mktemp "/tmp/rsnap.XXXXXXXXX")

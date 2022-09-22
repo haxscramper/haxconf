@@ -74,7 +74,10 @@ end
 -- Themes define colours, icons, font and wallpapers.
 local theme_location = haxconf("awesome_wm_theme/theme.lua") -- string.format("%s/.config/awesome/themes/%s/theme.lua", os.getenv("HOME"), "hax")
 write_log("Loading theme from " .. theme_location)
-beautiful.init(theme_location)
+if not beautiful.init(theme_location) then
+    write_log("Failed to load default theme")
+end
+-- write_log("Theme configuration directory " .. theme.confdir)
 
 -- This is used later as the default terminal and editor to run.
 terminal = "kitty"
@@ -930,13 +933,13 @@ client.connect_signal(
 client.connect_signal(
     "focus",
     function(c)
-        c.border_color = beautiful.border_focus
+        c.border_marked = beautiful.border_focus
     end
 )
 client.connect_signal(
     "unfocus",
     function(c)
-        c.border_color = beautiful.border_normal
+        c.border_marked = beautiful.border_normal
     end
 )
 -- }}}

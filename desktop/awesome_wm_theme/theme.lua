@@ -1,18 +1,16 @@
 -- Multicolor Awesome WM theme 2.0 github.com/lcpz
 local gears = require("gears")
-local lain  = require("lain")
 local awful = require("awful")
 local wibox = require("wibox")
 local dpi   = require("beautiful.xresources").apply_dpi
 local beautify = require("beautiful")
-
 
 local os = os
 local my_table = awful.util.table or gears.table
 local theme                                     = {}
 theme.confdir = os.getenv("HOME") .. "/.config/haxconf/desktop/awesome_wm_theme"
 theme.font                                      = "JetBrains Mono 12"
-theme.wallpaper = os.getenv("HOME") .. "/defaultdirs/images/wallpapers/bg-0"
+theme.wallpaper = os.getenv("HOME") .. "/defaultdirs/images/wallpapers/default"
 theme.menu_bg_normal                            = "#000000"
 theme.menu_bg_focus                             = "#000000"
 theme.bg_normal                                 = "#000000"
