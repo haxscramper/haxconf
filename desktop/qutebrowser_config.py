@@ -22,7 +22,8 @@ c.new_instance_open_target = "tab-bg"
 c.url.start_pages = ["https://searx.me/search"]
 c.tabs.background = True
 
-totalFont = "JetBrains Mono"
+nosize = "JetBrains Mono"
+totalFont = "12pt " + nosize
 
 ##= Fonts
 # c.fonts.monospace             = totalFont
@@ -32,15 +33,17 @@ c.fonts.debug_console = totalFont
 c.fonts.downloads = totalFont
 c.fonts.hints = totalFont
 c.fonts.keyhint = totalFont
+c.fonts.tabs.selected = totalFont
+c.fonts.tabs.unselected = totalFont
 c.fonts.messages.error = totalFont
 c.fonts.messages.info = totalFont
 c.fonts.messages.warning = totalFont
 c.fonts.prompts = totalFont
 c.fonts.statusbar = totalFont
 # c.fonts.tabs                  = totalFont
-c.fonts.web.family.fixed = totalFont
-c.fonts.web.family.sans_serif = totalFont
-c.fonts.web.family.serif = totalFont
+c.fonts.web.family.fixed = nosize
+c.fonts.web.family.sans_serif = nosize
+c.fonts.web.family.serif = nosize
 
 c.content.pdfjs = True
 
