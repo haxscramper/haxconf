@@ -72,6 +72,9 @@
     # Rofi text selector configuration and themes
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
+    # Indirection to simplify xbindkeys configuration
+    ~/.config/rofi-launchers: external/rofi-themes/files/launchers
+
     ~/.xbindkeysrc: desktop/xbindkeysrc.sh
     ~/.config/mimeapps.list: desktop/mimeapps.conf
     ~/.xinitrc:

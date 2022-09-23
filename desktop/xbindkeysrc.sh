@@ -7,7 +7,7 @@ release+Mod2+Mod4 + c
 "maim | xclip -selection clipboard -t image/png"
 release+Mod2+Mod4+Control + c
 
-"xkb-switch -s us && rofi -show run"
+"xkb-switch -s us && rofi -show drun -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + r
 
 "emacsclient-window"
@@ -58,7 +58,7 @@ XF86AudioPrev
 "strawberry --next"
 XF86AudioNext
 
-"~/.config/haxconf/scripts/copyq_start.nim.bin"
+"copyq toggle"
 release+Mod2+Mod4 + p
 
 "xbacklight -dec 10"

@@ -8,7 +8,8 @@
 (setq doom-font (font-spec :family "JetBrains Mono" :size 18)
       doom-unicode-font doom-font
       doom-serif-font doom-font
-      doom-variable-pitch-font doom-font)
+      doom-variable-pitch-font doom-font
+      doom-theme 'doom-city-lights)
 
 (defun hax/buffer-face-mode-variable ()
   "Set current buffer fase to a different configuration"
@@ -20,9 +21,8 @@
 (after! unicode-fonts
   ;; Otherwise unicode fonts are not properly set in the configuration, and
   ;; text does not loop properly (uses default fallback consolas)
-  (setq doom-unicode-font doom-font)
+  (setq doom-unicode-font doom-font))
 
-  )
 
 ;; `:ui unicode' does it's own fontset configuration, so I have to hack
 ;; this in like suggested on issue
