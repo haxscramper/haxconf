@@ -10,6 +10,9 @@ release+Mod2+Mod4+Control + c
 "xkb-switch -s us && rofi -show drun -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + r
 
+"xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
+release+Mod2+Mod4 + w
+
 "emacsclient-window"
 release+Mod2+Mod4 + e
 
@@ -39,6 +42,12 @@ release+Mod2+Mod4 + T
 
 "$HOME/.config/haxconf/scripts/rofi-select-song.sh"
 release+Control+Mod2+Mod4 + N
+
+"xbacklight -inc 1"
+XF86MonBrightnessUp
+
+"xbacklight -dec 1"
+XF86MonBrightnessDown
 
 "pactl set-sink-volume @DEFAULT_SINK@ +2%"
 XF86AudioRaiseVolume
