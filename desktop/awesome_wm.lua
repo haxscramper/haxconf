@@ -8,6 +8,7 @@ local cpu_widget = require("awesome-wm-widgets.cpu-widget.cpu-widget")
 local net_speed_widget = require("awesome-wm-widgets.net-speed-widget.net-speed")
 local mpdarc_widget = require("awesome-wm-widgets.mpdarc-widget.mpdarc")
 local volume_widget = require("awesome-wm-widgets.volume-widget.volume")
+local batteryarc_widget = require("awesome-wm-widgets.batteryarc-widget.batteryarc")
 local awful = require("awful")
 require("awful.autofocus")
 -- Widget and layout library
@@ -331,6 +332,10 @@ awful.screen.connect_for_each_screen(
                 wibox.widget.systray(),
                 mytextclock,
                 s.mylayoutbox,
+                batteryarc_widget({
+                    show_current_level = true,
+                    arc_thickness = 1,
+                }),
                 volume_widget {
                     widget_type = "arc"
                 }
