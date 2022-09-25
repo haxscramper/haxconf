@@ -6,3 +6,14 @@ $ username: cut -d':' -f1 /etc/passwd
 
 # List all users in the system
 cut -d':' -f1 /etc/passwd
+
+# Add user to a group
+sudo groupadd -a -G <group> <user>
+
+$ group: getent group | cut -f1 -d':'
+$ user: cut -d':' -f1 /etc/passwd
+
+# List groups for a user
+groups <user>
+
+$ user: cut -d':' -f1 /etc/passwd
