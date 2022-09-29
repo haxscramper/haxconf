@@ -163,7 +163,7 @@
 
 (defun hax/git-commit-hook ()
   (interactive)
-  (set-fill-column 90))
+  (set-fill-column 80))
 
 
 (after! magit

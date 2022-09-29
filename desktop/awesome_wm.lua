@@ -257,7 +257,8 @@ awful.screen.connect_for_each_screen(
         set_wallpaper(s)
 
         -- Each screen has its own tag table.
-        awful.tag({"1", "2", "3", "4", "5", "6", "7", "8", "9"}, s, awful.layout.layouts[1])
+        awful.tag({"1", "2", "3", "4", "5", "6", "7", "8", "9"},
+            s, awful.layout.layouts[1])
 
         -- Create a promptbox for each screen
         s.mypromptbox = awful.widget.prompt()
@@ -302,14 +303,6 @@ awful.screen.connect_for_each_screen(
             screen = s,
             filter = awful.widget.taglist.filter.all,
             buttons = taglist_buttons
-        }
-
-        -- Create a tasklist widget
-        s.mytasklist =
-            awful.widget.tasklist {
-            screen = s,
-            filter = awful.widget.tasklist.filter.currenttags,
-            buttons = tasklist_buttons
         }
 
         -- Create the wibox
@@ -821,14 +814,35 @@ end
 function update_client_numeration()
     num = 1
     -- TODO ignore tags that are not currently visible
+    local tagidx = 1
+    local class_shortening = {
+        TelegramDesktop = "tg",
+        qutebrowser = "qb",
+        firefox = "FF"
+    };
+
     for _, tag in pairs(root.tags()) do
-        for _, cl in ipairs(tag:clients()) do
+        local newname = "#" .. tostring(tagidx)
+        for cl_index, cl in ipairs(tag:clients()) do
+            if 1 < cl_index then
+                newname = newname .. ", "
+            else
+                newname = newname .. " "
+            end
+
+            if class_shortening[cl.class] ~= nil then
+                newname = newname .. class_shortening[cl.class]
+            else
+                newname = newname .. cl.class
+            end
+
             local color = "green"
             if cl == client.focus then
                 color = "red"
             end
 
-            local text = '<span foreground="' .. color .. '">' .. "[- " .. num .. " -]</span>"
+            local text = '<span foreground="' ..
+                color .. '">' .. "[- " .. num .. " -]</span>"
 
             if number_widgets[cl] then
                 number_widgets[cl]:set_markup_silently(text)
@@ -836,6 +850,8 @@ function update_client_numeration()
                 num = num + 1
             end
         end
+        tagidx = tagidx + 1
+        tag.name = newname
     end
     -- print("---")
 end
