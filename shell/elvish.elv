@@ -123,7 +123,7 @@ alias:new find-lib "ldconfig -p | grep -i"
 alias:new vi nvim
 alias:new ec emacsclient --nw
 alias:new mkdir e:mkdir -p
-alias:new ip e:ip -c -4
+alias:new ip e:ip -c
 
 set edit:abbr['paci '] = 'sudo pacman -Sv '
 set edit:abbr['pacl '] = 'pacman -Qqe '
@@ -466,3 +466,13 @@ fn call-navi {
 }
 
 set edit:insert:binding[Ctrl-g] = { call-navi >/dev/tty 2>&1 }
+
+
+fn br {|@arguments|
+  var path = (mktemp)
+  broot --outcmd $path $@arguments
+  if ?(test -s $path) {
+    eval (cat $path)
+  }
+  e:rm -f $path
+}

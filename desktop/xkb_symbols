@@ -7,7 +7,6 @@ xkb_keymap {
 
     xkb_geometry  { include "pc(pc105)" };
 
-
     xkb_types    {
         include "complete"
         type "THREE_GROUPS" {
@@ -30,8 +29,8 @@ xkb_keymap {
         #modifier_map Mod5 { ISO_Level3_Shift };
 
         key <AB09> {
-            symbols[Group1]= [          period,         greater ],
-            symbols[Group2]= [     Cyrillic_yu,         greater ]
+            symbols[Group1] = [          period,         greater ],
+            symbols[Group2] = [     Cyrillic_yu,         greater ]
         };
 
         key <TLDE> {

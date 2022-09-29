@@ -8,3 +8,5 @@ source $ZSH/oh-my-zsh.sh
 
 precmd() { print "" }
 eval "$(starship init zsh)"
+
+source $HOME/.config/broot/launcher/bash/br

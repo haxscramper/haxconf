@@ -27,3 +27,5 @@ fi
 # >>> xmake >>>
 [[ -s "$HOME/.xmake/profile" ]] && source "$HOME/.xmake/profile" # load xmake profile
 # <<< xmake <<<
+
+source $HOME/.config/broot/launcher/bash/br
