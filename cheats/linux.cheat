@@ -17,3 +17,6 @@ $ user: cut -d':' -f1 /etc/passwd
 groups <user>
 
 $ user: cut -d':' -f1 /etc/passwd
+
+# Grep only matching text (discard surrounding)
+grep -o
