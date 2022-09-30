@@ -11,11 +11,10 @@ kernel       /usr/src/linux
 hack         $HOME/workspace/hack
 nim          $HOME/workspace/hack/testing/nim
 
-githib       /mnt/workspace/github
+githib       $HOME/defaultdirs/repos
 
-hcparse      /mnt/workspace/github/hcparse
-hmisc        /mnt/workspace/github/hmisc
-nimskull     /mnt/workspace/github/nimskull
-semester6    $HOME/defaultdirs/documents/semester_6/
+hcparse      $HOME/defaultdirs/repos/hcparse
+hmisc        $HOME/defaultdirs/repos/hmisc
+nimskull     $HOME/defaultdirs/repos/nimskull
 git-sandbox  $HOME/workspace/git-sandbox
 telegram     $HOME/.cache/telegram

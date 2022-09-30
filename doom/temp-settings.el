@@ -355,4 +355,3 @@ must be non-read-only, empty, and there must be a rule in
 (defun hax/opaque-frame ()
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(100 100)))
-

@@ -1,1 +1,5 @@
-* { font-family: JetBrains Mono !important; }
+* {
+  font-family: JetBrains Mono !important;
+  text-align: justify;
+  text-justify: inter-word;
+}

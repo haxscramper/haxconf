@@ -32,6 +32,7 @@
   ;; page is https://www.evertype.com/emono/)
   (set-fontset-font "fontset-default" 'mathematical "Everson Mono"))
 
+
 (setq +file-templates-dir (expand-file-name "templates" (dir!)))
 
 (defun hax/in-snippet-file (path)

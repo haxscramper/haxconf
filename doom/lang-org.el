@@ -895,8 +895,25 @@ selection result. Provide PROMPT for selection input"
 
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
 
+
+(defun hax/org-capture-finalize (beg end)
+  (interactive "P")
+  )
+
+(defmacro push-tmp-value! (variable value body)
+  `(let ((tmp-value ,variable))
+     (setq ,variable ,value)
+     ,body
+     (setq ,variable tmp-value)))
+
 (defun hax/org-capture-hook ()
   (interactive)
+  (map!
+   :map org-capture-mode-map
+   "C-c C-k" (cmd!
+              (push-tmp-value!
+               hax/delete-region-as-kill nil
+               (org-capture-kill))))
   ;; I use adaptive indentation for drawers, but I don't want to forcefully
   ;; indent the text inside of the subtrees.
   (let ((text (buffer-substring (line-beginning-position) (point))))
@@ -1058,6 +1075,14 @@ subtree deadline/sheduled/timestamp if any."
 (defun hax/org-pre-capture-hook (&optional fun args)
   (interactive)
   (setq hax/org-capture-from-line (line-number-at-pos)))
+
+(defvar hax/delete-region-as-kill t)
+(defun hax/delete-region (fun &rest args)
+  (if hax/delete-region-as-kill
+      (apply fun args)
+    (apply 'delete-region args)))
+
+(advice-add 'kill-region :around #'hax/delete-region)
 
 (advice-add 'org-capture :before #'hax/org-pre-capture-hook)
 
