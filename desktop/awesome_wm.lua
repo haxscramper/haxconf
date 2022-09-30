@@ -171,6 +171,7 @@ local taglist_buttons =
         function(t)
             if client.focus then
                 client.focus:move_to_tag(t)
+                update_client_numeration()
             end
         end
     ),
@@ -670,6 +671,7 @@ for i = 1, 9 do
                     local tag = client.focus.screen.tags[i]
                     if tag then
                         client.focus:move_to_tag(tag)
+                        update_client_numeration()
                     end
                 end
             end,
