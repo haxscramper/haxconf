@@ -355,3 +355,40 @@ must be non-read-only, empty, and there must be a rule in
 (defun hax/opaque-frame ()
   (interactive)
   (set-frame-parameter (selected-frame) 'alpha '(100 100)))
+
+
+(defun pcomplete-all-args ()
+  (let ((outlist nil)
+        (counter 0))
+    (while (pcomplete-arg 1 counter)
+      (setq outlist (append outlist (list (pcomplete-arg 1 counter))))
+      (setq counter (+ 1 counter)))
+    outlist))
+
+
+
+(when (and (executable-find "carapace"))
+  (cl-defun pcomplete-with-carapace
+      (spec args &optional (shell "elvish"))
+    ;; NOTE IIRC emacs shell also supports pcomplete for the remote shell
+    ;; applications, which would require `carapace' to be installed in order
+    ;; to properly get directory listings. This is not especially important
+    ;; all things considered, but might be nice to implement sometimes later.
+    (let* ((cmd (format "carapace %s %s %s" spec shell (s-join " " args)))
+           (json (shell-command-to-string cmd))
+           (res (json-parse-string json)))
+      (--map (gethash "Value" it) res)))
+
+  (let ((specified
+         (-slice
+          (s-split
+           " "
+           (shell-command-to-string "carapace _carapace bash | grep complete"))
+          3)))
+    (dolist (spec specified)
+      (message "Defined alias for %s" spec)
+      (defalias
+        (intern (concat "pcomplete/" spec))
+        (lambda ()
+          (let* ((args (pcomplete-all-args)))
+            (while (pcomplete-here (pcomplete-with-carapace spec args)))))))))

@@ -593,3 +593,5 @@ assed
 bugfix
 unittest
 Linters
+stdout
+stderr
