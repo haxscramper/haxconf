@@ -51,8 +51,31 @@ mode"
     (delete-backward-char (length target))
     (evil-insert-state)))
 
+(defun hax/org-download-display-inline-images (func))
+
+(defun org-download-insert-link (link filename)
+  ;; HACK Setting `org-download-display-inline-images' to `nil' does not
+  ;; work - I need to explicitly override function call with an empty
+  ;; function. I also need to remove all advices that were put on this
+  ;; symbol to prevent `+org' hook from triggering.
+  (let* ((beg (point))
+         (line-beg (line-beginning-position))
+         str)
+    (insert
+     (format "[[file:%s][image]]"
+             (org-link-escape
+              (funcall org-download-abbreviate-filename-function filename))))
+    (setq str (buffer-substring-no-properties line-beg (point)))
+    str))
+
 (defun hax/org-download-setup ()
+  (interactive)
   (require 'org-download)
+  (advice-remove-all 'org-download-insert-link)
+  (advice-add
+   'org-download--display-inline-images
+   :around #'hax/org-download-display-inline-images)
+
   (let ((base
          (if (buffer-file-name) (buffer-file-name)
            (let ((buf (org-capture-get :buffer)))
@@ -63,9 +86,12 @@ mode"
     (setq org-image-actual-width 300)
     ;; Update configuration to it's original values - some doom emacs
     ;; configuration changes these as well, and I don't need it.
-    (setq org-download-link-format-function #'org-download-link-format-function-default)
+    (setq org-download-link-format-function
+          #'org-download-link-format-function-default)
+    ;; Don't redisplay all images in file on each insertion - if I need to
+    ;; redisplay them, I can do it perfectly well by myself.
+    (setq org-download-display-inline-images nil)
     (setq org-download-abbreviate-filename-function #'file-relative-name)
-    (setq org-download-link-format "[[file:%s]]")
     (setq org-download-method 'directory)
     (setq org-download-heading-lvl nil)))
 
@@ -1180,7 +1206,9 @@ contextual information."
 
   (defun hax/tg-insert-selected-note (beginning end)
     (interactive "r")
-    (hax/tg-insert-note (buffer-substring beginning end))
+    (hax/tg-insert-note (s-replace "𝖍𝖆𝖝𝖘𝖈𝖗𝖆𝖒𝖕𝖊𝖗"
+                                   "haxscramper"
+                                   (buffer-substring beginning end)))
     (kill-region beginning end)
     (message (propertize "inserted note" 'face
                          `(:foreground ,(doom-color 'red))))))

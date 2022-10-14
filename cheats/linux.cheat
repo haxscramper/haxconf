@@ -8,7 +8,7 @@ $ username: cut -d':' -f1 /etc/passwd
 cut -d':' -f1 /etc/passwd
 
 # Add user to a group
-sudo groupadd -a -G <group> <user>
+sudo usermod -a -G <group> <user>
 
 $ group: getent group | cut -f1 -d':'
 $ user: cut -d':' -f1 /etc/passwd

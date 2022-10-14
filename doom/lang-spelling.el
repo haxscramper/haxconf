@@ -35,6 +35,7 @@ List of CANDIDATES is given by flyspell for the WORD.
 Return selected word to use as a replacement or a tuple
 of (command . word) to be used by `flyspell-do-correct'."
     (let* ((verbatim-word (s-wrap word "=" "="))
+           (internal-link-word (s-wrap word "[[" "]]"))
            (code-word (s-wrap word "~" "~"))
            (corrects (if flyspell-sort-corrections
                          (sort candidates 'string<)
@@ -44,6 +45,7 @@ of (command . word) to be used by `flyspell-do-correct'."
                       ("C-b" "Accept (buffer)"   (buffer  . ,word))
                       ("C-=" "Make verbatim"     ,verbatim-word)
                       ("C-`" "Make code"         ,code-word)
+                      ("C-]" "Make link"         ,internal-link-word)
                       ("C-c" "Skip"              (skip    . ,word))))
            (prompt   (format "Dictionary: [%s]"  (or ispell-local-dictionary
                                                      ispell-dictionary

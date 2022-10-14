@@ -6,15 +6,23 @@
 
 
 (setq doom-font (font-spec :family "JetBrains Mono" :size 18)
-      doom-unicode-font doom-font
+      doom-unicode-font (font-spec :family "Noto Sans Mono" :size 18)
       doom-serif-font doom-font
       doom-variable-pitch-font doom-font
-      doom-theme 'doom-city-lights)
+      doom-theme 'doom-city-lights
+      doom-emoji-fallback-font-families '("Apple Color Emoji"
+                                          "Segoe UI Emoji"
+                                          "Noto Color Emoji"
+                                          "Noto Emoji")
+
+      doom-symbol-fallback-font-families '("Segoe UI Symbol"
+                                           "Apple Symbols"
+                                           "Noto"))
 
 (defun hax/buffer-face-mode-variable ()
   "Set current buffer fase to a different configuration"
   (interactive)
-  (setq buffer-face-mode-face '(:family "Iosevka Mono"))
+  (setq buffer-face-mode-face '(:family "Noto Sans Mono"))
   (buffer-face-mode))
 
 
@@ -164,7 +172,7 @@
 
 (defun hax/git-commit-hook ()
   (interactive)
-  (set-fill-column 80))
+  (set-fill-column 75))
 
 
 (after! magit
@@ -288,6 +296,19 @@ more nitpickery about stuff I write in my configuration files."
     "-i" "4" ;; Indent: 0 for tabs (default), >0 for number of spaces.
     "-sr" ;; Redirect operators will be followed by a space.
     ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
+
+(set-formatter! 'pyfmt
+  '("black" "--line-length" "75" "-")
+  :modes '(python-mode)
+  )
+
+(set-formatter! 'cmakefmt
+  '("cmake-format"
+    "--line-width" "75"
+    "--command-case" "lower"
+    "--keyword-case" "upper"
+    "-")
+  :modes '(cmake-mode))
 
 (set-formatter! 'sqlfmt
   '("sqlformat" "-"

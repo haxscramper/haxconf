@@ -149,6 +149,7 @@ occurrence of symbol"
  :v "x" 'kill-region
  ;; Delete deletes things
  :v "d" 'delete-region
+ :v "<delete>" 'evil-delete-char-without-register
  ;; Backspace should **DELETE** text - why in world someone could even
  ;; thing this is not how it should function.
  :nvi "<C-backspace>" 'backward-delete-word-no-push
@@ -289,5 +290,6 @@ either be 1, -1 or nil. Nil defaults to 1 (below)"
 
 (define-key evil-inner-text-objects-map "$" 'evil-inner-dollar)
 (define-key evil-inner-text-objects-map "~" 'evil-inner-tilda)
+(define-key evil-inner-text-objects-map "<" 'evil-inner-angle)
 
 ;; https://stackoverflow.com/questions/18102004/emacs-evil-mode-how-to-create-a-new-text-object-to-select-words-with-any-non-sp

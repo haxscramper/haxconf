@@ -835,7 +835,11 @@ function update_client_numeration()
             if class_shortening[cl.class] ~= nil then
                 newname = newname .. class_shortening[cl.class]
             else
-                newname = newname .. cl.class
+                if cl.class ~= nil then
+                    newname = newname .. cl.class
+                else
+                    newname = newname .. "?"
+                end
             end
 
             local color = "green"
