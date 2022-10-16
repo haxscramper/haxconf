@@ -53,28 +53,26 @@ mode"
 
 (defun hax/org-download-display-inline-images (func))
 
-(defun org-download-insert-link (link filename)
-  ;; HACK Setting `org-download-display-inline-images' to `nil' does not
-  ;; work - I need to explicitly override function call with an empty
-  ;; function. I also need to remove all advices that were put on this
-  ;; symbol to prevent `+org' hook from triggering.
-  (let* ((beg (point))
-         (line-beg (line-beginning-position))
-         str)
-    (insert
-     (format "[[file:%s][image]]"
-             (org-link-escape
-              (funcall org-download-abbreviate-filename-function filename))))
-    (setq str (buffer-substring-no-properties line-beg (point)))
-    str))
-
 (defun hax/org-download-setup ()
   (interactive)
   (require 'org-download)
+  ;; NOTE function redefinition should happen after the hook.
+  (defun org-download-insert-link (link filename)
+    ;; HACK Setting `org-download-display-inline-images' to `nil' does not
+    ;; work - I need to explicitly override function call with an empty
+    ;; function. I also need to remove all advices that were put on this
+    ;; symbol to prevent `+org' hook from triggering.
+    (let* ((beg (point))
+           (line-beg (line-beginning-position))
+           str)
+      (insert
+       (format "[[file:%s][image]]"
+               (org-link-escape
+                (funcall org-download-abbreviate-filename-function filename))))
+      (setq str (buffer-substring-no-properties line-beg (point)))
+      str))
+
   (advice-remove-all 'org-download-insert-link)
-  (advice-add
-   'org-download--display-inline-images
-   :around #'hax/org-download-display-inline-images)
 
   (let ((base
          (if (buffer-file-name) (buffer-file-name)

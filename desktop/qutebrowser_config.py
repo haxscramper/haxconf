@@ -106,6 +106,7 @@ c.url.searchengines = {
     "gp": "https://packages.gentoo.org/packages/search?q={}",
     "so": "https://stackoverflow.com/search?q={}",
     "wa": "https://www.wolframalpha.com/input/?i={}",
+    "rg": "https://glosbe.com/ru/en/{}",
     "glp": "https://gitlab.com/dashboard/projects?utf8=%E2%9C%93&name={}",
     "cpr": "https://en.cppreference.com/mwiki/index.php?title=Special%3ASearch&search={}",
 }
