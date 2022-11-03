@@ -1,10 +1,10 @@
 ;; -*- lexical-binding: t; -*-
 
 ;; https://archive.baty.net/2020/respecting-visual-lines-in-doom-emacs/
-(use-package-hook! evil :pre-init
-  ;; sane j and k behavior
-  (setq evil-respect-visual-line-mode t)
-  t)
+;(use-package-hook! evil :pre-init
+;  ;; sane j and k behavior
+;  (setq evil-respect-visual-line-mode t)
+;  t)
 
 (defconst hax/+roam nil)
 

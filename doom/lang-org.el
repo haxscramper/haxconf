@@ -742,6 +742,7 @@ selection result. Provide PROMPT for selection input"
   (hl-todo-mode 1)
 
   (push '(?$ . ("\\(" . "\\)")) evil-surround-pairs-alist)
+  (setq olivetti-body-width (+ 75 7))
 
   (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
@@ -1492,7 +1493,8 @@ contextual information."
                           hax/inbox.org
                           hax/notes.org
                           hax/projects.org)
-   org-refile-targets `((,hax/fic.org :maxlevel . 9)
+   org-refile-targets `((nil :maxlevel . 4)
+                        (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/inbox.org :maxlevel . 1)

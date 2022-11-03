@@ -52,6 +52,17 @@ tasks:
         {{.USE_INSTALLED}}
         {{.TARGET}}
 
+  nim_trunner:
+    desc: "Build and execute trunner for tests"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: tests/misc/trunner.nim
+          FLAGS: "-o=tests/misc/trunner.bin"
+
+      - ./tests/misc/trunner.bin
+
+
   nim_temp:
     desc: "Build a debug compiler instance compiler"
     cmds:
@@ -118,6 +129,16 @@ tasks:
     desc: "Execute koch test using debug compiler build"
     cmds:
       - ./koch.py --nim={{.OUT_RES}} {{.ACT}}
+
+  test_testament_category:
+    desc: "Run testament category tests"
+    cmds:
+      - ./bin/testament cat {{.CATEGORY}}
+
+  test_testament_run:
+    desc: "Run a single testament file"
+    cmds:
+      - ./bin/testament run {{.FILE}}
 
   test_nimsuggest:
     desc: "Execute nimsuggest tests using debug compiler build or provided one"

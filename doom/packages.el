@@ -84,6 +84,11 @@
   :recipe (:type git :host github :repo "kanru/uuidgen-el"
            :branch "master"))
 
+(package! evil-surround
+  :recipe (:type git :host github :repo "emacs-evil/evil-surround"
+           :branch "master"))
+
+
 (package! lorem-ipsum)
 
 (package! origami)
@@ -117,7 +122,14 @@
 ;; https://github.com/alphapapa/org-sidebar
 (package! org-sidebar)
 
+(package! olivetti)
 (when hax/+roam
   (unpin! org-roam)
   (package! org-roam-ui))
 (package! howdoyou)
+
+
+(package! elisp-format)
+
+(package! sdcv)
+(package! mw-thesaurus)

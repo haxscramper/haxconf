@@ -20,3 +20,8 @@ $ user: cut -d':' -f1 /etc/passwd
 
 # Grep only matching text (discard surrounding)
 grep -o
+
+# Open a bz2 file
+tar -xvf <file>
+
+$ file: fd -uu -e bz2

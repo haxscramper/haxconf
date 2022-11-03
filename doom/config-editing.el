@@ -5,6 +5,9 @@
 (setq-default fill-column 75)
 (global-visual-line-mode t)
 
+(after! olivetti
+  (setq olivetti-body-width (+ 75 7)))
+
 ;; Don't account for folded section lines
 (setq display-line-numbers-type 'visual)
 ;; Editing operations such as deleting work only on parts of the word instead of

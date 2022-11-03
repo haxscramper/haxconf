@@ -286,6 +286,11 @@
        (format "file: %s line: %s note: %s\n  text: \"%s\" \n"
                file line (s-trim text) note)))))
 
+(defun copy-buffer ()
+  "Copy all the text from the buffer"
+  (interactive)
+  (copy-text (buffer-substring-no-properties (point-min) (point-max))))
+
 (defun hax/close-popup-buffer-callback nil)
 (defvar hax/read-from-popup-buffer-mode-map nil)
 (setq hax/read-from-popup-buffer-mode-map
