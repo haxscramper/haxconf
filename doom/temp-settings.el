@@ -397,3 +397,17 @@ must be non-read-only, empty, and there must be a rule in
         (lambda ()
           (let* ((args (pcomplete-all-args)))
             (while (pcomplete-here (pcomplete-with-carapace spec args)))))))))
+
+(defun dired-sort ()
+  "Sort dired dir listing in different ways.
+Prompt for a choice."
+  (interactive)
+  (let (-sort-by -arg)
+    (setq -sort-by (ido-completing-read "Sort by:" '( "date" "size" "name" "dir")))
+    (cond
+     ((equal -sort-by "name") (setq -arg "-Al --si --time-style long-iso "))
+     ((equal -sort-by "date") (setq -arg "-Al --si --time-style long-iso -t"))
+     ((equal -sort-by "size") (setq -arg "-Al --si --time-style long-iso -S"))
+     ((equal -sort-by "dir") (setq -arg "-Al --si --time-style long-iso --group-directories-first"))
+     (t (error "logic error 09535" )))
+    (dired-sort-other -arg )))

@@ -130,14 +130,24 @@ tasks:
     cmds:
       - ./koch.py --nim={{.OUT_RES}} {{.ACT}}
 
+  build_testament:
+    desc: "Build testament executable"
+    cmds:
+      - task: installed_nim
+        vars:
+          TARGET: testament/testament.nim
+          FLAGS: --out={{.PWD}}/bin/testament
+
   test_testament_category:
     desc: "Run testament category tests"
     cmds:
+      - task: build_testament
       - ./bin/testament cat {{.CATEGORY}}
 
   test_testament_run:
     desc: "Run a single testament file"
     cmds:
+      - task: build_testament
       - ./bin/testament run {{.FILE}}
 
   test_nimsuggest:

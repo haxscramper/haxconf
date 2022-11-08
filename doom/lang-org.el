@@ -2073,7 +2073,11 @@ displays relative (from the current time) hour and minute range."
          (year (nth 2 date))
          ;; Immediately convert to the `ts` time format, because regular
          ;; emacs time formatting is an absolutely nauseating trash.
-         (ts (ts-apply :year year :month month :day day :hour 0 :minute 0 (ts-now)))
+         (ts (ts-apply :year year
+                       :month month
+                       :day day
+                       :hour 0
+                       :minute 0 (ts-now)))
          (tdiff (ts-difference ts (ts-now))))
     (format
      "%03d%s %s"
@@ -2100,8 +2104,10 @@ displays relative (from the current time) hour and minute range."
   (setq
    company-backends
    '(company-capf
-     (:separate hax/org-company-tags company-dabbrev company-yasnippet company-ispell)
-     (:separate hax/org-company-tags company-ispell company-dabbrev company-yasnippet))))
+     (:separate hax/org-company-tags
+                company-dabbrev company-yasnippet company-ispell)
+     (:separate hax/org-company-tags
+                company-ispell company-dabbrev company-yasnippet))))
 
 
 (defun hax/after-inline-uppercase ()
@@ -2179,3 +2185,12 @@ skips capitalized and upperacsed words (names and abbreviations)"
 (defun hax/fill-paragraph ()
   (interactive)
   (funcall-interactively 'fill-paragraph 'full))
+
+(defun org-refile-targets-all-files ()
+  "Use all currently opened Org buffer files as org-refile targets."
+  (mapcar 'buffer-file-name
+          (seq-filter ; filter Org buffers
+           (lambda (buffer)
+             (if-let (file (buffer-file-name buffer))
+                 (string-equal (file-name-extension file) "org")))
+           (buffer-list))))
