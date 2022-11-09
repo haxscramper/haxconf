@@ -1124,15 +1124,15 @@ subtree deadline/sheduled/timestamp if any."
         (let* ((top (f-filename (magit-toplevel)))
                (file (magit-file-relative-name orig)))
           (format
-           "from ~%s:%s:%s~ (=%s=)"
-           top file hax/org-capture-from-line uuid))
+           "from ~%s:%s:%s~"
+           top file hax/org-capture-from-line))
       (if orig
           (format
-           "from ~%s:%s~ (=%s=)"
-           (f-filename orig) hax/org-capture-from-line uuid)
+           "from ~%s:%s~"
+           (f-filename orig) hax/org-capture-from-line)
         (format
-         "from ~%s~ (=%s=)"
-         (s-replace "~" "∼" hax/fullscreen-client-name) uuid)))))
+         "from ~%s~"
+         (s-replace "~" "∼" hax/fullscreen-client-name))))))
 
 (defun org-odt-inline-src-block (_inline-src-block _contents _info)
   "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
