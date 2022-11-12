@@ -72,6 +72,8 @@
     # Rofi text selector configuration and themes
     ~/.config/rofi/config.rasi: desktop/rofi
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
+    ~/.config/sxiv/exec/key-handler: desktop/sxiv_key_handler.sh
+
     # Indirection to simplify xbindkeys configuration
     ~/.config/rofi-launchers: external/rofi-themes/files/launchers
 

@@ -15,10 +15,14 @@ theme.menu_bg_normal                            = "#000000"
 theme.menu_bg_focus                             = "#000000"
 theme.bg_normal                                 = "#000000"
 theme.bg_focus                                  = "#000000"
-theme.bg_urgent                                 = "#FF0000"
+theme.bg_urgent                                 = "#000000"
+-- Urgent and focused modes have the same background color to avoid
+-- spurious color flashes all over the place. I will see the change when I
+-- open the software, there is no need to bombard me with visual
+-- distractions all the time.
 theme.fg_normal                                 = "#aaaaaa"
-theme.fg_focus                                  = "#ff8c00"
-theme.fg_urgent                                 = "#af1d18"
+theme.fg_focus                                  = "#aaaaaa"
+theme.fg_urgent                                 = "#aaaaaa"
 theme.fg_minimize                               = "#ffffff"
 theme.border_width                              = 2
 theme.border_normal                             = "#1c2022"
