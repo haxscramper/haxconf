@@ -21,7 +21,7 @@ theme.bg_urgent                                 = "#000000"
 -- open the software, there is no need to bombard me with visual
 -- distractions all the time.
 theme.fg_normal                                 = "#aaaaaa"
-theme.fg_focus                                  = "#aaaaaa"
+theme.fg_focus                                  = "#af1d18"
 theme.fg_urgent                                 = "#aaaaaa"
 theme.fg_minimize                               = "#ffffff"
 theme.border_width                              = 2

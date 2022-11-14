@@ -1,6 +1,6 @@
 /usr/lib64/llvm/7/bin
-/usr/lib/jvm/java-8-openjdk/bin
 /usr/lib/jvm/java-11-openjdk/bin
+/usr/lib/jvm/java-8-openjdk/bin
 /opt/android-sdk/tools/bin
 /opt
 /opt/X11/bin

@@ -730,6 +730,8 @@ selection result. Provide PROMPT for selection input"
       (delete-region (region-beginning) (region-end))
       res)))
 
+;; (global-set-key (kbd "M-i") nil)
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -791,6 +793,11 @@ selection result. Provide PROMPT for selection input"
    :desc "sort, todo state order"
    :nv "soo" #'hax/sort-subtree-contextually)
 
+  ;; (map!
+  ;;  :map evil-org-mode-map
+  ;;  :nvi "M-i M-l M-t" nil
+  ;;  )
+
   (map!
    :map evil-org-mode-map
    ;; Consistent multicursor bindings are more important for me, so
@@ -846,26 +853,39 @@ selection result. Provide PROMPT for selection input"
 
    :desc "link to word"
    :v "M-i M-l M-w" (cmd! (let ((text (get-selected-region-text)))
-                            (delete-region (get-selected-region-start) (get-selected-region-end))
+                            (delete-region (get-selected-region-start)
+                                           (get-selected-region-end))
                             (insert (format "[[%s][%s]]" text text))))
 
-   :desc "link to subtree"
-   :v "M-i M-l M-t" (cmd! (let ((text (get-selected-region-text)))
-                            (delete-region (get-selected-region-start) (get-selected-region-end))
-                            (hax/org-insert-clipboard-link text)))
+   :desc "link to subtree, full name"
+   :v "M-i M-l M-t M-f" (cmd! (let ((text (get-selected-region-text)))
+                                (delete-region (get-selected-region-start)
+                                               (get-selected-region-end))
+                                (hax/org-insert-clipboard-link text)))
    :desc "link to clipboard"
    :v "M-i M-l M-l" (cmd! (let ((text (get-selected-region-text)))
-                            (delete-region (get-selected-region-start) (get-selected-region-end))
+                            (delete-region (get-selected-region-start)
+                                           (get-selected-region-end))
                             (hax/org-insert-clipboard-link text)))
 
    :desc "link subtree, full name"
    :ni "M-i M-l M-t M-f" (cmd! (hax/org-insert-link-to-subtree))
    :desc "link subtree, short name"
    :ni "M-i M-l M-t M-s" (cmd! (hax/org-insert-link-to-subtree :last-n 1))
+   :desc "link subtree, short name"
+   :v "M-i M-l M-t M-s" (cmd! (let ((text (get-selected-region-text)))
+                                (delete-region (get-selected-region-start)
+                                               (get-selected-region-end))
+                                (hax/org-insert-link-to-subtree
+                                 :description text
+                                 :last-n 1)))
+
    :desc "subtree, only short name"
    :ni "M-i M-l M-t M-n" (cmd! (hax/org-select-subtree-callback
                                 "Insert: "
-                                (lambda (x) (insert (hax/org-outline-path-at-marker (cdr x) 1)))
+                                (lambda
+                                  (x) (insert (hax/org-outline-path-at-marker
+                                               (cdr x) 1)))
                                 'hax/org-insert-link-to-heading))
 
    :desc "link active subtree, full name"

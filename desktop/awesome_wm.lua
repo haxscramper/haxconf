@@ -823,6 +823,9 @@ function update_client_numeration()
         firefox = "FF"
     };
 
+    class_shortening[
+        "org-openstreetmap-josm-gui-MainApplication"] = "JOSM";
+
     for _, tag in pairs(root.tags()) do
         local newname = "#" .. tostring(tagidx)
         for cl_index, cl in ipairs(tag:clients()) do
@@ -834,6 +837,7 @@ function update_client_numeration()
 
             if class_shortening[cl.class] ~= nil then
                 newname = newname .. class_shortening[cl.class]
+
             else
                 if cl.class ~= nil then
                     newname = newname .. cl.class
