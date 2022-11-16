@@ -438,6 +438,7 @@ fn none-of {|list pred|
 
 eval (starship init elvish)
 eval (carapace _carapace|slurp)
+eval (zoxide init elvish | slurp)
 
 fn call-navi {
   if (eq $edit:current-command '') {

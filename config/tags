@@ -304,3 +304,11 @@
 #story##arc##start
 #story##arc##end
 #tenative
+#organization
+#organization##research
+#organization##government
+#organization##commercial
+#location##japan
+#repeated
+#software##langtool
+#programing##logging

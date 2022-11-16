@@ -8,8 +8,8 @@ personal     $HOME/defaultdirs/personal
 defaultdirs  $HOME/defaultdirs/
 automatic    $HOME/defaultdirs/automatic
 kernel       /usr/src/linux
-hack         $HOME/workspace/hack
-nim          $HOME/workspace/hack/testing/nim
+hack         $HOME/defaultdirs/repos/hack
+nim          $HOME/defaultdirs/repos/hack/testing/nim
 
 githib       $HOME/defaultdirs/repos
 

@@ -338,7 +338,7 @@ selection result. Provide PROMPT for selection input"
                (save-excursion
                  (goto-char (marker-position (cdr tree-car)))
                  (org-id-get-create)))))
-    (insert (format " [[id:%s][%s]]" id (if description description name)))))
+    (insert (format "[[id:%s][%s]]" id (if description description name)))))
 
 (cl-defun hax/org-insert-link-to-subtree
     (&key description
@@ -356,6 +356,25 @@ selection result. Provide PROMPT for selection input"
                 x description last-n with-tags cleanup-name-formatting))
    'hax/org-insert-link-to-heading
    entries))
+
+(defun hax/add-subtree-refs ()
+  (interactive)
+  (let* ((newref (with-temp-buffer
+                   (hax/org-insert-link-to-subtree :description "ref")
+                   (buffer-substring-no-properties (point-min) (point-max))))
+         (content (org-entry-get nil "REFS"))
+         (refs (when content (--filter (not (string-empty-p it))
+                                       (s-split "," content)))))
+    (org-entry-put
+     nil
+     "REFS"
+     (if refs
+         (if (and (-contains-p refs newref) (length< refs 0))
+             (s-join "," (--filter (not (or
+                                         (string-empty-p it)
+                                         (s-equals? newref it))) refs))
+           (s-join "," (-concat (list newref) refs)))
+       newref))))
 
 (cl-defun www-get-page-title (url &optional (timeout 15))
   "Return title of the URL page, or if not found the page's
@@ -856,6 +875,9 @@ selection result. Provide PROMPT for selection input"
                             (delete-region (get-selected-region-start)
                                            (get-selected-region-end))
                             (insert (format "[[%s][%s]]" text text))))
+
+   :desc "link to subtree, refs"
+   :nvi "M-i M-l M-t M-r" #'hax/add-subtree-refs
 
    :desc "link to subtree, full name"
    :v "M-i M-l M-t M-f" (cmd! (let ((text (get-selected-region-text)))
@@ -1389,18 +1411,20 @@ contextual information."
       :empty-lines-before 1
       :empty-lines-after 1)
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U %(hax/capture-location)
+      "** %U
   :PROPERTIES:
   :CREATED: %U
+  :ORIGIN: %(hax/capture-location)
   :END:
 
 %?"
       :empty-lines-before 1
       :empty-lines-after 1)
      ("@" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U %(hax/capture-location) %(hax/immediate-note-tags)
+      "** %U %(hax/immediate-note-tags)
   :PROPERTIES:
   :CREATED: %U
+  :ORIGIN: %(hax/capture-location)
   :END:
 
 %(hax/get-immediate-note-content)
