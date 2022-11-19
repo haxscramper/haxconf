@@ -29,3 +29,4 @@ fi
 # <<< xmake <<<
 
 source $HOME/.config/broot/launcher/bash/br
+. "$HOME/.cargo/env"

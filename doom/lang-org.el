@@ -1198,30 +1198,48 @@ contextual information."
 
   (defun hax/tg-extract-date (msg)
     (with-temp-buffer
-      (insert msg)
-      (goto-char 0)
-      (re-search-forward (rx "["
-                             (group (1+ digit)) "/" ;; 1 month
-                             (group (1+ digit)) "/" ;; 2 day
-                             (group (1+ digit)) " " ;; 3 year
-                             (group (1+ digit)) ":" ;; 4 hour
-                             (group (1+ digit)) " " ;; 5 minute
-                             (group (| "PM" "AM"))  ;; 6 AM/PM
-                             "]"))
-      (let ((hour (string-to-number (match-string 4))))
+      (let* ((iso-form (s-replace-regexp
+                        (rx
+                         "["
+                         (group (1+ digit)) "/"
+                         (group (1+ digit)) "/"
+                         (group (1+ digit)) " "
+                         (group (1+ digit)) ":"
+                         (group (1+ digit)) " "
+                         (group (| "AM" "PM"))
+                         "]")
+                        "[20\\3-\\1-\\2 \\4\\6:\\5]"
+                        msg))
+             (un-pm (s-replace-all
+                     '(("10PM" . "22") ("11PM" . "23") ("12PM" . "24")
+                       ("10AM" . "01") ("11AM" . "11") ("12AM" . "12")
+                       ("1PM" . "13") ("2PM" . "14") ("3PM" . "15")
+                       ("4PM" . "16") ("5PM" . "17") ("6PM" . "18")
+                       ("7PM" . "19") ("8PM" . "20") ("9PM" . "21")
+                       ("1AM" . "01") ("2AM" . "02") ("3AM" . "03")
+                       ("4AM" . "04") ("5AM" . "05") ("6AM" . "06")
+                       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09"))
+                     iso-form)))
+        ;; (message iso-form)
+        ;; (message un-pm)
+        (insert un-pm)
+        (goto-char 0)
+        (re-search-forward (rx "["
+                               (group (1+ digit)) "-" ;; 1 year
+                               (group (1+ digit)) "-" ;; 2 month
+                               (group (1+ digit)) " " ;; 3 day
+                               (group (1+ digit)) ":" ;; 4 hour
+                               (group (1+ digit)) ;; 5 minute
+                               "]"))
+        (message un-pm)
         (list
-         ;; sec
-         0
-         ;; min
-         (string-to-number (match-string 5))
-         ;; hour
-         (if (string= (match-string 6) "AM") (+ hour 12) hour)
-         ;; day
-         (string-to-number (match-string 2))
-         ;; mon
-         (string-to-number (match-string 1))
-         ;; year
-         (+ 2000 (string-to-number (match-string 3)))))))
+         0 ;; sec
+         (string-to-number (match-string 5)) ;; min
+         (string-to-number (match-string 4)) ;; hour
+         (string-to-number (match-string 3)) ;; day
+         (string-to-number (match-string 2)) ;; mon
+         (string-to-number (match-string 1)) ;; year
+         ))))
 
   (defun hax/tg-extract-tags (msg)
     (with-temp-buffer
@@ -1632,6 +1650,7 @@ contextual information."
      (shell . t)
      (sqlite . t)
      (python . t)))
+  (setq org-latex-listings 'minted)
   (setq org-todo-keywords
         ;; I don't use most of these keywords as well, and sometimes they
         ;; overlap with GTD management. You can think of them as "yes" and
@@ -2238,3 +2257,42 @@ skips capitalized and upperacsed words (names and abbreviations)"
              (if-let (file (buffer-file-name buffer))
                  (string-equal (file-name-extension file) "org")))
            (buffer-list))))
+
+
+(defun org-export-filter-timestamp-remove-brackets (timestamp backend info)
+  "removes relevant brackets from a timestamp"
+  (cond
+   ((org-export-derived-backend-p backend 'latex)
+    (replace-regexp-in-string
+     (rx "[" (group (* (not "]"))) "]") "\\1"
+     (s-replace "textit" "texttt" timestamp)))
+   ((org-export-derived-backend-p backend 'html)
+    (replace-regexp-in-string "&[lg]t;\\|[][]" "" timestamp))))
+
+(eval-after-load 'ox
+  '(add-to-list
+    'org-export-filter-timestamp-functions
+    'org-export-filter-timestamp-remove-brackets))
+
+
+(defun org-latex-quote-block (quote-block contents info)
+  "Transcode a QUOTE-BLOCK element from Org to LaTeX.
+CONTENTS holds the contents of the block.  INFO is a plist
+holding contextual information."
+  (let ((caption (org-element-property :caption quote-block))
+        (caption-above-p (org-latex--caption-above-p quote-block info))
+        (environment
+         (or (org-export-read-attribute :attr_latex quote-block :environment)
+             (plist-get info :latex-default-quote-environment)))
+        (options
+         (or (org-export-read-attribute :attr_latex quote-block :options)
+             "")))
+    (org-latex--wrap-label
+     quote-block
+     (format
+      "\\begin{%s}%s\n\\textit{%s}\\end{%s}"
+      environment
+      options
+      contents
+      environment)
+     info)))

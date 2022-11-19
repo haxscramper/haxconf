@@ -133,3 +133,4 @@
 
 (package! sdcv)
 (package! mw-thesaurus)
+(package! ox-gfm)
