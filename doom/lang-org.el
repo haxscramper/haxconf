@@ -2279,20 +2279,16 @@ skips capitalized and upperacsed words (names and abbreviations)"
   "Transcode a QUOTE-BLOCK element from Org to LaTeX.
 CONTENTS holds the contents of the block.  INFO is a plist
 holding contextual information."
-  (let ((caption (org-element-property :caption quote-block))
-        (caption-above-p (org-latex--caption-above-p quote-block info))
-        (environment
+  (let ((environment
          (or (org-export-read-attribute :attr_latex quote-block :environment)
              (plist-get info :latex-default-quote-environment)))
         (options
          (or (org-export-read-attribute :attr_latex quote-block :options)
              "")))
     (org-latex--wrap-label
-     quote-block
-     (format
-      "\\begin{%s}%s\n\\textit{%s}\\end{%s}"
-      environment
-      options
-      contents
-      environment)
+     quote-block (format "\\begin{%s}%s\n%s\\end{%s}"
+                         environment
+                         options
+                         contents
+                         environment)
      info)))
