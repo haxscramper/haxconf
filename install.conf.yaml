@@ -17,6 +17,9 @@
     # Shell configuration
     ~/.config/elvish/rc.elv: shell/elvish.elv
 
+    # Carapace completions
+    ~/.config/carapace/specs: shell/completions
+
     # Starship shell prompt configuration
     ~/.config/starship.toml: cli/starship.toml
 

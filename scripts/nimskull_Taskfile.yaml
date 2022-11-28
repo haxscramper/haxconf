@@ -147,11 +147,8 @@ tasks:
   test_testament_run:
     desc: "Run a single testament file"
     cmds:
-      - task: installed_nim
-        vars:
-          FLAGS: "-r"
-          TARGET: "{{.FILE}}"
-      - ./koch.py test run {{.FILE}}
+      - task: build_testament
+      - ./bin/testament run {{.FILE}}
 
   test_nimsuggest:
     desc: "Execute nimsuggest tests using debug compiler build or provided one"
