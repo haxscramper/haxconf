@@ -4,3 +4,6 @@
 [submodule "external/rofi-themes"]
 	path = external/rofi-themes
 	url = https://github.com/adi1090x/rofi.git
+[submodule "dotbot"]
+	path = dotbot
+	url = https://github.com/anishathalye/dotbot

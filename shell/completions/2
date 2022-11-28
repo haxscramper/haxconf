@@ -1,0 +1,286 @@
+Hints:
+  [x] Success
+  [x] SuccessX
+  [x] CC
+  [x] LineTooLong
+  [x] XDeclaredButNotUsed
+  [x] DuplicateModuleImport
+  [x] XCannotRaiseY
+  [x] ConvToBaseNotNeeded
+  [x] ConvFromXtoItselfNotNeeded
+  [x] ExprAlwaysX
+  [x] QuitCalled
+  [x] Processing
+  [ ] ProcessingStmt
+  [ ] CodeBegin
+  [ ] CodeEnd
+  [x] Conf
+  [ ] Path
+  [x] CondTrue
+  [x] CondFalse
+  [x] Name
+  [x] Pattern
+  [x] Exec
+  [x] Link
+  [ ] Dependency
+  [ ] Source
+  [ ] Performance
+  [ ] StackTrace
+  [ ] GCStats
+  [ ] GlobalVar
+  [x] ExpandMacro
+  [x] User
+  [x] UserRaw
+  [ ] ExtendedContext
+  [ ] MsgOrigin
+  [ ] DeclaredLoc
+Hint: used config file '/home/haxscramper/.choosenim/toolchains/nim-1.6.0/config/nim.cfg' [Conf]
+Hint: used config file '/home/haxscramper/.choosenim/toolchains/nim-1.6.0/config/config.nims' [Conf]
+Hints:
+  [ ] Success
+  [ ] SuccessX
+  [ ] CC
+  [ ] LineTooLong
+  [ ] XDeclaredButNotUsed
+  [ ] DuplicateModuleImport
+  [ ] XCannotRaiseY
+  [ ] ConvToBaseNotNeeded
+  [ ] ConvFromXtoItselfNotNeeded
+  [ ] ExprAlwaysX
+  [x] QuitCalled
+  [x] Processing
+  [ ] ProcessingStmt
+  [ ] CodeBegin
+  [ ] CodeEnd
+  [ ] Conf
+  [ ] Path
+  [ ] CondTrue
+  [ ] CondFalse
+  [ ] Name
+  [ ] Pattern
+  [x] Exec
+  [ ] Link
+  [ ] Dependency
+  [ ] Source
+  [ ] Performance
+  [ ] StackTrace
+  [ ] GCStats
+  [ ] GlobalVar
+  [ ] ExpandMacro
+  [x] User
+  [ ] UserRaw
+  [ ] ExtendedContext
+  [ ] MsgOrigin
+  [ ] DeclaredLoc
+-- list of currently defined symbols --
+nimHasHintAll
+nimHasstrictFuncs
+nimHasWarningFileChanged
+nimHasWarningIndexCheck
+nimHasWarningProveIndex
+nimHasimplicitDeref
+nimHasWarningHoleEnumConv
+nimHasWarningResultShadowed
+nimHasHintLink
+nimHascaseStmtMacros
+nimlocks
+nimHascompiletimeFFI
+nimNewDot
+nimHasWarningLockLevel
+nimHasDeclaredLocs
+nimHasHintExpandMacro
+nimHasWarningFieldXNotSupported
+nimHasJsBigIntBackend
+nimHasHintPattern
+nimHasWarningEffect
+nimHasparallel
+nimHasEffectsOf
+nimHasWarningProveField
+nimHasHintQuitCalled
+nimHasHintSuccess
+nimNewRuntime
+nimHasviews
+nimHasWarningCannotOpenFile
+nimNoNilSeqs2
+nimIncrSeqV3
+nimHasHintAsError
+nimNoNil
+nimHasWarningAnyEnumConv
+nimHasHintDuplicateModuleImport
+nimcomputedgoto
+nimHasNilChecks
+nimDoesntTrackDefects
+nimHasWarningOctalEscape
+nimHasSpellSuggest
+nimHasWarningUnsafeCode
+nimHasStacktracesModule
+nimHasWarningEnumConv
+nimHasHintMsgOrigin
+nimHasExceptionsQuery
+nimHasHintXCannotRaiseY
+nimToOpenArrayCString
+niminheritable
+nimHasWarningCommentXIgnored
+nimHasWarningUnsafeSetLen
+nimHasCppDefine
+nimHasHintName
+nimHasHintExec
+nimNoNilSeqs
+nimbabel
+nimHasDeclaredMagic
+nimalias
+nimAshr
+nimKnowsNimvm
+nimSymKind
+nimHasWarningEachIdentIsTuple
+nimErrorProcCanHaveBody
+nimHascallOperator
+nimGenericInOutFlags
+nimHasWarningCycleCreated
+nimVmEqIdent
+nimHasIsNamedTuple
+nimNewShiftOps
+nimHasDefault
+nimHasWarningGcUnsafe
+nimHasHintDependency
+nimHasUnifiedTuple
+nimHasInstantiationOfInMacro
+nimHasWarningLanguageXNotSupported
+nimHasHintProcessing
+nimHasCastPragmaBlocks
+nimAlignPragma
+nimHasHintSource
+nimHasHintCC
+nimHasLentIterators
+nimHasWarningUnreachableCode
+nimHascodeReordering
+nimrequiresnimframe
+nimUncheckedArrayTyp
+nimHasHintExtendedContext
+nimHasDragonBox
+nimHasHintConvFromXtoItselfNotNeeded
+nimHasRunnableExamples
+nimHasWarningCannotOpen
+nimHasHintConvToBaseNotNeeded
+nimHasWarningBrokenLink
+nimHasWarningUser
+nimnewshared
+nimparsebiggestfloatmagic
+nimHasWarningwarnRstStyle
+nimHasHintProcessingStmt
+nimHasHintExprAlwaysX
+nimHasSymOwnerInMacro
+nimArrIdx
+nimFixedForwardGeneric
+nimHasunicodeOperators
+nimHasWarningCaseTransition
+nimHasIterable
+nimHasCursor
+nimHasWarningObservableStores
+nimHasdynamicBindSym
+nimHasInvariant
+nimHasWarningDotLikeOps
+nimHasnotnil
+nimHasHintGCStats
+nimHasWarningGcUnsafe2
+nimHasWarningUnusedImport
+nimunion
+nimHasWarningInheritFromException
+nimHashOrdinalFixed
+nimNewIntegerOps
+nimHasHotCodeReloading
+nimHasWarningXIsNeverRead
+nimHasWarningUnknownMagic
+nimHasHintSuccessX
+nimHasdestructor
+nimHasstrictEffects
+nimHasHintUser
+nimDistros
+nimNotNil
+nimHasWarningXmightNotBeenInit
+nim_compiler
+nimHasWarningDeprecated
+nimNoArrayToCstringConversion
+nimnode
+nimHasHintStackTrace
+nimHasUserErrors
+nimHasHintDeclaredLoc
+nimeffects
+nimHasWarningWriteToForeignHeap
+nimHasvmopsDanger
+nimHasWarningProveInit
+nimHasCustomLiterals
+nimVersion
+nimNoZeroExtendMagic
+c
+nimHasNilSeqs
+nimHasWarningTypelessParam
+nimFixedOwned
+nimHasWarningUseBase
+nimNewTypedesc
+nimHasHintCondTrue
+nimHasWarningGcMem
+nimHasHintGlobalVar
+nimHasWarningSmallLshouldNotBeUsed
+gcc
+nimHasoverloadableEnums
+nimHasHintCodeBegin
+nimHasWarningConfigDeprecated
+nimHasTypeof
+nimHasWarningResultUsed
+nimHasWarningDestructor
+nimtypedescfixed
+nimHasHintCondFalse
+nimmixin
+nimHasHintUserRaw
+nimHasWarningUninit
+nimNoZeroTerminator
+nimHasHintCodeEnd
+nimHasStacktraceMsgs
+nimMacrosSizealignof
+nimHasWarningUnknownSubstitutionX
+nimHasUsed
+nimHasalignOf
+nimHasTrace
+nimnomagic64
+nimHasWarningCStringConv
+nimHasHintXDeclaredButNotUsed
+nimHasHintLineTooLong
+nimHasHintPerformance
+nimHasStyleChecks
+nimHasSignatureHashInMacro
+nimVmExportFixed
+nimMacrosGetNodeId
+nimHasEffectTraitsModule
+nimHasWarningUnsafeDefault
+nimHasforLoopMacros
+nimHasWarningUnreachableElse
+nimHasWarningRedefinitionOfLabel
+nimvarargstyped
+nimHasWarningSpacing
+nimHasstrictNotNil
+nimHasHintConf
+nimhygiene
+nimHasHintPath
+nimHasdotOperators
+nimHasWarningAsError
+nimHasTypeofVoid
+nimHasWarningStrictNotNil
+nimHasSinkInference
+-- end of list --
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/pure
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/core
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/arch
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/pure/unidecode
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/js
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/posix
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/windows
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/wrappers/linenoise
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/wrappers
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/impure
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/pure/concurrency
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/pure/collections
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/deprecated/pure
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib/deprecated/core
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib
+/home/haxscramper/.choosenim/toolchains/nim-1.6.0/lib

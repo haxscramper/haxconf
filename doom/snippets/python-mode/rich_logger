@@ -1,0 +1,22 @@
+# -*- mode: snippet -*-
+# name: rich-logger
+# key: rich-logger
+# uuid: rich-logger
+# --
+
+import logging
+from rich.logging import RichHandler
+
+logging.basicConfig(
+    level="NOTSET",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True, markup=True)],
+)
+
+for name in logging.root.manager.loggerDict:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.WARNING)
+
+log = logging.getLogger("rich")
+log.setLevel(logging.DEBUG)
