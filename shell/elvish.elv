@@ -477,3 +477,13 @@ fn br {|@arguments|
   }
   e:rm -f $path
 }
+
+
+fn erg {|glob search|
+  rg -g "*."$glob --no-heading --line-number $search | sd '\(:\d+:\)' ':$1: '
+}
+
+
+fn rrg {|search|
+  rg --no-heading --line-number $search | sd '\(:\d+:\)' ':$1: '
+}

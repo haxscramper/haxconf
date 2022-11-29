@@ -649,8 +649,8 @@ abbr icat kitty +kitten icat
 function my_bindings
     fish_vi_key_bindings
     fzf_key_bindings
-    fish_user_key_bindings
-    bind \cE 'echo "hello"'
+    # fish_user_key_bindings
+    # bind \cE 'echo "hello"'
 end
 
 set -g fish_key_bindings my_bindings
@@ -690,6 +690,14 @@ function man -d "colored manpages"
         set -lx LESS_TERMCAP_us (printf "\e[1;32m")
         /bin/man $argv
     end
+end
+
+function erg -a "glob" -a "search"
+    rg -g "*."$glob --no-heading --line-number -- $search
+end
+
+function rrg  -a "search"
+    rg --no-heading --line-number -- $search
 end
 
 
@@ -816,3 +824,4 @@ function vish -a 'file_name' -d 'Create script file and open in in vi'
 end
 
 starship init fish | source
+zoxide init fish | source
