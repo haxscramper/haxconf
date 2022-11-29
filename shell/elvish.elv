@@ -295,6 +295,19 @@ fn inwait-cwd-loop {|callback|
 
 
 
+fn py-rebuild {|file|
+  var py-content = '#!/usr/bin/env python
+'
+
+  if (not (prompt-create-file $file $py-content)) {
+    return
+  }
+
+  chmod +x $file
+  emacs-open (realpath $file)
+  fd | e:entr -rc sh -c './'$file
+}
+
 fn cpp-rebuild {|file|
   var cpp-content = '#include <iostream>
 

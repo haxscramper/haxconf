@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: Parse XML using etree
+# key: parse-etree-xml
+# uuid: parse-etree-xml
+# --
+
+
+xml_tree = None
+with open("$1", 'r') as xml_file:
+    content = xml_file.read()
+    xml_tree = etree.fromstring(content)
