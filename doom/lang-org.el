@@ -118,6 +118,33 @@ mode"
 
 
 (load! "lang-org-tags.el")
+
+(defun hax/select-tag (action)
+  (interactive)
+  (let* ((org-last-tags-completion-table
+          (append (and (or org-complete-tags-always-offer-all-agenda-tags
+                           (eq major-mode 'org-agenda-mode))
+                       (org-global-tags-completion-table
+                        (org-agenda-files)))
+                  (unless (boundp 'org-current-tag-alist)
+                    org-tag-persistent-alist)
+                  org-tag-alist))
+         (selected (ivy-read (counsel-org-tag-prompt)
+                             (lambda (str _pred _action)
+                               (delete-dups
+                                (all-completions
+                                 str #'org-tags-completion-function)))
+                             :history 'org-tags-history
+                             :action action
+                             :caller 'hax/org-assign-tag)))
+    (unless (--any (s-equals? (car it) selected) org-tag-alist)
+      (f-append-text (concat "\n#" selected) 'utf-8 hax/tags-file)
+      (setq org-tag-alist (push (cons selected ??) org-tag-alist))
+      (message
+       "New tag %s"
+       (propertize selected 'face `(:foreground ,(doom-color 'red)))))
+    selected))
+
 (defun hax/org-assign-tag ()
   "Add or remove tags in `org-mode'. If new tag is added, store
 it in the persistent list of tags, and update current list of tags"
@@ -134,29 +161,7 @@ it in the persistent list of tags, and update current list of tags"
       (unless (org-at-heading-p)
         (org-back-to-heading t))
       (setq counsel-org-tags (counsel--org-get-tags)))
-    (let* ((org-last-tags-completion-table
-            (append (and (or org-complete-tags-always-offer-all-agenda-tags
-                             (eq major-mode 'org-agenda-mode))
-                         (org-global-tags-completion-table
-                          (org-agenda-files)))
-                    (unless (boundp 'org-current-tag-alist)
-                      org-tag-persistent-alist)
-                    org-tag-alist))
-           (selected (ivy-read (counsel-org-tag-prompt)
-                               (lambda (str _pred _action)
-                                 (delete-dups
-                                  (all-completions
-                                   str #'org-tags-completion-function)))
-                               :history 'org-tags-history
-                               :action #'counsel-org-tag-action
-                               :caller 'hax/org-assign-tag)))
-      (unless (--any (s-equals? (car it) selected) org-tag-alist)
-        (f-append-text (concat "\n#" selected) 'utf-8 hax/tags-file)
-        (setq org-tag-alist (push (cons selected ??) org-tag-alist ))
-        (message
-         "New tag %s"
-         (propertize selected 'face `(:foreground ,(doom-color 'red)))))
-      selected)))
+    (hax/select-tag #'counsel-org-tag-action)))
 
 (defun hax/maybe-numeric-prefix (else)
   "Return optional numeric prefix, if one was supplied for current
@@ -844,6 +849,7 @@ selection result. Provide PROMPT for selection input"
                       (goto-char (org-in-item-p))
                       (org-toggle-checkbox))))
    :n ",ta" #'hax/org-assign-tag
+   :n ",ti" (cmd! (insert (concat "#" (hax/select-tag nil))))
    :ni "M-i M-i" #'hax/org-paste-clipboard
    :desc "math"
    :ni "M-i M-m" (lambda (text)

@@ -1,0 +1,25 @@
+name: testament
+description: run tests
+commands:
+  - name: cat
+    description: Run test in a subcategory
+    completion:
+      positional:
+        - [
+          "$_fs.SubDirectories(tests)",
+          "assert",
+          "debugger",
+          "dll\tShared library tests",
+          "gc\tGarbage collector tests",
+          "js\tJavascript tests",
+          "ic\tIncremental compilation tests",
+          "lib\tStandard library test",
+          "manyloc",
+          "threads",
+          "untestable", # see trunner_special
+          "testdata",
+          "nimcache",
+          "osproc",
+          "shouldfail",
+          "destructor"
+        ]
