@@ -120,6 +120,7 @@
 (load! "lang-base.el")
 (load! "lang-c.el")
 (load! "lang-org.el")
+(load! "lang-plantuml.el")
 (load! "lang-latex.el")
 
 (load! "config-editing.el")

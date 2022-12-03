@@ -59,6 +59,7 @@
      (left . 0.5))))
 
 (add-to-list 'auto-mode-alist '("\\.ASM" . asm-mode))
+(add-to-list 'auto-mode-alist '("\\.puml" . plantuml-mode))
 (add-to-list 'auto-mode-alist '("\\.pro" . qt-pro-mode))
 
 (defun hax/asm-mode-hook ()
@@ -371,7 +372,6 @@ must be non-read-only, empty, and there must be a rule in
     outlist))
 
 
-
 (when (and (executable-find "carapace"))
   (cl-defun pcomplete-with-carapace
       (spec args &optional (shell "elvish"))
@@ -411,3 +411,5 @@ Prompt for a choice."
      ((equal -sort-by "dir") (setq -arg "-Al --si --time-style long-iso --group-directories-first"))
      (t (error "logic error 09535" )))
     (dired-sort-other -arg )))
+
+
