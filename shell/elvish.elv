@@ -293,7 +293,18 @@ fn inwait-cwd-loop {|callback|
     }
 }
 
+fn puml-rebuild {|file|
+  var puml-content = '@startuml
 
+@enduml'
+
+  if (not (prompt-create-file $file $puml-content)) {
+    return
+  }
+
+  emacs-open (realpath $file)
+  fd | e:entr -rc plantuml "-o"$E:PWD $file
+}
 
 fn py-rebuild {|file|
   var py-content = '#!/usr/bin/env python

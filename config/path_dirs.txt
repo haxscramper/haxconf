@@ -1,3 +1,6 @@
+$HOME/software
+$HOME/hax-scripts
+$HOME/.emacs.d/bin
 /usr/lib64/llvm/7/bin
 /usr/lib/jvm/java-11-openjdk/bin
 /usr/lib/jvm/java-8-openjdk/bin
@@ -43,4 +46,3 @@ $HOME/.npm-packages
 $HOME/.ghcup/bin
 $HOME/.config/hax-software/hmisc
 $HOME/.emacs.doom.d/bin
-$HOME/hax-scripts

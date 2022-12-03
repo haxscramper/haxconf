@@ -1,0 +1,39 @@
+name: doom
+description: Doom emacs orchestrator
+commands:
+  - name: help
+    description: Show documentation for a Doom CLI command.
+  - name: run
+    description: Launch Doom Emacs or an Emacs sandbox
+  - name: make
+    description: (Re)Generate project files and boilerplate.
+  - name: ci
+    description: Commands that automate development processes.
+  - name: version
+    description: Show installed versions of Doom, Doom modules, and Emacs.
+  - name: info
+    description: Print detailed information about your config for bug reports.
+  - name: doctor
+    description: Diagnoses common issues on your system.
+  - name: pf
+    description: -> doom pf
+  - name: clean
+    description: Delete all *.elc files.
+  - name: compile
+    description: Byte-compiles your config or selected modules.
+  - name: install
+    description: Installs and sets up Doom Emacs for the first time.
+  - name: purge
+    description: Deletes orphaned packages & repos, and compacts them.
+  - name: build
+    description: Byte-compiles & symlinks installed packages.
+  - name: env
+    description: (Re)generates envvars file from your shell environment.
+  - name: upgrade
+    description: Updates Doom and packages.
+  - name: profile
+    description: THIS COMMAND IS A STUB AND HAS NOT BEEN IMPLEMENTED YET.
+  - name: profiles
+    description: Commands for maintaining your Doom Emacs configuration.
+  - name: sync
+    description: Synchronize your config with Doom Emacs.
