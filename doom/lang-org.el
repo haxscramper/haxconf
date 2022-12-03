@@ -756,6 +756,12 @@ selection result. Provide PROMPT for selection input"
 
 ;; (global-set-key (kbd "M-i") nil)
 
+(defun hax/org-edit-id ()
+  (interactive)
+  (let* ((used (org-entry-get nil "ID"))
+         (original (if used used "")))
+    (org-entry-put nil "ID" (read-from-minibuffer ":ID:> " original))))
+
 (defun hax/org-mode-hook ()
   (interactive)
   ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
@@ -844,12 +850,18 @@ selection result. Provide PROMPT for selection input"
    :nv ",eo" 'org-odt-export-to-odt
    :nv ",eh" 'org-html-export-to-html
    :nv ",in" #'org-add-note
+   :desc "Set tree ID"
+   :n ",ti" #'hax/org-edit-id
+   :n ",tP" #'org-set-property-and-value
+   :n ",tp" #'org-set-property
+   :desc "Toggle checkbox"
    :n ",tc" (cmd! (when (org-in-item-p)
                     (save-excursion
                       (goto-char (org-in-item-p))
                       (org-toggle-checkbox))))
    :n ",ta" #'hax/org-assign-tag
-   :n ",ti" (cmd! (insert (concat "#" (hax/select-tag nil))))
+   :desc "Insert tag in text"
+   :n ",tt" (cmd! (insert (concat "#" (hax/select-tag nil))))
    :ni "M-i M-i" #'hax/org-paste-clipboard
    :desc "math"
    :ni "M-i M-m" (lambda (text)
