@@ -748,6 +748,16 @@ selection result. Provide PROMPT for selection input"
     (when (eq (car item) 'item)
       (goto-char (org-element-property :end item)))))
 
+(defun hax/org-insert-text-tag ()
+  "Insert org-mode hashtag under corrent cursor position, adding
+necessary whitespace around it if he cursor wasn't positioned at
+the empty area."
+  (interactive)
+  (when (not (= (char-after) ?\s)) (insert " "))
+  (insert (concat "#" (hax/select-tag nil)))
+  (when (not (= (char-before ?\s))) (insert " "))
+  (when (not (= (char-after) ?\s)) (insert " ")))
+
 (defun pop-selection ()
   (when (use-region-p)
     (let ((res (buffer-substring-no-properties (region-beginning) (region-end))))
@@ -861,7 +871,7 @@ selection result. Provide PROMPT for selection input"
                       (org-toggle-checkbox))))
    :n ",ta" #'hax/org-assign-tag
    :desc "Insert tag in text"
-   :n ",tt" (cmd! (insert (concat "#" (hax/select-tag nil))))
+   :n ",tt" #'hax/org-insert-text-tag
    :ni "M-i M-i" #'hax/org-paste-clipboard
    :desc "math"
    :ni "M-i M-m" (lambda (text)
