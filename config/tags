@@ -353,3 +353,6 @@
 #project##nimskull##diagnostic
 #code##rust
 #project##nimskull##format
+#software##graphviz
+#programming##bug_found
+#project##translations
