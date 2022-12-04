@@ -98,7 +98,8 @@
 
 (defvar plantuml-mode-debug-enabled nil)
 
-(defvar plantuml-font-lock-keywords nil)
+(defvar plantuml-uml-font-lock-keywords nil)
+(defvar plantuml-ebnf-font-lock-keywords nil)
 
 (defvar plantuml-mode-map
   (let ((keymap (make-sparse-keymap)))
@@ -154,17 +155,7 @@
     cmd-list))
 
 ;;; syntax table
-(defvar plantuml-mode-syntax-table
-  (let ((synTable (make-syntax-table)))
-    (modify-syntax-entry ?\/  ". 14c"   synTable)
-    (modify-syntax-entry ?'   "< 23"    synTable)
-    (modify-syntax-entry ?\n  ">"       synTable)
-    (modify-syntax-entry ?\r  ">"       synTable)
-    (modify-syntax-entry ?!   "w"       synTable)
-    (modify-syntax-entry ?@   "w"       synTable)
-    (modify-syntax-entry ?#   "'"       synTable)
-    synTable)
-  "Syntax table for `plantuml-mode'.")
+(defvar plantuml-mode-syntax-table nil "Syntax table for `plantuml-mode'.")
 
 (defvar plantuml-types nil)
 (defvar plantuml-keywords nil)
@@ -330,6 +321,8 @@
          '("switch"
            "case"
            "endnote"
+           "note left"
+           "note right"
            "Processes"
            "endswitch")))
   nil)
@@ -559,138 +552,148 @@ Uses prefix (as PREFIX) to choose where to display it:
   "Ensure initialization only happens once.  Use exec mode MODE to load the language details or by first querying `plantuml-get-exec-mode'."
   (interactive)
   (let ((mode (or mode (plantuml-get-exec-mode))))
-    (unless plantuml-kwdList
-      (plantuml-init mode)
-      (setq plantuml-types-regexp (concat "^\\s *\\(" (regexp-opt plantuml-types 'words) "\\|\\<\\(note\\s +over\\|note\\s +\\(left\\|right\\|bottom\\|top\\)\\s +\\(of\\)?\\)\\>\\|\\<\\(\\(left\\|center\\|right\\)\\s +\\(header\\|footer\\)\\)\\>\\)"))
-      (setq plantuml-keywords-regexp (concat "^\\s *" (regexp-opt plantuml-keywords 'words)  "\\|\\(<\\|<|\\|\\*\\|o\\)\\(\\.+\\|-+\\)\\|\\(\\.+\\|-+\\)\\(>\\||>\\|\\*\\|o\\)\\|\\.\\{2,\\}\\|-\\{2,\\}"))
-      (setq plantuml-builtins-regexp (regexp-opt plantuml-builtins 'words))
-      (setq plantuml-preprocessors-regexp (concat "^\\s *" (regexp-opt plantuml-preprocessors 'words)))
+    (plantuml-init mode)
+    (setq plantuml-types-regexp (concat "^\\s *\\(" (regexp-opt plantuml-types 'words) "\\|\\<\\(note\\s +over\\|note\\s +\\(left\\|right\\|bottom\\|top\\)\\s +\\(of\\)?\\)\\>\\|\\<\\(\\(left\\|center\\|right\\)\\s +\\(header\\|footer\\)\\)\\>\\)"))
+    (setq plantuml-keywords-regexp (concat "^\\s *" (regexp-opt plantuml-keywords 'words)  "\\|\\(<\\|<|\\|\\*\\|o\\)\\(\\.+\\|-+\\)\\|\\(\\.+\\|-+\\)\\(>\\||>\\|\\*\\|o\\)\\|\\.\\{2,\\}\\|-\\{2,\\}"))
+    (setq plantuml-builtins-regexp (regexp-opt plantuml-builtins 'words))
+    (setq plantuml-preprocessors-regexp (concat "^\\s *" (regexp-opt plantuml-preprocessors 'words)))
 
-      ;; Below are the regexp's for indentation.
-      ;; Notes:
-      ;; - there is some control on what it is indented by overriding some of below
-      ;;   X-start and X-end regexp before plantuml-mode is loaded. E.g., to disable
-      ;;   indentation on activate, you might define in your .emacs something like
-      ;;      (setq plantuml-indent-regexp-activate-start
-      ;;         "NEVER MATCH THIS EXPRESSION"); define _before_ load plantuml-mode!
-      ;;      (setq plantuml-indent-regexp-activate-end
-      ;;          "NEVER MATCH THIS EXPRESSION"); define _before_ load plantuml-mode!
-      ;; - due to the nature of using (context-insensitive) regexp, indentation have
-      ;;   following limitations
-      ;;   - commands commented out by /' ... '/ will _not_ be ignored
-      ;;     and potentially lead to miss-indentation
-      ;; - you can though somewhat correct mis-indentation by adding in '-comment lines
-      ;;   PLANTUML_MODE_INDENT_INCREASE and/or PLANTUML_MODE_INDENT_DECREASE
-      ;;   to increase and/or decrease the level of indentation
-      ;;   (Note: the line with the comment should not contain any text matching other indent
-      ;;    regexp or this user-control instruction will be ignored; also at most will count
-      ;;    per line ...)
+    ;; Below are the regexp's for indentation.
+    ;; Notes:
+    ;; - there is some control on what it is indented by overriding some of below
+    ;;   X-start and X-end regexp before plantuml-mode is loaded. E.g., to disable
+    ;;   indentation on activate, you might define in your .emacs something like
+    ;;      (setq plantuml-indent-regexp-activate-start
+    ;;         "NEVER MATCH THIS EXPRESSION"); define _before_ load plantuml-mode!
+    ;;      (setq plantuml-indent-regexp-activate-end
+    ;;          "NEVER MATCH THIS EXPRESSION"); define _before_ load plantuml-mode!
+    ;; - due to the nature of using (context-insensitive) regexp, indentation have
+    ;;   following limitations
+    ;;   - commands commented out by /' ... '/ will _not_ be ignored
+    ;;     and potentially lead to miss-indentation
+    ;; - you can though somewhat correct mis-indentation by adding in '-comment lines
+    ;;   PLANTUML_MODE_INDENT_INCREASE and/or PLANTUML_MODE_INDENT_DECREASE
+    ;;   to increase and/or decrease the level of indentation
+    ;;   (Note: the line with the comment should not contain any text matching other indent
+    ;;    regexp or this user-control instruction will be ignored; also at most will count
+    ;;    per line ...)
 
-      ;; "Indentation regex for all plantuml elements that might define a
-      ;; {} block. Plantuml elements like skinparam, rectangle, sprite,
-      ;; package, etc. The opening { has to be the last visible character
-      ;; in the line (whitespace might follow)."
-      (setq plantuml-indent-regexp-block-start "^.*{\s*$")
-      ;; "simplyfied regex; note syntax is especially inconsistent across diagrams"
-      (setq plantuml-indent-regexp-note-start  "^\s*\\(floating\s+\\)?[hr]?note\s+\\(right\\|left\\|top\\|bottom\\|over\\)[^:]*?$" )
-      ;; "Indentation regex for plantuml group elements that are defined
-      ;; for sequence diagrams. Two variants for groups: keyword is either
-      ;; followed by whitespace and some text or it is followed by line
-      ;; end."
-      (setq plantuml-indent-regexp-group-start "^\s*\\(alt\\|else\\|opt\\|loop\\|par\\|break\\|critical\\|group\\)\\(?:\s+.+\\|$\\)")
-      (setq plantuml-indent-regexp-activate-start "^\s*activate\s+.+$")
-      (setq plantuml-indent-regexp-box-start "^\s*box\s+.+$")
-      (setq plantuml-indent-regexp-ref-start "^\s*ref\s+over\s+[^:]+?$")
-      (setq plantuml-indent-regexp-title-start "^\s*title\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-header-start "^\s*\\(?:\\(?:center\\|left\\|right\\)\s+header\\|header\\)\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-footer-start "^\s*\\(?:\\(?:center\\|left\\|right\\)\s+footer\\|footer\\)\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-legend-start "^\s*\\(?:legend\\|legend\s+\\(?:bottom\\|top\\)\\|legend\s+\\(?:center\\|left\\|right\\)\\|legend\s+\\(?:bottom\\|top\\)\s+\\(?:center\\|left\\|right\\)\\)\s*\\('.*\\)?$")
-      ;; used in current activity diagram, sometimes already mentioned as
-      ;; deprecated
-      (setq plantuml-indent-regexp-oldif-start
-            "^.*if\s+\".*\"\s+then\s*\\('.*\\)?$" )
-      (setq plantuml-indent-regexp-newif-start
-            "^\s*\\(?:else\\)?if\s+(.*)\s+then\s*.*$")
-      (setq plantuml-indent-regexp-loop-start
-            "^\s*\\(?:repeat\s*\\|while\s+(.*).*\\)$")
-      (setq plantuml-indent-regexp-fork-start
-            "^\s*\\(?:fork\\|split\\)\\(?:\s+again\\)?\s*$")
-      (setq plantuml-indent-regexp-macro-start
-            "^\s*!definelong.*$")
-      (setq plantuml-indent-regexp-user-control-start
-            "^.*'.*\s*PLANTUML_MODE_INDENT_INCREASE\s*.*$")
-      (setq plantuml-indent-regexp-start
-            (list plantuml-indent-regexp-block-start
-                  plantuml-indent-regexp-group-start
-                  plantuml-indent-regexp-activate-start
-                  plantuml-indent-regexp-box-start
-                  plantuml-indent-regexp-ref-start
-                  plantuml-indent-regexp-legend-start
-                  plantuml-indent-regexp-note-start
-                  plantuml-indent-regexp-newif-start
-                  plantuml-indent-regexp-loop-start
-                  plantuml-indent-regexp-fork-start
-                  plantuml-indent-regexp-title-start
-                  plantuml-indent-regexp-header-start
-                  plantuml-indent-regexp-footer-start
-                  plantuml-indent-regexp-macro-start
-                  plantuml-indent-regexp-oldif-start
-                  plantuml-indent-regexp-user-control-start))
-      (setq plantuml-indent-regexp-block-end
-            "^\s*\\(?:}\\|endif\\|else\s*.*\\|end\\)\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-note-end
-            "^\s*\\(end\s+note\\|end[rh]note\\)\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-group-end "^\s*end\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-activate-end "^\s*deactivate\s+.+$")
-      (setq plantuml-indent-regexp-box-end "^\s*end\s+box\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-ref-end "^\s*end\s+ref\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-title-end "^\s*end\s+title\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-header-end "^\s*endheader\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-footer-end "^\s*endfooter\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-legend-end "^\s*endlegend\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-oldif-end
-            "^\s*\\(endif\\|else\\)\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-newif-end
-            "^\s*\\(endif\\|elseif\\|else\\)\s*.*$")
-      (setq plantuml-indent-regexp-loop-end
-            "^\s*\\(repeat\s*while\\|endwhile\\)\s*.*$")
-      (setq plantuml-indent-regexp-fork-end
-            "^\s*\\(\\(fork\\|split\\)\s+again\\|end\s+\\(fork\\|split\\)\\)\s*$")
-      (setq plantuml-indent-regexp-macro-end
-            "^\s*!enddefinelong\s*\\('.*\\)?$")
-      (setq plantuml-indent-regexp-user-control-end
-            "^.*'.*\s*PLANTUML_MODE_INDENT_DECREASE\s*.*$")
-      (setq plantuml-indent-regexp-end
-            (list plantuml-indent-regexp-block-end
-                  plantuml-indent-regexp-group-end
-                  plantuml-indent-regexp-activate-end
-                  plantuml-indent-regexp-box-end
-                  plantuml-indent-regexp-ref-end
-                  plantuml-indent-regexp-legend-end
-                  plantuml-indent-regexp-note-end
-                  plantuml-indent-regexp-newif-end
-                  plantuml-indent-regexp-loop-end
-                  plantuml-indent-regexp-fork-end
-                  plantuml-indent-regexp-title-end
-                  plantuml-indent-regexp-header-end
-                  plantuml-indent-regexp-footer-end
-                  plantuml-indent-regexp-macro-end
-                  plantuml-indent-regexp-oldif-end
-                  plantuml-indent-regexp-user-control-end))
-      (setq plantuml-font-lock-keywords
-            `((,plantuml-types-regexp . font-lock-type-face)
-              (,plantuml-keywords-regexp . font-lock-keyword-face)
-              (,plantuml-builtins-regexp . font-lock-builtin-face)
-              (,plantuml-preprocessors-regexp . font-lock-preprocessor-face)
-              ;; note: order matters
-              ))
+    ;; "Indentation regex for all plantuml elements that might define a
+    ;; {} block. Plantuml elements like skinparam, rectangle, sprite,
+    ;; package, etc. The opening { has to be the last visible character
+    ;; in the line (whitespace might follow)."
+    (setq plantuml-indent-regexp-block-start "^.*{\s*$")
+    ;; "simplyfied regex; note syntax is especially inconsistent across diagrams"
+    (setq plantuml-indent-regexp-note-start  "^\s*\\(floating\s+\\)?[hr]?note\s+\\(right\\|left\\|top\\|bottom\\|over\\)[^:]*?$" )
+    ;; "Indentation regex for plantuml group elements that are defined
+    ;; for sequence diagrams. Two variants for groups: keyword is either
+    ;; followed by whitespace and some text or it is followed by line
+    ;; end."
+    (setq plantuml-indent-regexp-group-start "^\s*\\(alt\\|else\\|opt\\|loop\\|par\\|break\\|critical\\|group\\)\\(?:\s+.+\\|$\\)")
+    (setq plantuml-indent-regexp-activate-start "^\s*activate\s+.+$")
+    (setq plantuml-indent-regexp-box-start "^\s*box\s+.+$")
+    (setq plantuml-indent-regexp-ref-start "^\s*ref\s+over\s+[^:]+?$")
+    (setq plantuml-indent-regexp-title-start "^\s*title\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-header-start "^\s*\\(?:\\(?:center\\|left\\|right\\)\s+header\\|header\\)\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-footer-start "^\s*\\(?:\\(?:center\\|left\\|right\\)\s+footer\\|footer\\)\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-legend-start "^\s*\\(?:legend\\|legend\s+\\(?:bottom\\|top\\)\\|legend\s+\\(?:center\\|left\\|right\\)\\|legend\s+\\(?:bottom\\|top\\)\s+\\(?:center\\|left\\|right\\)\\)\s*\\('.*\\)?$")
+    ;; used in current activity diagram, sometimes already mentioned as
+    ;; deprecated
+    (setq plantuml-indent-regexp-oldif-start
+          "^.*if\s+\".*\"\s+then\s*\\('.*\\)?$" )
+    (setq plantuml-indent-regexp-newif-start
+          "^\s*\\(?:else\\)?if\s+(.*)\s+then\s*.*$")
+    (setq plantuml-indent-regexp-loop-start
+          "^\s*\\(?:repeat\s*\\|while\s+(.*).*\\)$")
+    (setq plantuml-indent-regexp-fork-start
+          "^\s*\\(?:fork\\|split\\)\\(?:\s+again\\)?\s*$")
+    (setq plantuml-indent-regexp-macro-start
+          "^\s*!definelong.*$")
+    (setq plantuml-indent-regexp-user-control-start
+          "^.*'.*\s*PLANTUML_MODE_INDENT_INCREASE\s*.*$")
+    (setq plantuml-indent-regexp-start
+          (list plantuml-indent-regexp-block-start
+                plantuml-indent-regexp-group-start
+                plantuml-indent-regexp-activate-start
+                plantuml-indent-regexp-box-start
+                plantuml-indent-regexp-ref-start
+                plantuml-indent-regexp-legend-start
+                plantuml-indent-regexp-note-start
+                plantuml-indent-regexp-newif-start
+                plantuml-indent-regexp-loop-start
+                plantuml-indent-regexp-fork-start
+                plantuml-indent-regexp-title-start
+                plantuml-indent-regexp-header-start
+                plantuml-indent-regexp-footer-start
+                plantuml-indent-regexp-macro-start
+                plantuml-indent-regexp-oldif-start
+                plantuml-indent-regexp-user-control-start))
+    (setq plantuml-indent-regexp-block-end
+          "^\s*\\(?:}\\|endif\\|else\s*.*\\|end\\)\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-note-end
+          "^\s*\\(end\s+note\\|end[rh]note\\)\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-group-end "^\s*end\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-activate-end "^\s*deactivate\s+.+$")
+    (setq plantuml-indent-regexp-box-end "^\s*end\s+box\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-ref-end "^\s*end\s+ref\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-title-end "^\s*end\s+title\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-header-end "^\s*endheader\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-footer-end "^\s*endfooter\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-legend-end "^\s*endlegend\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-oldif-end
+          "^\s*\\(endif\\|else\\)\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-newif-end
+          "^\s*\\(endif\\|elseif\\|else\\)\s*.*$")
+    (setq plantuml-indent-regexp-loop-end
+          "^\s*\\(repeat\s*while\\|endwhile\\)\s*.*$")
+    (setq plantuml-indent-regexp-fork-end
+          "^\s*\\(\\(fork\\|split\\)\s+again\\|end\s+\\(fork\\|split\\)\\)\s*$")
+    (setq plantuml-indent-regexp-macro-end
+          "^\s*!enddefinelong\s*\\('.*\\)?$")
+    (setq plantuml-indent-regexp-user-control-end
+          "^.*'.*\s*PLANTUML_MODE_INDENT_DECREASE\s*.*$")
+    (setq plantuml-indent-regexp-end
+          (list plantuml-indent-regexp-block-end
+                plantuml-indent-regexp-group-end
+                plantuml-indent-regexp-activate-end
+                plantuml-indent-regexp-box-end
+                plantuml-indent-regexp-ref-end
+                plantuml-indent-regexp-legend-end
+                plantuml-indent-regexp-note-end
+                plantuml-indent-regexp-newif-end
+                plantuml-indent-regexp-loop-end
+                plantuml-indent-regexp-fork-end
+                plantuml-indent-regexp-title-end
+                plantuml-indent-regexp-header-end
+                plantuml-indent-regexp-footer-end
+                plantuml-indent-regexp-macro-end
+                plantuml-indent-regexp-oldif-end
+                plantuml-indent-regexp-user-control-end))
+    (setq plantuml-uml-font-lock-keywords
+          `((,plantuml-types-regexp . font-lock-type-face)
+            (,plantuml-keywords-regexp . font-lock-keyword-face)
+            (,plantuml-builtins-regexp . font-lock-builtin-face)
+            (,plantuml-preprocessors-regexp . font-lock-preprocessor-face)
+            ;; note: order matters
+            ))
 
-      (setq plantuml-kwdList (make-hash-table :test 'equal))
-      (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-types)
-      (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-keywords)
-      (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-builtins)
-      (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-preprocessors)
-      (put 'plantuml-kwdList 'risky-local-variable t))))
+    (setq plantuml-ebnf-font-lock-keywords
+          `(
+            (,(rx "(*") . font-lock-comment-face)
+            (,plantuml-types-regexp . font-lock-type-face)
+            (,plantuml-keywords-regexp . font-lock-keyword-face)
+            (,plantuml-builtins-regexp . font-lock-builtin-face)
+            (,plantuml-preprocessors-regexp . font-lock-preprocessor-face)
+            (,(rx (| "?" "=" "," ";" "{" "}")) . font-lock-builtin-face)
+            ;; note: order matters
+            ))
+
+    (setq plantuml-kwdList (make-hash-table :test 'equal))
+    (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-types)
+    (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-keywords)
+    (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-builtins)
+    (mapc (lambda (x) (puthash x t plantuml-kwdList)) plantuml-preprocessors)
+    (put 'plantuml-kwdList 'risky-local-variable t)))
 
 (defun plantuml-complete-symbol ()
   "Perform keyword completion on word before cursor."
@@ -719,27 +722,6 @@ Uses prefix (as PREFIX) to choose where to display it:
 ;; indentation
 
 
-(defun plantuml-current-block-depth ()
-  "Trace the current block indentation level by recursively looking back line by line."
-  (save-excursion
-    (let ((relative-depth 0))
-      ;; current line
-      (beginning-of-line)
-      (if (-any? 'looking-at plantuml-indent-regexp-end)
-          (setq relative-depth (1- relative-depth)))
-
-      ;; from current line backwards to beginning of buffer
-      (while (not (bobp))
-        (forward-line -1)
-        (if (-any? 'looking-at plantuml-indent-regexp-end)
-            (setq relative-depth (1- relative-depth)))
-        (if (-any? 'looking-at plantuml-indent-regexp-start)
-            (setq relative-depth (1+ relative-depth))))
-
-      (if (<= relative-depth 0)
-          0
-        relative-depth))))
-
 (defun plantuml-indent-line ()
   "Indent the current line to its desired indentation level.
 Restore point to same position in text of the line as before indentation."
@@ -748,12 +730,18 @@ Restore point to same position in text of the line as before indentation."
   (let ((original-position-eol (- (line-end-position) (point))))
     (save-excursion
       (beginning-of-line)
-      (indent-line-to (* plantuml-indent-level
-                         (plantuml-current-block-depth))))
+      (indent-line-to (+ plantuml-indent-level
+                         (previous-line-indent))))
 
     ;; restore position in text of line
     (goto-char (- (line-end-position) original-position-eol))))
 
+
+(defun plantuml-find-syntax-type ()
+  (save-excursion
+    (goto-char 0)
+    (search-forward "@start")
+    (buffer-substring (point) (line-end-position))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist
@@ -767,13 +755,44 @@ Shortcuts             Command Name
 \\[plantuml-complete-symbol]      `plantuml-complete-symbol'"
   (plantuml-init-once)
   (make-local-variable 'plantuml-output-type)
-  (set (make-local-variable 'comment-start-skip) "\\('+\\|/'+\\)\\s *")
-  (set (make-local-variable 'comment-start) "/'")
-  (set (make-local-variable 'comment-end) "'/")
+
   (set (make-local-variable 'comment-multi-line) t)
   (set (make-local-variable 'comment-style) 'extra-line)
   (set (make-local-variable 'indent-line-function) 'plantuml-indent-line)
-  (setq font-lock-defaults '((plantuml-font-lock-keywords) nil t)))
+  (pcase (plantuml-find-syntax-type)
+    ("uml"
+     (progn
+       (set (make-local-variable 'plantuml-mode-syntax-table)
+            (let ((synTable (make-syntax-table)))
+              (modify-syntax-entry ?\/  ". 14c"   synTable)
+              (modify-syntax-entry ?'   "< 23"    synTable)
+              (modify-syntax-entry ?\n  ">"       synTable)
+              (modify-syntax-entry ?\r  ">"       synTable)
+              (modify-syntax-entry ?!   "w"       synTable)
+              (modify-syntax-entry ?@   "w"       synTable)
+              (modify-syntax-entry ?#   "'"       synTable)
+              synTable))
+
+       (set (make-local-variable 'comment-start-skip) "\\('+\\|/'+\\)\\s *")
+       (set (make-local-variable 'comment-start) "/'")
+       (set (make-local-variable 'comment-end) "'/")
+       (setq font-lock-defaults '((plantuml-uml-font-lock-keywords) nil t))))
+    ("ebnf"
+     (progn
+       (set (make-local-variable 'plantuml-mode-syntax-table)
+            (let ((synTable (make-syntax-table)))
+              (modify-syntax-entry ?\/  ". 14c"   synTable)
+              (modify-syntax-entry ?!   "w"       synTable)
+              (modify-syntax-entry ?@   "w"       synTable)
+              (modify-syntax-entry ?#   "'"       synTable)
+              synTable))
+
+       (set (make-local-variable 'comment-start-skip) (rx "(*"))
+       (set (make-local-variable 'comment-start) "(*")
+       (set (make-local-variable 'comment-end) "*)")
+       (print plantuml-ebnf-font-lock-keywords)
+       (setq font-lock-defaults '((plantuml-ebnf-font-lock-keywords) nil t))))
+    (_ (message "Unknown syntax type for plantuml"))))
 
 (defun plantuml-deprecation-warning ()
   "Warns the user about the deprecation of the `puml-mode' project."

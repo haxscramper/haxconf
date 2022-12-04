@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-set -o nounset
+s~/.config/haxconf/desktop/sxiv_key_handler.shet -o nounset
 set -o errexit
 
 notify() {
     notify-send "$@"
 }
-
-notify "Test"
 
 while read file; do
     case "$1" in
@@ -27,13 +25,8 @@ while read file; do
             ;;
         "y")
             abs_path="$(realpath $file)"
-            if [[ "${file##*.}" -eq "gif" ]]; then
-                echo -n "$abs_path" | xclip -selection clipboard
-                notify "Cannot copy gif to clibpoard.\n Copied path instead"
-            else
-                xclip -sel cli -t image/png -i "$abs_path"
-                notify "Copied image $abs_path"
-            fi
+            notify "Copied $abs_path"
+            xclip -sel cli -t image/png -i "$abs_path"
             ;;
         "C-d")
             mv "$file" /tmp

@@ -175,6 +175,33 @@
   (interactive)
   (set-fill-column 75))
 
+(defun hax/buffer-associated-image ()
+  "Get image associated with the buffer file, if such image exists"
+  (let* ((file (buffer-file-name)))
+    (cond
+     ((member (f-ext file) '("png" "gif" "svg" "jpg" "jpeg"))
+      (buffer-file-name))
+     ((f-exists? (f-swap-ext file "png")) (f-swap-ext file "png"))
+     ((f-exists? (f-swap-ext file "jpg")) (f-swap-ext file "jpg"))
+     ((f-exists? (f-swap-ext file "svg")) (f-swap-ext file "svg"))
+     ((f-exists? (f-swap-ext file "jpeg")) (f-swap-ext file "jpeg"))
+     ((f-exists? (f-swap-ext file "gif")) (f-swap-ext file "gif"))
+     (t (error (format "Could not find image associted with %s" file))))))
+
+
+(defun hax/open-in-sxiv ()
+  "Open image associated with current buffer in the sxiv"
+  (interactive)
+  (start-process
+   "process" "*Sxiv buffer*" "sxiv" (hax/buffer-associated-image)))
+
+
+(defun hax/open-in-zathura ()
+  "Open image associated with current buffer in the zathura pdf reader"
+  (interactive)
+  (start-process
+   "process" "*Zathura buffer*" "zathura"
+   (f-swap-ext (buffer-file-name) "pdf")))
 
 (after! magit
   (setq git-commit-major-mode 'org-mode)
