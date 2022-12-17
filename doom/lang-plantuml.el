@@ -155,8 +155,6 @@
     cmd-list))
 
 ;;; syntax table
-(defvar plantuml-mode-syntax-table nil "Syntax table for `plantuml-mode'.")
-
 (defvar plantuml-types nil)
 (defvar plantuml-keywords nil)
 (defvar plantuml-preprocessors nil)
@@ -747,6 +745,10 @@ Restore point to same position in text of the line as before indentation."
 (add-to-list 'auto-mode-alist
              '("\\.\\(plantuml\\|pum\\|plu\\)\\'" . plantuml-mode))
 
+(defvar plantuml-mode-syntax-table
+  (let ((synTable (make-syntax-table))) synTable)
+  "Syntax table for `plantuml-mode'.")
+
 ;;;###autoload
 (define-derived-mode plantuml-mode prog-mode "plantuml"
   "Major mode for plantuml.
@@ -793,6 +795,7 @@ Shortcuts             Command Name
        (print plantuml-ebnf-font-lock-keywords)
        (setq font-lock-defaults '((plantuml-ebnf-font-lock-keywords) nil t))))
     (_ (message "Unknown syntax type for plantuml"))))
+
 
 (defun plantuml-deprecation-warning ()
   "Warns the user about the deprecation of the `puml-mode' project."

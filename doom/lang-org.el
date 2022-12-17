@@ -754,6 +754,7 @@ necessary whitespace around it if he cursor wasn't positioned at
 the empty area."
   (interactive)
   (when (not (= (char-after) ?\s)) (insert " "))
+  (when (not (= (char-before) ?\s)) (insert " "))
   (insert (concat "#" (hax/select-tag nil)))
   (when (not (= (char-before ?\s))) (insert " "))
   (when (not (= (char-after) ?\s)) (insert " ")))
