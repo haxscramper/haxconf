@@ -992,8 +992,21 @@ the empty area."
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
 
 
-(defun hax/org-capture-finalize (beg end)
-  (interactive "P")
+(defun hax/org-capture-pre-finalize ()
+  (save-excursion
+    ;; Automatically dedent subtree content to the line 0 --
+    ;; `org-adapt-indentation' does not work for content separately so this
+    ;; adjustment is required in order to get a sane automatic content
+    ;; placement using `org-note-insert-at-time+date' that I use for
+    ;; automatic note additions.
+    (goto-char (point-min))
+    (let* ((el (org-element-at-point))
+           (beg (org-element-property :robust-begin el))
+           (end (org-element-property :end el)))
+      (goto-char beg)
+      (indent-code-rigidly beg end (* -1 (current-line-indent))))))
+
+(defun hax/org-capture-after-finalize ()
   )
 
 (defmacro push-tmp-value! (variable value body)
@@ -1046,7 +1059,8 @@ the empty area."
   (setq hax/fullscreen-capture nil)
   (setq hax/fullscreen-client-name nil))
 
-(add-hook! 'org-capture-after-finalize-hook 'hax/org-post-capture-hook)
+(add-hook! 'org-capture-prepare-finalize-hook 'hax/org-capture-pre-finalize)
+(add-hook! 'org-capture-after-finalize-hook 'hax/org-capture-after-finalize)
 
 
 (map!
@@ -1115,7 +1129,7 @@ the empty area."
 
 (defun hax/maybe-relative-time ()
   "Insert relative time (in hours) between current time and target
-subtree deadline/sheduled/timestamp if any."
+  subtree deadline/sheduled/timestamp if any."
   (save-excursion
     ;; (with-no-warnings (defvar date) (defvar entry))
     ;; (message "%s" (calendar-absolute-from-gregorian date))
@@ -1207,11 +1221,104 @@ subtree deadline/sheduled/timestamp if any."
 
 (defun org-odt-inline-src-block (_inline-src-block _contents _info)
   "Transcode an INLINE-SRC-BLOCK element from Org to ODT.
-CONTENTS holds the contents of the item.  INFO is a plist holding
-contextual information."
+  CONTENTS holds the contents of the item.  INFO is a plist holding
+  contextual information."
   (format "<text:span text:style-name=\"%s\">%s</text:span>"
           "OrgCode" (org-odt--encode-plain-text
                      (org-element-property :value _inline-src-block))))
+
+
+(when t
+  (defun fixup-buffer-dates ()
+    (interactive)
+    (save-excursion
+      (let* ((point-now (point))
+             (start (buffer-substring (point-min) (point-max)))
+             (result (fixup-text-dates start)))
+        (delete-region (point-min) (point-max))
+        (insert result)
+        (goto-char point-now))))
+
+  (defun fixup-text-dates (str)
+    "Automatically convert string timestamps from some unreadable and
+  unparseable formats such as `month-day-year H:M PM/AM' into a
+  sane 8601 version."
+    ;; The implementation runs in two parts. First I try to get rid of the
+    ;; AM/PM nonsense by replacing all the content into the "almost correct"
+    ;; version and then I map things to the proper ISO8601 format.
+    (setq
+     months-names
+     (-concat
+      calendar-month-abbrev-array
+      calendar-month-name-array
+      '("01" "02" "03" "04" "05" "06" "07" "08" "09")
+      '("1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12"))
+     month-name-regex (s-join "|" months-names)
+     )
+    (setq
+     replacement-pairs
+     (list
+      (cons (rx "["
+                (group (1+ digit)) ":"
+                (group (1+ digit)) " "
+                (group (| "AM" "PM"))
+                "]") "[\\1\\3:\\2]")
+      (cons (rx "["
+                ;; Month Day, Year Hour:Minute AM|PM
+                (group (1+ digit)) " "
+                (group (1+ digit)) ", "
+                (group (1+ digit))
+                (? " "
+                   (group (1+ digit)) ":"
+                   (group (1+ digit)) " "
+                   (group (| "AM" "PM")))
+                "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
+      (cons (rx "["
+                ;; Month/Day/Year Hour:Minute AM|PM
+                (group (1+ digit)) "/"
+                (group (1+ digit)) "/"
+                (group (1+ digit))
+                (? " "
+                   (group (1+ digit)) ":"
+                   (group (1+ digit)) " "
+                   (group (| "AM" "PM")))
+                "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
+      (cons (rx "202022") "2022")
+      (cons (rx "-" (group digit) " ") "-0\\1 ")
+      (cons (rx " :]") "]")))
+
+    (setq
+     str
+     (s-replace-all
+      '(("January" . "01")
+        ("February" . "02")
+        ("March" . "03")
+        ("April" . "04")
+        ("May" . "05")
+        ("June" . "06")
+        ("July" . "07")
+        ("August" . "08")
+        ("September" . "09")
+        ("October" . "10")
+        ("November" . "11")
+        ("December" . "12"))
+      str))
+
+    (dolist (pair replacement-pairs)
+      ;; (message "%s" str)
+      ;; (message "%s -> " (car pair))
+      ;; (message "%s" (cdr pair))
+      (setq str (s-replace-regexp (car pair) (cdr pair) str)))
+
+    (s-replace-all
+     '(("10PM" . "22") ("11PM" . "23") ("12PM" . "12")
+       ("10AM" . "01") ("11AM" . "11") ("12AM" . "00")
+       ("1PM" . "13") ("2PM" . "14") ("3PM" . "15")
+       ("4PM" . "16") ("5PM" . "17") ("6PM" . "18")
+       ("7PM" . "19") ("8PM" . "20") ("9PM" . "21")
+       ("1AM" . "01") ("2AM" . "02") ("3AM" . "03")
+       ("4AM" . "04") ("5AM" . "05") ("6AM" . "06")
+       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09")) str)))
 
 (progn
   (cl-defun org-note-insert-at-time+date
@@ -1227,48 +1334,23 @@ contextual information."
 
   (defun hax/tg-extract-date (msg)
     (with-temp-buffer
-      (let* ((iso-form (s-replace-regexp
-                        (rx
-                         "["
-                         (group (1+ digit)) "/"
-                         (group (1+ digit)) "/"
-                         (group (1+ digit)) " "
-                         (group (1+ digit)) ":"
-                         (group (1+ digit)) " "
-                         (group (| "AM" "PM"))
-                         "]")
-                        "[20\\3-\\1-\\2 \\4\\6:\\5]"
-                        msg))
-             (un-pm (s-replace-all
-                     '(("10PM" . "22") ("11PM" . "23") ("12PM" . "24")
-                       ("10AM" . "01") ("11AM" . "11") ("12AM" . "12")
-                       ("1PM" . "13") ("2PM" . "14") ("3PM" . "15")
-                       ("4PM" . "16") ("5PM" . "17") ("6PM" . "18")
-                       ("7PM" . "19") ("8PM" . "20") ("9PM" . "21")
-                       ("1AM" . "01") ("2AM" . "02") ("3AM" . "03")
-                       ("4AM" . "04") ("5AM" . "05") ("6AM" . "06")
-                       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09"))
-                     iso-form)))
-        ;; (message iso-form)
-        ;; (message un-pm)
-        (insert un-pm)
-        (goto-char 0)
-        (re-search-forward (rx "["
-                               (group (1+ digit)) "-" ;; 1 year
-                               (group (1+ digit)) "-" ;; 2 month
-                               (group (1+ digit)) " " ;; 3 day
-                               (group (1+ digit)) ":" ;; 4 hour
-                               (group (1+ digit)) ;; 5 minute
-                               "]"))
-        (message un-pm)
-        (list
-         0 ;; sec
-         (string-to-number (match-string 5)) ;; min
-         (string-to-number (match-string 4)) ;; hour
-         (string-to-number (match-string 3)) ;; day
-         (string-to-number (match-string 2)) ;; mon
-         (string-to-number (match-string 1)) ;; year
-         ))))
+      (insert (fixup-text-dates msg))
+      (goto-char 0)
+      (re-search-forward (rx "["
+                             (group (1+ digit)) "-" ;; 1 year
+                             (group (1+ digit)) "-" ;; 2 month
+                             (group (1+ digit)) " " ;; 3 day
+                             (group (1+ digit)) ":" ;; 4 hour
+                             (group (1+ digit)) ;; 5 minute
+                             "]"))
+      (list
+       0 ;; sec
+       (string-to-number (match-string 5)) ;; min
+       (string-to-number (match-string 4)) ;; hour
+       (string-to-number (match-string 3)) ;; day
+       (string-to-number (match-string 2)) ;; mon
+       (string-to-number (match-string 1)) ;; year
+       )))
 
   (defun hax/tg-extract-tags (msg)
     (with-temp-buffer

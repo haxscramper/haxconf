@@ -412,4 +412,10 @@ Prompt for a choice."
      (t (error "logic error 09535" )))
     (dired-sort-other -arg )))
 
+(global-set-key
+ (kbd "s->")
+ (cmd! (shell-command "strawberry --next")))
 
+(global-set-key
+ (kbd "s-<")
+ (cmd! (shell-command "strawberry --prev")))

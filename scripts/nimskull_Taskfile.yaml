@@ -138,17 +138,23 @@ tasks:
           TARGET: testament/testament.nim
           FLAGS: --out={{.PWD}}/bin/testament
 
+  test_testament_all:
+    desc: "Run testament category tests"
+    cmds:
+      - task: build_testament
+      - ./bin/testament --nim=bin/nim all
+
   test_testament_category:
     desc: "Run testament category tests"
     cmds:
       - task: build_testament
-      - ./bin/testament cat {{.CATEGORY}}
+      - ./bin/testament --nim=bin/nim cat {{.CATEGORY}}
 
   test_testament_run:
     desc: "Run a single testament file"
     cmds:
       - task: build_testament
-      - ./bin/testament run {{.FILE}}
+      - ./bin/testament --nim=bin/nim run {{.FILE}}
 
   test_nimsuggest:
     desc: "Execute nimsuggest tests using debug compiler build or provided one"

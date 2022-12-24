@@ -72,12 +72,13 @@
 ;; Highlight symbol under cursor using saner keybinding
 (map! :nv ",hs" 'highlight-symbol)
 
+(defun current-line-indent ()
+  (interactive)
+  (save-excursion (back-to-indentation) (current-column)))
+
 (defun previous-line-indent ()
   (interactive)
-  (save-excursion
-    (forward-line -1)
-    (back-to-indentation)
-    (current-column)))
+  (save-excursion (forward-line -1) (current-column)))
 
 (cl-defun newline-and-indent-same-level (&optional
                                          (indent-addition nil)
