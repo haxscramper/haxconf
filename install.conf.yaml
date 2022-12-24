@@ -20,6 +20,9 @@
     # Carapace completions
     ~/.config/carapace/specs: shell/completions
 
+    # Tabby terminal configuration
+    ~/.config/tabby/config.yaml: shell/tabby.yaml
+
     # Starship shell prompt configuration
     ~/.config/starship.toml: cli/starship.toml
 
