@@ -303,7 +303,7 @@ fn puml-rebuild {|file|
   }
 
   emacs-open (realpath $file)
-  fd | e:entr -rc plantuml "-o"$E:PWD $file
+  fd -e puml | e:entr -rc plantuml -DPLANTUML_LIMIT_SIZE=200000 "-o"$E:PWD $file
 }
 
 fn py-rebuild {|file|

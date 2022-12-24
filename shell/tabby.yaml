@@ -174,33 +174,34 @@ hotkeys:
 terminal:
   searchOptions: {}
   colorScheme:
-    name: NightLion v1
-    foreground: '#bbbbbb'
-    background: '#000000'
+    name: Dracula
+    foreground: '#f8f8f2'
+    background: '#1e1f29'
     cursor: '#bbbbbb'
     colors:
-      - '#4c4c4c'
-      - '#bb0000'
-      - '#5fde8f'
-      - '#f3f167'
-      - '#276bd8'
-      - '#bb00bb'
-      - '#00dadf'
+      - '#000000'
+      - '#ff5555'
+      - '#50fa7b'
+      - '#f1fa8c'
+      - '#bd93f9'
+      - '#ff79c6'
+      - '#8be9fd'
       - '#bbbbbb'
       - '#555555'
       - '#ff5555'
-      - '#55ff55'
-      - '#ffff55'
-      - '#5555ff'
-      - '#ff55ff'
-      - '#55ffff'
+      - '#50fa7b'
+      - '#f1fa8c'
+      - '#bd93f9'
+      - '#ff79c6'
+      - '#8be9fd'
       - '#ffffff'
   profile: local:custom:elvish:36171298-17ea-4d05-83da-615872de883a
   customColorSchemes: []
-  font: Iosevka
+  font: JetBrains Mono
   fontSize: 16
   cursor: beam
   paneResizeStep: 0.2
+  background: colorScheme
 ssh: {}
 configSync:
   parts: {}

@@ -1001,10 +1001,10 @@ the empty area."
     ;; automatic note additions.
     (goto-char (point-min))
     (let* ((el (org-element-at-point))
-           (beg (org-element-property :robust-begin el))
            (end (org-element-property :end el)))
-      (goto-char beg)
-      (indent-code-rigidly beg end (* -1 (current-line-indent))))))
+      (message "reformattting %s %s" end (point-max))
+      (goto-char end)
+      (indent-code-rigidly end (point-max) (* -1 (current-line-indent))))))
 
 (defun hax/org-capture-after-finalize ()
   )
@@ -1228,6 +1228,8 @@ the empty area."
                      (org-element-property :value _inline-src-block))))
 
 
+
+
 (when t
   (defun fixup-buffer-dates ()
     (interactive)
@@ -1239,6 +1241,20 @@ the empty area."
         (insert result)
         (goto-char point-now))))
 
+  (rx-define rx-month-name
+    (| "January" "February" "March" "April" "May"
+       "June" "July" "August" "September" "October" "November" "December"
+       "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul"
+       "Aug" "Sep" "Oct" "Nov" "Dec"))
+
+  (rx-define rx-month-digit
+    (| "01" "02" "03" "04" "05" "06" "07" "08" "09"
+       "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12"))
+
+  (rx-define rx-month-name-or-digit (| rx-month-name rx-month-digit))
+  (rx-define rx-day-digit (1+ digit))
+  (rx-define rx-year (1+ digit))
+
   (defun fixup-text-dates (str)
     "Automatically convert string timestamps from some unreadable and
   unparseable formats such as `month-day-year H:M PM/AM' into a
@@ -1246,18 +1262,16 @@ the empty area."
     ;; The implementation runs in two parts. First I try to get rid of the
     ;; AM/PM nonsense by replacing all the content into the "almost correct"
     ;; version and then I map things to the proper ISO8601 format.
-    (setq
-     months-names
-     (-concat
-      calendar-month-abbrev-array
-      calendar-month-name-array
-      '("01" "02" "03" "04" "05" "06" "07" "08" "09")
-      '("1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12"))
-     month-name-regex (s-join "|" months-names)
-     )
+
     (setq
      replacement-pairs
      (list
+      (cons (rx "["
+                (group rx-day-digit) " "
+                (group rx-month-name) " "
+                (group rx-year)
+                "]")
+            "[\\3-\\2-\\1]")
       (cons (rx "["
                 (group (1+ digit)) ":"
                 (group (1+ digit)) " "
@@ -1265,17 +1279,22 @@ the empty area."
                 "]") "[\\1\\3:\\2]")
       (cons (rx "["
                 ;; Month Day, Year Hour:Minute AM|PM
-                (group (1+ digit)) " "
-                (group (1+ digit)) ", "
+                (group rx-month-name-or-digit) " "
+                (group rx-day-digit) ", "
                 (group (1+ digit))
-                (? " "
-                   (group (1+ digit)) ":"
-                   (group (1+ digit)) " "
-                   (group (| "AM" "PM")))
+                "]") "[20\\3-\\1-\\2]")
+      (cons (rx "["
+                ;; Month Day, Year Hour:Minute AM|PM
+                (group rx-month-name-or-digit) " "
+                (group (1+ digit)) ", "
+                (group (1+ digit)) " "
+                (group (1+ digit)) ":"
+                (group (1+ digit)) " "
+                (group (| "AM" "PM"))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "["
                 ;; Month/Day/Year Hour:Minute AM|PM
-                (group (1+ digit)) "/"
+                (group rx-month-name-or-digit) "/"
                 (group (1+ digit)) "/"
                 (group (1+ digit))
                 (? " "
@@ -1283,14 +1302,30 @@ the empty area."
                    (group (1+ digit)) " "
                    (group (| "AM" "PM")))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
-      (cons (rx "202022") "2022")
-      (cons (rx "-" (group digit) " ") "-0\\1 ")
+      (cons (rx "2020" (group digit digit)) "20\\1")
+      (cons (rx "-" (group digit) (group (| " " "]"))) "-0\\1\\2")
       (cons (rx " :]") "]")))
+
+    (dolist (pair replacement-pairs)
+      (setq str (s-replace-regexp (car pair) (cdr pair) str)))
 
     (setq
      str
      (s-replace-all
-      '(("January" . "01")
+      '(
+        ("Jan" . "01")
+        ("Feb" . "02")
+        ("Mar" . "03")
+        ("Apr" . "04")
+        ("May" . "05")
+        ("Jun" . "06")
+        ("Jul" . "07")
+        ("Aug" . "08")
+        ("Sep" . "09")
+        ("Oct" . "10")
+        ("Nov" . "11")
+        ("Dec" . "12")
+        ("January" . "01")
         ("February" . "02")
         ("March" . "03")
         ("April" . "04")
@@ -1304,12 +1339,6 @@ the empty area."
         ("December" . "12"))
       str))
 
-    (dolist (pair replacement-pairs)
-      ;; (message "%s" str)
-      ;; (message "%s -> " (car pair))
-      ;; (message "%s" (cdr pair))
-      (setq str (s-replace-regexp (car pair) (cdr pair) str)))
-
     (s-replace-all
      '(("10PM" . "22") ("11PM" . "23") ("12PM" . "12")
        ("10AM" . "01") ("11AM" . "11") ("12AM" . "00")
@@ -1318,7 +1347,9 @@ the empty area."
        ("7PM" . "19") ("8PM" . "20") ("9PM" . "21")
        ("1AM" . "01") ("2AM" . "02") ("3AM" . "03")
        ("4AM" . "04") ("5AM" . "05") ("6AM" . "06")
-       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09")) str)))
+       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09")) str))
+  ;; (fixup-text-dates "[Feb 15, 2011] [2 March 2020]")
+  )
 
 (progn
   (cl-defun org-note-insert-at-time+date
@@ -2403,3 +2434,10 @@ holding contextual information."
                          contents
                          environment)
      info)))
+
+(defun hax/org-element-inspect ()
+  (interactive)
+  (let* ((el (org-element-at-point)))
+    (with-current-buffer (get-buffer-create "*element-inspect*")
+      (delete-region (point-min) (point-max))
+      (insert (format "%s" el)))))
