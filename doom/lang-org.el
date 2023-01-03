@@ -1228,7 +1228,18 @@ the empty area."
                      (org-element-property :value _inline-src-block))))
 
 
+(setq
+ org-expiry-created-property-name "CREATED"
+ org-expiry-inactive-timestamps   t
+ )
 
+(defun hax/insert-created-timestamp()
+  "Insert a CREATED property using org-expiry.el for TODO entries"
+  (interactive)
+  (org-expiry-insert-created)
+  (org-back-to-heading)
+  (org-end-of-line)
+  (insert " "))
 
 (when t
   (defun fixup-buffer-dates ()
@@ -1303,6 +1314,7 @@ the empty area."
                    (group (| "AM" "PM")))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "2020" (group digit digit)) "20\\1")
+      (cons (rx "20" (group digit digit digit digit)) "\\1")
       (cons (rx "-" (group digit) (group (| " " "]"))) "-0\\1\\2")
       (cons (rx " :]") "]")))
 

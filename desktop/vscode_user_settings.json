@@ -1,0 +1,32 @@
+{
+    "explorer.confirmDragAndDrop": false,
+    "explorer.autoReveal": false,
+    "explorer.confirmDelete": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "nim.enableNimsuggest": false,
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "nim.lintOnSave": false,
+    "githubPullRequests.queries": [
+        {
+            "label": "Waiting For My Review",
+            "query": "is:open review-requested:${user}"
+        },
+        {
+            "label": "Assigned To Me",
+            "query": "is:open assignee:${user}"
+        },
+        {
+            "label": "All PRs",
+            "query": "sort:updated-desc"
+        },
+        {
+            "label": "Created By Me",
+            "query": "is:open author:${user}"
+        }
+    ],
+    "extensions.ignoreRecommendations": true,
+    "update.mode": "none",
+    "workbench.colorTheme": "High Contrast Theme",
+    "csharp.suppressDotnetInstallWarning": true,
+    "cmake.configureOnOpen": true
+}

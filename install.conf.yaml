@@ -80,6 +80,10 @@
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.config/sxiv/exec/key-handler: desktop/sxiv_key_handler.sh
 
+    ~/.config/Code/User/settings.json: desktop/vscode_user_settings.json
+    ~/.config/Code/User/keybindings.json: desktop/vscode_user_keybindings.json
+    ~/.config/Code/User/snippets: desktop/vscode_snippets
+
     # Indirection to simplify xbindkeys configuration
     ~/.config/rofi-launchers: external/rofi-themes/files/launchers
 

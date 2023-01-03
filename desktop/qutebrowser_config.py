@@ -22,7 +22,7 @@ c.new_instance_open_target = "tab-bg"
 c.url.start_pages = ["https://searx.me/search"]
 c.tabs.background = True
 
-nosize = "JetBrains Mono"
+nosize = "Iosevka"
 totalFont = "12pt " + nosize
 
 ##= Fonts

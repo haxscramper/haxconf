@@ -50,3 +50,4 @@ git push --force <remote> <local_branch>:<remote_branch>
 $ remote: git remote
 $ local_branch: git branch -a | sd "\*" ""
 $ remote_branch: git branch -r | sd "^ *[a-zA-Z-]+/" ""
+

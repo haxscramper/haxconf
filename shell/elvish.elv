@@ -263,7 +263,7 @@ fn nr_setup {|file|
   var path = (realpath $file)
   emacs-open $path
   echo "Run using build"
-  e:kitty @ set-window-title "nimble-rebuild "$file
+  # e:kitty @ set-window-title "nimble-rebuild "$file
 }
 
 edit:add-var nr~ {|file|
@@ -340,7 +340,7 @@ int main() {
   }
 
   emacs-open (realpath $file)
-  var opts = "-ferror-limit=2 -std=c++20"
+  var opts = "-ferror-limit=1 -std=c++20 -g"
   # inwait-cwd-loop {
   #   clang++ $file -g -ferror-limit=2 -std=c++20 -o $res-file $opt-file
   #   try {

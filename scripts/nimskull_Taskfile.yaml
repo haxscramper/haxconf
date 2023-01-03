@@ -41,6 +41,18 @@ tasks:
             cat .hax-gitignore >> .gitignore
         fi
 
+  installed_run:
+    desc: "Build something using the installed compiler"
+    cmds:
+      - >
+        nim
+        r
+        {{if eq "ON" .RELEASE}}{{.RELEASE_FLAGS}}{{end}}
+        {{.FLAGS}}
+        {{.USE_INSTALLED}}
+        {{.TARGET}}
+
+
   installed_nim:
     desc: "Build something using the installed compiler"
     cmds:

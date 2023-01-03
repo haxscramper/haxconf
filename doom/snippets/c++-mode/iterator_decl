@@ -1,0 +1,37 @@
+# -*- mode: snippet -*-
+# name: iterator_decl
+# key: iterator_decl
+# uuid: iterator_decl
+# --
+
+class iterator
+{
+  private:
+   // content
+
+  public:
+    typedef std::forward_iterator_tag iterator_category;
+    typedef $1                       value_type;
+    typedef $1*                      pointer;
+    typedef $1&                      reference;
+    typedef std::ptrdiff_t           difference_type;
+
+    iterator(/* arguments */)  {}
+
+    T& operator*() {
+        // get current value
+    }
+
+    iterator& operator++() {
+        // increment current iterator state
+        return *this;
+    }
+
+    bool operator!=(const iterator& other) {
+      // implement iterator inequality comparison
+    }
+};
+
+
+iterator begin() { return iterator(/* start iterator args */); }
+iterator end() { return iterator(/* end iterator args */); }

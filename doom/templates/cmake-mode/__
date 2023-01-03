@@ -6,13 +6,24 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CONAN_DISABLE_CHECK_COMPILER ON)
 
+add_executable($1 main.cpp)
+
+# Avoid getting flooded with compilation errors
+set(CMAKE_CXX_COMPILER clang++)
+target_compile_options($1 PRIVATE -ferror-limit=1)
+
+# Same configuration option for g++ compiler
+set(CMAKE_CXX_COMPILER g++)
+target_compile_options($1 PRIVATE -fmax-errors=1)
+
+# Conan package manager setup
 include(\${CMAKE_SOURCE_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
-
-add_executable($1 main.cpp)
 target_link_libraries($1 \${CONAN_LIBS})
 target_include_directories($1 PRIVATE \${CONAN_INCLUDE_DIRS})
 target_link_directories($1 PRIVATE \${CONAN_LIB_DIRS})
 
+# Output binary into the same directory, add extension to it
+set_target_properties($1 PROPERTIES OUTPUT_NAME $1 SUFFIX ".bin")
 set_target_properties($1 PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                                                  "\${CMAKE_SOURCE_DIR}")
+                                    "\${CMAKE_SOURCE_DIR}")

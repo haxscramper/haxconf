@@ -197,7 +197,7 @@ terminal:
       - '#ffffff'
   profile: local:custom:elvish:36171298-17ea-4d05-83da-615872de883a
   customColorSchemes: []
-  font: JetBrains Mono
+  font: Iosevka
   fontSize: 16
   cursor: beam
   paneResizeStep: 0.2
