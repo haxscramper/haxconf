@@ -3,6 +3,10 @@
     "explorer.autoReveal": false,
     "explorer.confirmDelete": false,
     "security.workspace.trust.untrustedFiles": "open",
+    // Yes, I'm smart enough to not donwload garbage in the first place, but once I've
+    // downloaded something I would like to be able to just open it
+    "security.workspace.trust.enabled": false,
+    // Never worked in the first place
     "nim.enableNimsuggest": false,
     "editor.unicodeHighlight.ambiguousCharacters": false,
     "nim.lintOnSave": false,
@@ -24,9 +28,33 @@
             "query": "is:open author:${user}"
         }
     ],
+    // Stop the buzz
     "extensions.ignoreRecommendations": true,
     "update.mode": "none",
-    "workbench.colorTheme": "High Contrast Theme",
     "csharp.suppressDotnetInstallWarning": true,
-    "cmake.configureOnOpen": true
+    "workbench.colorTheme": "High Contrast Theme",
+    // What else?
+    "cmake.configureOnOpen": true,
+    "editor.fontFamily": "'Iosevka', 'monospace', monospace",
+    // Because neovim extension is used
+    "editor.lineNumbers": "relative",
+    "files.autoSave": "onFocusChange",
+    "[cpp]": {
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+    // In most cases it is pretty useless
+    "editor.minimap.enabled": false,
+    "redhat.telemetry.enabled": false,
+    // Automatically pick up schema files from the workspace roots if possible
+    "xml.fileAssociations": [
+        {
+            "pattern": "**/*.xml",
+            "systemId": "schema.xsd"
+        }
+    ],
+    "githubPullRequests.terminalLinksHandler": "github",
+    "xml.server.vmargs": "-Xmx128M",
+    "workbench.tree.indent": 4,
+    "editor.tabSize": 2
 }
