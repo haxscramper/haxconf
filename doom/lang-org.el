@@ -748,16 +748,40 @@ selection result. Provide PROMPT for selection input"
     (when (eq (car item) 'item)
       (goto-char (org-element-property :end item)))))
 
+(defun ensure-text-around (expr)
+  (if (= (- (line-end-position) 1) (point))
+      (progn
+        (goto-char (+ 1 (point)))
+        (insert " ")
+        (funcall expr))
+    (progn
+      (when (not (= (char-after) ?\s)) (insert " "))
+      (when (not (= (char-before) ?\s)) (insert " "))
+      (funcall expr)
+      (when (not (= (char-before ?\s))) (insert " "))
+      (when (not (= (char-after) ?\s)) (insert " ")))))
+
 (defun hax/org-insert-text-tag ()
   "Insert org-mode hashtag under corrent cursor position, adding
 necessary whitespace around it if he cursor wasn't positioned at
 the empty area."
   (interactive)
-  (when (not (= (char-after) ?\s)) (insert " "))
-  (when (not (= (char-before) ?\s)) (insert " "))
-  (insert (concat "#" (hax/select-tag nil)))
-  (when (not (= (char-before ?\s))) (insert " "))
-  (when (not (= (char-after) ?\s)) (insert " ")))
+  (ensure-text-around (lambda () (insert (concat "#" (hax/select-tag nil))))))
+
+(defun hax/org-insert-timestamp ()
+  "Insert org-mode hashtag under corrent cursor position, adding
+necessary whitespace around it if he cursor wasn't positioned at
+the empty area."
+  (interactive)
+  (ensure-text-around (lambda () (org-insert-time-stamp (current-time) t t))))
+
+(defun hax/org-insert-timestamped-parens ()
+  (interactive)
+  (ensure-text-around
+   (lambda ()
+     (insert "((")
+     (org-insert-time-stamp (current-time) t t)
+     (insert "))"))))
 
 (defun pop-selection ()
   (when (use-region-p)
@@ -873,6 +897,9 @@ the empty area."
    :n ",ta" #'hax/org-assign-tag
    :desc "Insert tag in text"
    :n ",tt" #'hax/org-insert-text-tag
+   :desc "Insert timestamp in text"
+   :n ",ts" #'hax/org-insert-timestamp
+   :n ",tS" #'hax/org-insert-timestamped-parens
    :ni "M-i M-i" #'hax/org-paste-clipboard
    :desc "math"
    :ni "M-i M-m" (lambda (text)

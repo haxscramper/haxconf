@@ -409,3 +409,5 @@
 #software##novelai
 #software##spoofax
 #software##xtext
+#code##cpp##tool##clang
+#programming##diagnostics
