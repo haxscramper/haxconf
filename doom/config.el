@@ -339,6 +339,14 @@ more nitpickery about stuff I write in my configuration files."
     "-")
   :modes '(cmake-mode))
 
+
+(set-formatter! 'luafmt
+  '("luafmt"
+    "--stdin"
+    "--line-width" "75"
+    )
+  :modes '(lua-mode))
+
 (set-formatter! 'sqlfmt
   '("sqlformat" "-"
     "--keywords" "upper"

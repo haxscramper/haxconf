@@ -60,6 +60,7 @@
 
 (add-to-list 'auto-mode-alist '("\\.ASM" . asm-mode))
 (add-to-list 'auto-mode-alist '("\\.puml" . plantuml-mode))
+(add-to-list 'auto-mode-alist '("\\.g4" . antlr-mode))
 (add-to-list 'auto-mode-alist '("\\.pro" . qt-pro-mode))
 
 (defun hax/asm-mode-hook ()

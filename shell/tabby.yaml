@@ -80,8 +80,7 @@ hotkeys:
   toggle-last-tab: []
   rename-tab:
     - Ctrl-Shift-R
-  next-tab:
-    - - Ctrl-Tab
+  next-tab: []
   previous-tab:
     - - Ctrl-Shift-Tab
   move-tab-left:
