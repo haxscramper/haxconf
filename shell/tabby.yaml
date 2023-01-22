@@ -201,11 +201,13 @@ terminal:
   cursor: beam
   paneResizeStep: 0.2
   background: colorScheme
+  warnOnMultilinePaste: false
 ssh: {}
 configSync:
   parts: {}
 clickableLinks: {}
-accessibility: {}
+accessibility:
+  animations: false
 appearance:
   flexTabs: true
 hacks: {}
@@ -217,3 +219,4 @@ saveOutput:
   autoSave: 'on'
   autoSaveDirectory: /home/haxscramper/.cache/tabby-out
 docker: {}
+recoverTabs: false

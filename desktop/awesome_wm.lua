@@ -82,7 +82,7 @@ end
 -- write_log("Theme configuration directory " .. theme.confdir)
 
 -- This is used later as the default terminal and editor to run.
-terminal = "kitty"
+terminal = "tabby"
 editor = os.getenv("EDITOR") or "nano"
 editor_cmd = terminal .. " -e " .. editor
 
@@ -750,7 +750,8 @@ awful.rules.rules = {
             class = {
                 "emacs",
                 "Emacs",
-                "kitty"
+                "kitty",
+                "tabby"
             },
             -- Note that the name property shown in xprop might be set
             -- slightly after creation of the client and the name shown

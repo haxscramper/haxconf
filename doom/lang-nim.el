@@ -34,7 +34,7 @@
   (nimsuggest-mode 0)
   ;; Flycheck relies on nimsuggest, so disable it as well
   (electric-indent-mode 0)
-  (company-mode t)
+  (company-mode nil)
   (setq company-backends '(company-capf :with company-etags))
   (setq imenu-generic-expression nim-imenu-generic-expression)
   (map!
