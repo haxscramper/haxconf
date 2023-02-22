@@ -1,0 +1,8 @@
+template <>
+inline $1 low() {
+    return $1::$2;
+}
+template <>
+inline $1 high() {
+    return $1::$3;
+}

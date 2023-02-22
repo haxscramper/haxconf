@@ -1,0 +1,6 @@
+template <>
+struct std::hash<$1> {
+    std::size_t operator()($1 const& it) const noexcept {
+        return std::hash< $2 >{}(it.$3);
+    }
+};

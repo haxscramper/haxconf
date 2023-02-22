@@ -56,5 +56,5 @@
     "githubPullRequests.terminalLinksHandler": "github",
     "xml.server.vmargs": "-Xmx128M",
     "workbench.tree.indent": 4,
-    "editor.tabSize": 2
+    "editor.tabSize": 2,
 }

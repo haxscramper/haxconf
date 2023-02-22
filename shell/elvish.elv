@@ -306,7 +306,7 @@ fn puml-rebuild {|file|
   fd -e puml | e:entr -rc plantuml -DPLANTUML_LIMIT_SIZE=200000 "-o"$E:PWD $file
 }
 
-fn py-rebuild {|file|
+fn py-rebuild {|file @arguments|
   var py-content = '#!/usr/bin/env python
 '
 
@@ -316,7 +316,7 @@ fn py-rebuild {|file|
 
   chmod +x $file
   emacs-open (realpath $file)
-  fd | e:entr -rc sh -c './'$file
+  fd | e:entr -rc './'$file $@arguments
 }
 
 fn cpp-rebuild {|file|
