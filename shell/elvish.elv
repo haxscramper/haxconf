@@ -293,6 +293,11 @@ fn inwait-cwd-loop {|callback|
     }
 }
 
+fn git-new-branch {|name description|
+  git checkout -b $name
+  git config "branch."$name".description" $description
+}
+
 fn puml-rebuild {|file|
   var puml-content = '@startuml
 
@@ -462,7 +467,13 @@ fn none-of {|list pred|
 
 eval (starship init elvish)
 eval (carapace _carapace|slurp)
-eval (zoxide init elvish | slurp)
+try {
+  # On Ubuntu zoxide installation is so ancient it
+  # does not have support for elvish shell
+  eval (zoxide init elvish | slurp) 2> /dev/null
+} catch {
+
+}
 
 fn call-navi {
   if (eq $edit:current-command '') {
@@ -492,6 +503,26 @@ fn call-navi {
 
 set edit:insert:binding[Ctrl-g] = { call-navi >/dev/tty 2>&1 }
 
+set edit:before-readline = [
+  $@edit:before-readline
+  {
+    try {
+      var m = [(direnv export elvish | from-json)]
+      if (> (count $m) 0) {
+        set m = (all $m)
+        keys $m | each {|k|
+          if $m[$k] {
+            set-env $k $m[$k]
+          } else {
+            unset-env $k
+          }
+        }
+      }
+    } catch e {
+      echo $e
+    }
+  }
+]
 
 fn br {|@arguments|
   var path = (mktemp)

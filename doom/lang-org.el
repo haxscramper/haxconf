@@ -1184,10 +1184,12 @@ the empty area."
                             ;; first, then align time to five characters,
                             ;; then 12 for scheduled information. Title and
                             ;; all the other data will be placed afterwards.
-                            (agenda . "%(hax/maybe-relative-time) %-12t ")
-                            (todo . "%(hax/parent-subtrees) ")
-                            (tags . "%(hax/parent-subtrees) ")
-                            (search . "%(hax/parent-subtrees) "))
+                            ;;
+                            ;; 'e' is for time estimates.
+                            (agenda . "%(hax/maybe-relative-time) %-12t %-6e")
+                            (todo . "%(hax/parent-subtrees) %-6e")
+                            (tags . "%(hax/parent-subtrees) %-6e")
+                            (search . "%(hax/parent-subtrees) %-6e"))
  org-agenda-start-on-weekday nil
  org-agenda-ndays 14
  org-agenda-show-all-dates t
@@ -1652,12 +1654,11 @@ the empty area."
       :empty-lines-after 1)
      ("c" "Clock" entry (clock)
       ;; (function hax/goto-top-clock)
-      "** %U %(hax/capture-location)
+      "** TODO %?
   :PROPERTIES:
   :CREATED: %U
   :END:
-
-%?"
+"
       :empty-lines-before 1
       :empty-lines-after 1)
      ("s" "Subtask-now" entry (clock)

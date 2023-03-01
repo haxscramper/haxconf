@@ -36,16 +36,19 @@ Return selected word to use as a replacement or a tuple
 of (command . word) to be used by `flyspell-do-correct'."
     (let* ((verbatim-word (s-wrap word "=" "="))
            (internal-link-word (s-wrap word "[[" "]]"))
+           (internal-make-person (s-wrap word "[[person:" "]]"))
+           (internal-make-acronym (s-wrap word "[[abbrev:" "]]"))
            (code-word (s-wrap word "~" "~"))
            (corrects (if flyspell-sort-corrections
                          (sort candidates 'string<)
                        candidates))
            (actions `(("C-s" "Save word"         (save    . ,word))
-                      ("C-a" "Accept (session)"  (session . ,word))
                       ("C-b" "Accept (buffer)"   (buffer  . ,word))
                       ("C-=" "Make verbatim"     ,verbatim-word)
                       ("C-`" "Make code"         ,code-word)
                       ("C-]" "Make link"         ,internal-link-word)
+                      ("C-p" "Make person"       ,internal-make-person)
+                      ("C-a" "Make acronym"      ,internal-make-acronym)
                       ("C-c" "Skip"              (skip    . ,word))))
            (prompt   (format "Dictionary: [%s]"  (or ispell-local-dictionary
                                                      ispell-dictionary

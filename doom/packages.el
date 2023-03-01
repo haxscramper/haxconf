@@ -135,3 +135,5 @@
 (package! mw-thesaurus)
 (package! ox-gfm)
 (package! ox-rst)
+
+(package! mpv)

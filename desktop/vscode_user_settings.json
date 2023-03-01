@@ -43,6 +43,11 @@
         "editor.formatOnSave": true,
         "editor.formatOnPaste": true
     },
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4,
+        "editor.formatOnType": true
+    },
     // In most cases it is pretty useless
     "editor.minimap.enabled": false,
     "redhat.telemetry.enabled": false,
@@ -57,4 +62,26 @@
     "xml.server.vmargs": "-Xmx128M",
     "workbench.tree.indent": 4,
     "editor.tabSize": 2,
+    "githubPullRequests.terminalLinksHandler": "github",
+    "xml.server.vmargs": "-Xmx128M",
+    "workbench.tree.indent": 4,
+    "editor.tabSize": 2,
+    "files.insertFinalNewline": true,
+    "todo-tree.filtering.ignoreGitSubmodules": false,
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "XXX",
+        "[ ]",
+        "[x]",
+        "QUESTION",
+        "NOTE",
+        "IMPLEMENT",
+        "TEMP"
+    ],
+    "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
+    "githubPullRequests.pullBranch": "never",
+    "editor.renderWhitespace": "none"
 }
