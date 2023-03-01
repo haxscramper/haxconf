@@ -420,3 +420,4 @@ Prompt for a choice."
 (global-set-key
  (kbd "s-<")
  (cmd! (shell-command "strawberry --prev")))
+
