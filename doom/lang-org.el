@@ -1566,7 +1566,7 @@ the empty area."
    'org-latex-and-related nil
    :foreground "dim gray")
 
-  (global-company-mode nil)
+  (global-company-mode -1)
   (org-link-set-parameters "coords" :follow #'org-coords-open)
   (require 'ts)
   (require 'org-expiry)

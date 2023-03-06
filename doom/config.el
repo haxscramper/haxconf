@@ -132,6 +132,8 @@
 (after! evil-mc
   (global-evil-mc-mode t))
 
+(global-company-mode -1)
+
 ;; Use `C-c C-return' to annotate single lines in the commit message. Maybe
 ;; this can somehow be integrated with github review (read the anotations
 ;; from the commit message and add them as review on github instead of

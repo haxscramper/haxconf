@@ -413,6 +413,11 @@ Prompt for a choice."
      (t (error "logic error 09535" )))
     (dired-sort-other -arg )))
 
+
+(global-set-key
+ (kbd "s-C->")
+ (cmd! (shell-command "strawberry --play-pause")))
+
 (global-set-key
  (kbd "s->")
  (cmd! (shell-command "strawberry --next")))
@@ -421,3 +426,38 @@ Prompt for a choice."
  (kbd "s-<")
  (cmd! (shell-command "strawberry --prev")))
 
+(defconst hax/last-buffer-position nil)
+(defun hax/remember-buffer-position ()
+  ;; (setq hax/last-buffer-position (point))
+  (message "Before buffer revert")
+  )
+
+(defun hax/goto-remembered-buffe-position ()
+  ;; (when hax/last-buffer-position
+  ;;   (goto-char hax/last-buffer-position)
+  ;;   (setq hax/last-buffer-position nil))
+  (message "After buffer revert")
+  )
+
+(add-hook! after-revert-hook 'hax/goto-remembered-buffe-position)
+(add-hook! before-revert-hook 'hax/remember-buffer-position)
+
+(defconst hax/all-themes (custom-available-themes))
+
+(setq hax/all-themes (custom-available-themes))
+(setq hax/current-cycle-theme-index 0)
+
+(defun hax/load-pointed-theme ()
+  (let* ((to-load (nth hax/current-cycle-theme-index hax/all-themes)))
+    (load-theme to-load t)
+    (message "Loaded theme '%s'" to-load)))
+
+(defun hax/next-theme ()
+  (interactive)
+  (hax/load-pointed-theme)
+  (setq hax/current-cycle-theme-index (+ hax/current-cycle-theme-index 1)))
+
+(defun hax/prev-theme ()
+  (interactive)
+  (hax/load-pointed-theme)
+  (setq hax/current-cycle-theme-index (- hax/current-cycle-theme-index 1)))

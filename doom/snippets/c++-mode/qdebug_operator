@@ -1,0 +1,5 @@
+QDebug operator << ( QDebug os, $1 const& value ) {
+       QDebugStateSaver saved{os};
+       $0
+    return os;
+}
