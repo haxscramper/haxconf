@@ -16,8 +16,6 @@ use github.com/zzamboni/elvish-modules/alias
 
 mkdir -p /tmp/hax-trash
 
-set edit:insert:binding["Ctrl-["] = $edit:command:start~
-set edit:command:binding["Ctrl-["] = $edit:command:start~
 
 fn msg {|@a|
   echo -- $@a > /dev/tty
@@ -48,6 +46,9 @@ var sequence = ""
 fn cleanseq { set sequence = "" }
 fn addseq {|key| set sequence = $sequence""$key }
 fn setseq {|key| set sequence = $key }
+
+set edit:insert:binding["Ctrl-["] = $edit:command:start~
+set edit:command:binding["Ctrl-["] = $edit:command:start~
 
 set edit:insert:binding[Ctrl-t] = {
   try { edit:insert-at-dot (fd | fzf 2> /dev/tty) } catch e { }
