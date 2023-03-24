@@ -82,7 +82,7 @@ end
 -- write_log("Theme configuration directory " .. theme.confdir)
 
 -- This is used later as the default terminal and editor to run.
-terminal = "tabby"
+terminal = "kitty"
 editor = os.getenv("EDITOR") or "nano"
 editor_cmd = terminal .. " -e " .. editor
 

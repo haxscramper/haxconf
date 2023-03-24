@@ -20,7 +20,27 @@
   (insert (format "- %s (%s) /\"%s\"/" logical physical quote))
   '(:boolean t))
 
-(dbus-register-method
- :session "org.freedesktop.TextEditor" "/org/freedesktop/TextEditor"
- "org.freedesktop.TextEditor" "OpenFile"
- #'my-dbus-method-handler)
+(defun hax/dbus-register-methods (method-list)
+  (dolist (method method-list)
+    (dbus-register-method
+     :session "hax.haxconf.Emacs" "/hax/haxconf/Emacs"
+     "hax.haxconf.Emacs"
+     (car method)
+     (cdr method))))
+
+
+
+(hax/dbus-register-methods
+ (list
+  (cons "InsertPdfQuoteBlock2"
+        (lambda (logical physical quote)
+          (insert (format "#+caption: %s (%s)\n#+begin_quote\n%s\n#+end_quote\n"
+                          logical physical quote))))
+  (cons "InsertPdfQuoteItem2"
+        (lambda (logical physical quote)
+          (insert (format "- %s (%s) /\"%s\"/"
+                          logical physical quote))))
+  (cons "PrintTest" (lambda (input) (message "%s" input)))))
+
+
+(set-face-attribute 'winum-face nil :weight 'bold :foreground "green")

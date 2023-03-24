@@ -415,7 +415,7 @@ Prompt for a choice."
 
 
 (global-set-key
- (kbd "s-C->")
+ (kbd "s-p")
  (cmd! (shell-command "strawberry --play-pause")))
 
 (global-set-key

@@ -6,6 +6,25 @@ import sys
 from PySide6.QtCore import QCoreApplication
 from PySide6.QtDBus import QDBusConnection, QDBusMessage
 
+import notify2
+
+notify2.init("okular_emacs_communication")
+
+
+def notify_error(message):
+    # Create a new notification object
+    notification = notify2.Notification(
+        "Title",  # The title of the notification
+        message,  # The message body of the notification
+    )  # The icon to use for the notification
+
+    # Set the timeout for the notification (in milliseconds)
+    notification.set_timeout(5000)
+    notification.set_urgency(2)
+
+    # Show the notification
+    notification.show()
+
 
 def get_current_selection():
     # Get the current selection using the xsel command-line tool
@@ -30,6 +49,10 @@ def get_current_pdf():
             okular = name
             break
 
+    if okular == None:
+        notify_error("No okular instance is running")
+        return None
+
     # Full list of APIs for D-Bus is provided in the introspection call,
     # use d-feet to debug.
     get_document = QDBusMessage.createMethodCall(
@@ -45,14 +68,14 @@ def get_current_pdf():
     return (document.arguments()[0], page.arguments()[0])
 
 
-def send_selection_to_dbus(logical, physical, selection):
+def send_selection_to_dbus(logical, physical, selection, method_name):
     # Get a proxy object for the destination interface, names are temporary
     # emacs debug solutions, will be changed later on.
     call = QDBusMessage.createMethodCall(
-        "org.freedesktop.TextEditor",  # destination
-        "/org/freedesktop/TextEditor",  # path
-        "org.freedesktop.TextEditor",  # interface
-        "OpenFile",  # method
+        "hax.haxconf.Emacs",  # destination
+        "/hax/haxconf/Emacs",  # path
+        "hax.haxconf.Emacs",  # interface
+        method_name,  # method
     )
 
     # Can also use `setArguments` or some similar call, but `<<` seems ok
@@ -157,7 +180,38 @@ def logical_pdf_to_physical(pdf_file, logical_page_num):
         return str(logical_page_num)
 
 
-selection = get_current_selection()
-(opened_pdf, logical_page) = get_current_pdf()
-physical_page = logical_pdf_to_physical(opened_pdf, logical_page)
-send_selection_to_dbus(logical_page, physical_page, selection.replace("\n", " "))
+def fix_selection(text):
+    result = ""
+    prev_dash = False
+    for line in text.split("\n"):
+        if not prev_dash:
+            result += " "
+
+        clean = line.rstrip("- ")
+        prev_dash = len(clean) != len(line)
+        result += clean
+
+    return result.strip()
+
+def send_selection_to(method_name):
+    result = get_current_pdf()
+    if not result:
+        return
+
+    (opened_pdf, logical_page) = result
+    selection = get_current_selection()
+    physical_page = logical_pdf_to_physical(opened_pdf, logical_page)
+    send_selection_to_dbus(
+        logical_page,
+        physical_page,
+        selection.replace("\n", " "),
+        method_name,
+    )
+
+if __name__ == "__main__":
+    print(fix_selection("""
+As the economy grows relative to the ecosystem, however, and
+the limiting factors shift to clean water, clean air, dump space, and accept-
+able forms of energy and raw materials, the traditional focus on only capi-
+tal and labor becomes increasingly unhelpful.
+    """))
