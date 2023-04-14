@@ -59,9 +59,15 @@ log = logging.getLogger("rich")
 
 
 class ShellCmd:
-    def __init__(self, cmd: List[str], stdin: Optional[str] = None):
+    def __init__(
+        self,
+        cmd: List[str],
+        stdin: Optional[str] = None,
+        joinOut: bool = False,
+    ):
         self.cmd = cmd
         self.stdin = stdin
+        self.joinOut = joinOut
 
 
 class CommandExecutor(QObject):
@@ -71,7 +77,7 @@ class CommandExecutor(QObject):
     exit_app = pyqtSignal()
     execute = pyqtSignal()
 
-    def __init__(self, commands: List[ShellCmd]):
+    def __init__(self, commands: List[List[ShellCmd]]):
         super().__init__()
         self.commands = commands
         self.current_process = None
@@ -87,7 +93,11 @@ class CommandExecutor(QObject):
                 stdout=(
                     subprocess.PIPE if i < len(chain) - 1 else log_handle
                 ),
-                stderr=subprocess.STDOUT,
+                stderr=(
+                    subprocess.PIPE
+                    if command.joinOut
+                    else subprocess.STDOUT
+                ),
             )
             if i > 0:
                 # Allow the previous process to receive a SIGPIPE if
@@ -103,19 +113,17 @@ class CommandExecutor(QObject):
     def execute_commands(self):
         self.started.emit()
         for command in self.commands:
-            self.execute_chain([command])
+            self.execute_chain(command)
 
             try:
                 return_code = self.current_process.wait()
             except KeyboardInterrupt:
                 self.current_process.terminate()
-                self.error_occurred.emit(
-                    f"Interrupted command: {' '.join(command)}"
-                )
+                self.error_occurred.emit(f"Interrupted command: {command}")
                 break
 
             if return_code != 0:
-                log.error(f"Failed command: {' '.join(command.cmd)}")
+                log.error(f"Failed command: {command}")
                 break
         self.finished.emit()
 
@@ -316,7 +324,7 @@ def cli():
 
 @cli.command("cpp")
 @click.argument("file", type=click.Path())
-@click.option("--options", type=click.Path())
+@click.option("--options", type=click.Path(), help="?")
 @click.option(
     "--wrapper", type=click.Choice(["lldb", "rr", "valgrind", "firejail"])
 )
@@ -369,8 +377,35 @@ int main() {
         case _:
             run_cmds = [binary] + [o for o in opt]
 
+    filters = [
+        r"is a Catch2",
+        r"Run with -\? for options",
+        r"Catch will terminate",
+        r"\(lldb\)",
+        r"frame-format",
+        r"  0x",
+        r"libc\.so",
+        r"Process \d{2,}",
+        r"Executing commands in",
+        r"Terminate called without",
+        r"\.{10,}",
+        r"-{10,}",
+        r"~{10,}",
+        r"Test failure requires aborting",
+        r"terminate called without",
+    ]
+
+    rg_filter = ["rg", "-v", "(" + "|".join(filters) + ")"]
+
     start_main_loop(
-        [ShellCmd(compile_cmds), ShellCmd(run_cmds)], [os.getcwd()]
+        [
+            [
+                ShellCmd(compile_cmds, joinOut=True),
+                ShellCmd(["tee", "/tmp/cpp-rebuild-errors"]),
+            ],
+            [ShellCmd(run_cmds, joinOut=True), ShellCmd(rg_filter)],
+        ],
+        [os.getcwd()],
     )
 
 
