@@ -1,0 +1,4 @@
+settings set frame-format "${script.frame:lldb_script.format_frame}"
+settings show frame-format
+skip_backtrace
+quit

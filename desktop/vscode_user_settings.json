@@ -45,8 +45,7 @@
     },
     "[python]": {
         "editor.formatOnSave": true,
-        "editor.tabSize": 4,
-        "editor.formatOnType": true
+        "editor.tabSize": 4
     },
     // In most cases it is pretty useless
     "editor.minimap.enabled": false,

@@ -301,6 +301,10 @@ fn git-new-branch {|name description|
 
 fn puml-rebuild {|file|
   var puml-content = '@startuml
+skinparam DefaultFontName Iosevka
+skinparam defaultTextAlignment left
+skinparam maxMessageSize 200
+skinparam wrapWidth 200
 
 @enduml'
 
@@ -308,8 +312,12 @@ fn puml-rebuild {|file|
     return
   }
 
+  var svg-file = (str:trim-suffix $file ".puml")".svg"
+  var pdf-file = (str:trim-suffix $file ".puml")".pdf"
+
   emacs-open (realpath $file)
-  fd -e puml | e:entr -rc plantuml -DPLANTUML_LIMIT_SIZE=200000 "-o"$E:PWD $file
+  fd -e puml |
+  e:entr -rc sh -c "plantuml -tsvg -o"$E:PWD" "$file" && inkscape --file="$svg-file" --export-pdf="$pdf-file
 }
 
 fn py-rebuild {|file @arguments|
@@ -346,7 +354,7 @@ int main() {
   }
 
   emacs-open (realpath $file)
-  var opts = "-ferror-limit=1 -std=c++20 -g"
+  var opts = "-ferror-limit=1 -std=c++20 -g -fdiagnostics-color=always"
   # inwait-cwd-loop {
   #   clang++ $file -g -ferror-limit=2 -std=c++20 -o $res-file $opt-file
   #   try {
@@ -356,7 +364,7 @@ int main() {
   #   }
   # }
 
-  fd | e:entr -rc sh -c "clang++ '"$file"' "$opts" -o '"$res-file"' '"$opt-file"' && ./"$res-file
+  fd | e:entr -rc sh -c "clang++ '"$file"' "$opts" -o '"$res-file"' '"$opt-file"' 2>&1 | tee /tmp/cpp-rebuild-errors  && ./"$res-file
 }
 
 fn dot-rebuild {|file|
