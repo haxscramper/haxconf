@@ -498,15 +498,6 @@ globalkeys =
         end,
         {description = "restore minimized", group = "client"}
     ),
-    -- Prompt
-    awful.key(
-        {modkey},
-        "r",
-        function()
-            awful.screen.focused().mypromptbox:run()
-        end,
-        {description = "run prompt", group = "launcher"}
-    ),
     awful.key(
         {modkey},
         "x",
@@ -519,15 +510,6 @@ globalkeys =
             }
         end,
         {description = "lua execute prompt", group = "awesome"}
-    ),
-    -- Menubar
-    awful.key(
-        {modkey},
-        "p",
-        function()
-            menubar.show()
-        end,
-        {description = "show the menubar", group = "launcher"}
     )
 )
 

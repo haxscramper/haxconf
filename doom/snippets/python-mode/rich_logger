@@ -19,8 +19,5 @@ for name in logging.root.manager.loggerDict:
     logger = logging.getLogger(name)
     logger.setLevel(logging.WARNING)
 
-    log = logging.getLogger("rich")
-    log.setLevel(logging.DEBUG)
-
 log = logging.getLogger("rich")
 log.setLevel(logging.DEBUG)

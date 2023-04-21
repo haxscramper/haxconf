@@ -1,0 +1,38 @@
+diff a/desktop/vscode_user_keybindings.json b/desktop/vscode_user_keybindings.json	(rejected hunks)
+@@ -72,5 +72,36 @@
+         "key": "ctrl+shift+k",
+         "command": "-editor.action.deleteLines",
+         "when": "textInputFocus && !editorReadonly"
++    },
++    {
++        "key": "shift+alt+d",
++        "command": "-editor.detectLanguage",
++        "when": "editorTextFocus && !notebookEditable"
++    },
++    {
++        "key": "shift+alt+d",
++        "command": "-notebook.cell.detectLanguage",
++        "when": "notebookCellEditable && notebookEditable"
++    },
++    {
++        "key": "shift+alt+d",
++        "command": "editor.action.peekDefinition",
++        "when": "editorHasDefinitionProvider && editorTextFocus && !inReferenceSearchEditor && !isInEmbeddedEditor"
++    },
++    {
++        "key": "ctrl+shift+f10",
++        "command": "-editor.action.peekDefinition",
++        "when": "editorHasDefinitionProvider && editorTextFocus && !inReferenceSearchEditor && !isInEmbeddedEditor"
++    },
++    {
++        // Who could've thought that placing 'kill everything' command close to the 
++        // 'close current single focused thing I'm looking on at the moment' would be a bad idea?
++        "key": "ctrl+q",
++        "command": "-workbench.action.quit"
++    },
++    {
++        "key": "shift+enter",
++        "command": "-python.execSelectionInTerminal",
++        "when": "editorTextFocus && !findInputFocussed && !jupyter.ownsSelection && !notebookEditorFocused && !replaceInputFocussed && editorLangId == 'python'"
+     }
+ ]

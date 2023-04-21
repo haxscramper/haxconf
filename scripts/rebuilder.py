@@ -89,15 +89,16 @@ class CommandExecutor(QObject):
             log.debug(command.cmd)
             process = subprocess.Popen(
                 command.cmd,
-                stdin=(None if i == 0 else processes[i - 1].stdout),
+                stdin=(command.stdin if i == 0 else processes[i - 1].stdout),
                 stdout=(
                     subprocess.PIPE if i < len(chain) - 1 else log_handle
                 ),
-                stderr=(
-                    subprocess.PIPE
-                    if command.joinOut
-                    else subprocess.STDOUT
-                ),
+                stderr=(subprocess.STDOUT),
+                # stderr=(
+                #     subprocess.PIPE
+                #     if command.joinOut
+                #     else subprocess.STDOUT
+                # ),
             )
             if i > 0:
                 # Allow the previous process to receive a SIGPIPE if
@@ -209,7 +210,6 @@ class DirectoryWatcher(QObject):
 
     def on_modified(self, event):
         if not self.ignore_patterns.match_file(event.src_path):
-            log.info(event.src_path)
             match event.event_type:
                 case "modified":
                     if event.is_directory:

@@ -1,0 +1,31 @@
+diff a/config/tags b/config/tags	(rejected hunks)
+@@ -434,4 +434,27 @@
+ #software##dbus
+ #software##sourcetrail
+ #@repeated
+-#software##drawio
+\ No newline at end of file
++#software##drawio
++#programming##pr##rebase
++#test##findings##issue
++#summary
++#activity##meeting
++#activity##write##personal
++#test##findings##feature
++#recollection##day
++#importance##must_have
++#importance##should_have
++#importance##could_have
++#importance##wont_have
++#complexity##unknown
++#complexity##trivial_1
++#complexity##simple_2
++#complexity##modest_3
++#complexity##moderate_5
++#complexity##complex_8
++#complexity##intricate_13
++#complexity##daunting_21
++#complexity##torturous_34
++#severity##minor
++#severity##critical
++#severity##medium

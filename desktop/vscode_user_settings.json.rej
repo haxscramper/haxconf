@@ -1,0 +1,9 @@
+diff a/desktop/vscode_user_settings.json b/desktop/vscode_user_settings.json	(rejected hunks)
+@@ -78,5 +78,6 @@
+     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
+     "githubPullRequests.pullBranch": "never",
+     "editor.renderWhitespace": "none",
+-    "cmake.configureOnEdit": false
++    "cmake.configureOnEdit": false,
++    "window.zoomLevel": -1
+ }

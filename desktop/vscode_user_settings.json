@@ -82,5 +82,6 @@
     ],
     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
     "githubPullRequests.pullBranch": "never",
-    "editor.renderWhitespace": "none"
+    "editor.renderWhitespace": "none",
+    "C_Cpp.default.compilerPath": "/bin/clang++"
 }

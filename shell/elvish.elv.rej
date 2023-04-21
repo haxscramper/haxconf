@@ -1,0 +1,57 @@
+diff a/shell/elvish.elv b/shell/elvish.elv	(rejected hunks)
+@@ -16,8 +16,6 @@ use github.com/zzamboni/elvish-modules/alias
+ 
+ mkdir -p /tmp/hax-trash
+ 
+-set edit:insert:binding["Ctrl-["] = $edit:command:start~
+-set edit:command:binding["Ctrl-["] = $edit:command:start~
+ 
+ fn msg {|@a|
+   echo -- $@a > /dev/tty
+@@ -49,6 +47,9 @@ fn cleanseq { set sequence = "" }
+ fn addseq {|key| set sequence = $sequence""$key }
+ fn setseq {|key| set sequence = $key }
+ 
++set edit:insert:binding["Ctrl-["] = $edit:command:start~
++set edit:command:binding["Ctrl-["] = $edit:command:start~
++
+ set edit:insert:binding[Ctrl-t] = {
+   try { edit:insert-at-dot (fd | fzf 2> /dev/tty) } catch e { }
+ }
+@@ -532,11 +533,18 @@ fn terminal-name {|text|
+     print "\e]0;"$text"\a"
+ }
+ 
++var last-command-dir = (pwd)
++var last-command-date = (date -Ins)
++
+ set edit:after-readline = [
+   $@edit:after-readline
+   {|text|
+     terminal-name $text
+   }
++  {|text|
++    set last-command-dir = (pwd)
++    set last-command-date = (date -Ins)
++  }
+ ]
+ 
+ set edit:after-command = [
+@@ -544,6 +552,17 @@ set edit:after-command = [
+   {|thing|
+     terminal-name (hostname)"/"(basename (pwd))
+   }
++  {|map|
++    var result = [
++      &started-at=$last-command-date
++      &ended-in=(pwd)
++      &started-in=$last-command-dir
++      &duration=$map[duration]
++      &src=$map[src]
++      &error=$map[error]
++    ]
++    put $result | to-json >> ~/.cache/elvish_exec_logs.json
++  }
+ ]
+ 
+ fn br {|@arguments|

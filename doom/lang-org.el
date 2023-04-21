@@ -145,6 +145,90 @@ mode"
        (propertize selected 'face `(:foreground ,(doom-color 'red)))))
     selected))
 
+(defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
+
+(defun backward-to-empty-line-after-non-empty ()
+  "Move the cursor backwards to the empty line directly after the first non-empty line encountered."
+  (interactive)
+  (while (at-empty-line) (forward-line -1))
+  (unless (bobp) (forward-line 1)))
+
+(defun hax/ensure-logbook-drawer-exists ()
+  "Ensure a LOGBOOK drawer exists in the current subtree."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let ((indentation (org-current-level)))
+      (unless (re-search-forward ":LOGBOOK:" (save-excursion (outline-next-heading)) t)
+        (org-end-of-meta-data t)
+        (forward-line -1)
+        (backward-to-empty-line-after-non-empty)
+        (insert (format "%s:LOGBOOK:\n%s:END:\n"
+                        (s-repeat (+ 1 indentation) " ")
+                        (s-repeat (+ 1 indentation) " ")))))))
+
+(defun hax/insert-logbook-tag-entry (tag-name action)
+  "Insert a logbook entry with TAG-NAME and ACTION ('added or 'removed) into the subtree logbook."
+  (let ((current-time (format-time-string (org-time-stamp-format t t))))
+    (hax/ensure-logbook-drawer-exists)
+    (save-excursion
+      (org-back-to-heading t)
+      (when (re-search-forward ":LOGBOOK:" (save-excursion (outline-next-heading)) t)
+        (end-of-line)
+        (insert "\n")
+        (insert
+         (format "%s- Tag \"%s\" %s on %s"
+                 (s-repeat (+ 1 (org-current-level)) " ")
+                 tag-name
+                 (if (eq action 'added) "Added" "Removed")
+                 current-time))))))
+
+
+
+(defun hax/counsel-org-tag-action (x)
+  "Add tag X to `counsel-org-tags'.
+If X is already part of the list, remove it instead.  Quit the selection if
+X is selected by either `ivy-done', `ivy-alt-done' or `ivy-immediate-done',
+otherwise continue prompting for tags."
+  (if (member x counsel-org-tags)
+      (progn
+        (setq counsel-org-tags (delete x counsel-org-tags)))
+    (unless (equal x "")
+      (setq counsel-org-tags (append counsel-org-tags (list x)))
+      (unless (member x ivy--all-candidates)
+        (setq ivy--all-candidates (append ivy--all-candidates (list x))))))
+  (let ((prompt (counsel-org-tag-prompt)))
+    (setf (ivy-state-prompt ivy-last) prompt)
+    (setq ivy--prompt (concat "%-4d " prompt)))
+  (cond ((memq this-command '(ivy-done
+                              ivy-alt-done
+                              ivy-immediate-done))
+         (if (eq major-mode 'org-agenda-mode)
+             (if (null org-agenda-bulk-marked-entries)
+                 (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
+                                     (org-agenda-error))))
+                   (with-current-buffer (marker-buffer hdmarker)
+                     (goto-char hdmarker)
+                     (counsel-org--set-tags)))
+               (let ((add-tags (copy-sequence counsel-org-tags)))
+                 (dolist (m org-agenda-bulk-marked-entries)
+                   (with-current-buffer (marker-buffer m)
+                     (save-excursion
+                       (goto-char m)
+                       (setq counsel-org-tags
+                             (delete-dups
+                              (append (counsel--org-get-tags) add-tags)))
+                       (counsel-org--set-tags))))))
+           (counsel-org--set-tags)
+           (if (member x counsel-org-tags)
+               (hax/insert-logbook-tag-entry x 'added)
+             (hax/insert-logbook-tag-entry x 'removed)
+             (message "Tag %S has been removed." x))))
+        ((eq this-command 'ivy-call)
+         (with-selected-window (active-minibuffer-window)
+           (delete-minibuffer-contents)))))
+
+
 (defun hax/org-assign-tag ()
   "Add or remove tags in `org-mode'. If new tag is added, store
 it in the persistent list of tags, and update current list of tags"
@@ -161,7 +245,7 @@ it in the persistent list of tags, and update current list of tags"
       (unless (org-at-heading-p)
         (org-back-to-heading t))
       (setq counsel-org-tags (counsel--org-get-tags)))
-    (hax/select-tag #'counsel-org-tag-action)))
+    (hax/select-tag #'hax/counsel-org-tag-action)))
 
 (defun hax/maybe-numeric-prefix (else)
   "Return optional numeric prefix, if one was supplied for current
