@@ -64,10 +64,12 @@ class ShellCmd:
         cmd: List[str],
         stdin: Optional[str] = None,
         joinOut: bool = False,
+        mightBeMissing: bool = False,
     ):
         self.cmd = cmd
         self.stdin = stdin
         self.joinOut = joinOut
+        self.mightBeMissing = mightBeMissing
 
 
 class CommandExecutor(QObject):
@@ -82,14 +84,23 @@ class CommandExecutor(QObject):
         self.commands = commands
         self.current_process = None
 
-    def execute_chain(self, chain: List[ShellCmd]):
+    def execute_chain(self, chain: List[ShellCmd]) -> bool:
         processes = []
         log_handle = sys.stdout
+
         for i, command in enumerate(chain):
+            if command.mightBeMissing and not os.path.exists(
+                command.cmd[0]
+            ):
+                log.error(f"{command.cmd} is missing, skipping execution")
+                return False
+
             log.debug(command.cmd)
             process = subprocess.Popen(
                 command.cmd,
-                stdin=(command.stdin if i == 0 else processes[i - 1].stdout),
+                stdin=(
+                    command.stdin if i == 0 else processes[i - 1].stdout
+                ),
                 stdout=(
                     subprocess.PIPE if i < len(chain) - 1 else log_handle
                 ),
@@ -110,11 +121,17 @@ class CommandExecutor(QObject):
             if i == 0:
                 self.current_process = process
 
+        return True
+
     @pyqtSlot()
     def execute_commands(self):
         self.started.emit()
         for command in self.commands:
-            self.execute_chain(command)
+            if not self.execute_chain(command):
+                log.warning(
+                    "Chain command failed to execute, stopping the full list"
+                )
+                break
 
             try:
                 return_code = self.current_process.wait()
@@ -330,7 +347,23 @@ def cli():
 )
 @click.option("--opt", multiple=True, default=[])
 @click.option("--run-input", type=click.Path())
-def exec_cpp(file, options, wrapper, opt, run_input):
+@click.option(
+    "--macro-expand", type=click.BOOL, is_flag=True, default=False
+)
+@click.option(
+    "--no-std-include", type=click.BOOL, is_flag=True, default=False
+)
+@click.option("--binary", "binary_override", type=click.Path())
+def exec_cpp(
+    file,
+    options,
+    wrapper,
+    opt,
+    run_input,
+    macro_expand,
+    no_std_include,
+    binary_override,
+):
     file = os.path.abspath(file)
     create_missing_file(
         file,
@@ -345,19 +378,63 @@ int main() {
     )
 
     scripts: str = os.path.expanduser("~/.config/haxconf/scripts")
-    binary: str = os.path.abspath(file.replace(".cpp", ".bin"))
+    binary: str = (
+        binary_override
+        if binary_override
+        else os.path.abspath(file.replace(".cpp", ".bin"))
+    )
 
     run_cmds: List[str] = []
-    compile_cmds: List[str] = [
-        "clang++",
-        "-ferror-limit=1",
-        "-std=c++20",
-        "-g",
-        "-fdiagnostics-color=always",
-        "-o",
-        binary,
-        file,
-    ]
+    compile_cmds: List[ShellCmd] = []
+    if macro_expand:
+        cmds = [
+            "clang++",
+            "-E",
+            "-P",
+            "-std=c++20",
+            "-fdiagnostics-color=always",
+        ]
+
+        if no_std_include:
+            cmds.append("-nostdinc++")
+
+        cmds.append(file)
+
+        compile_cmds = [ShellCmd(cmds)]
+
+    else:
+        if file.endswith("CMakeLists.txt"):
+            compile_cmds = [
+                ShellCmd(
+                    [
+                        "cmake",
+                        "-B",
+                        "build",
+                        "--log-level",
+                        "TRACE",
+                        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                        ".",
+                    ]
+                ),
+                ShellCmd(["ninja", "-C", "build"]),
+            ]
+
+        else:
+            compile_cmds = [
+                ShellCmd(
+                    [
+                        "clang++",
+                        "-ferror-limit=1",
+                        "-std=c++20",
+                        "-g",
+                        "-fdiagnostics-color=always",
+                        "-o",
+                        binary,
+                        file,
+                    ],
+                    joinOut=True,
+                )
+            ]
 
     match wrapper:
         case "lldb":
@@ -397,16 +474,34 @@ int main() {
 
     rg_filter = ["rg", "-v", "(" + "|".join(filters) + ")"]
 
-    start_main_loop(
-        [
+    if macro_expand:
+        start_main_loop(
             [
-                ShellCmd(compile_cmds, joinOut=True),
-                ShellCmd(["tee", "/tmp/cpp-rebuild-errors"]),
+                compile_cmds
+                + [
+                    ShellCmd(
+                        ["clang-format", "--assume-filename=test.hpp"]
+                    ),
+                    ShellCmd(["bat", "--language=cpp", "--no-pager"]),
+                ]
             ],
-            [ShellCmd(run_cmds, joinOut=True), ShellCmd(rg_filter)],
-        ],
-        [os.getcwd()],
-    )
+            [os.getcwd()],
+        )
+
+    else:
+        start_main_loop(
+            [
+                compile_cmds
+                + [
+                    ShellCmd(["tee", "/tmp/cpp-rebuild-errors"]),
+                ],
+                [
+                    ShellCmd(run_cmds, joinOut=True, mightBeMissing=True),
+                    ShellCmd(rg_filter),
+                ],
+            ],
+            [os.getcwd()],
+        )
 
 
 def main():
