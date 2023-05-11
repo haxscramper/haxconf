@@ -41,7 +41,7 @@
     "files.autoSave": "onFocusChange",
     "[cpp]": {
         "editor.formatOnSave": true,
-        "editor.formatOnPaste": true
+        "editor.formatOnPaste": false
     },
     "[python]": {
         "editor.formatOnSave": true,

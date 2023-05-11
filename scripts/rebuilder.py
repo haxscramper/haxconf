@@ -2,6 +2,7 @@
 #
 import sys
 import subprocess
+import itertools
 import readchar
 import rich_click as click
 import select
@@ -11,6 +12,7 @@ from pathlib import Path
 from threading import Thread
 import os
 from typing import *
+from pprint import pprint
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -193,8 +195,8 @@ class DirectoryWatcher(QObject):
         self.ignore_patterns = self.load_ignore_patterns()
 
     def load_ignore_patterns(self):
-        patterns = []
         current_dir = os.path.abspath(os.getcwd())
+        pattern_groups = []
 
         while True:
             for file_name in [".gitignore", ".fdignore"]:
@@ -202,8 +204,8 @@ class DirectoryWatcher(QObject):
                 try:
                     with open(file_path, "r") as f:
                         log.info(f"Using ignore patterns from {file_path}")
-                        file_patterns = f.read().splitlines()
-                    patterns.extend(file_patterns)
+                        pattern_groups.append(f.read())
+
                 except FileNotFoundError:
                     pass
 
@@ -212,7 +214,14 @@ class DirectoryWatcher(QObject):
                 break
             current_dir = parent_dir
 
-        return PathSpec.from_lines(GitWildMatchPattern, patterns)
+        return PathSpec.from_lines(
+            GitWildMatchPattern,
+            list(
+                itertools.chain.from_iterable(
+                    [it.splitlines() for it in reversed(pattern_groups)]
+                )
+            ),
+        )
 
     def start(self):
         for directory in self.directories:
@@ -229,24 +238,18 @@ class DirectoryWatcher(QObject):
         if not self.ignore_patterns.match_file(event.src_path):
             match event.event_type:
                 case "modified":
-                    if event.is_directory:
-                        self.directory_modified.emit()
-
-                    else:
+                    if not event.is_directory:
+                        log.info(event.src_path)
                         self.file_modified.emit()
 
                 case "deleted":
-                    if event.is_directory:
-                        self.directory_deleted.emit()
-
-                    else:
+                    if not event.is_directory:
+                        log.info(event.src_path)
                         self.file_deleted.emit()
 
                 case "created":
-                    if event.is_directory:
-                        self.directory_created.emit()
-
-                    else:
+                    if not event.is_directory:
+                        log.info(event.src_path)
                         self.file_created.emit()
 
 
@@ -339,6 +342,40 @@ def cli():
     pass
 
 
+@cli.command("dot")
+@click.argument("file", type=click.Path())
+def exec_dot(file):
+    file = os.path.abspath(file)
+    create_missing_file(
+        file,
+        """
+digraph G {
+  node[shape=rect];
+  A -> B;
+}
+    """,
+    )
+
+    format = "png"
+    result = os.path.abspath(file.replace(".dot", "." + format))
+
+    head = ["dot", "-T" + format]
+
+    CommandExecutor(
+        [[ShellCmd(head + ["-o" + result, file])]]
+    ).execute_commands()
+
+    subprocess.Popen(["sxiv", result])
+
+    start_main_loop(
+        [
+            [ShellCmd(head + ["-o" + result + ".tmp", file])],
+            [ShellCmd(["cp", result + ".tmp", result])],
+        ],
+        [os.getcwd()],
+    )
+
+
 @cli.command("cpp")
 @click.argument("file", type=click.Path())
 @click.option("--options", type=click.Path(), help="?")
@@ -371,7 +408,7 @@ def exec_cpp(
 #include <iostream>
 
 int main() {
-    std::cout << "1\n";
+    std::cout << "1\\n";
     return 0;
 }
     """,
@@ -386,13 +423,22 @@ int main() {
 
     run_cmds: List[str] = []
     compile_cmds: List[ShellCmd] = []
+
+    base_name = os.path.splitext(file)[0]  # Remove the original extension
+    cfg_file = base_name + ".cfg"  # Append .cfg to the base name
+
+    config_cmds = []
+    if os.path.exists(cfg_file):
+        log.info(f"Found configuration file {cfg_file}")
+        config_cmds.append("@" + cfg_file)
+
     if macro_expand:
         cmds = [
             "clang++",
             "-E",
             "-P",
             "-std=c++20",
-            "-fdiagnostics-color=always",
+            "-fno-color-diagnostics",
         ]
 
         if no_std_include:
@@ -428,6 +474,9 @@ int main() {
                         "-std=c++20",
                         "-g",
                         "-fdiagnostics-color=always",
+                    ]
+                    + config_cmds
+                    + [
                         "-o",
                         binary,
                         file,

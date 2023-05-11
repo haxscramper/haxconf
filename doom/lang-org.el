@@ -185,48 +185,7 @@ mode"
 
 
 
-(defun hax/counsel-org-tag-action (x)
-  "Add tag X to `counsel-org-tags'.
-If X is already part of the list, remove it instead.  Quit the selection if
-X is selected by either `ivy-done', `ivy-alt-done' or `ivy-immediate-done',
-otherwise continue prompting for tags."
-  (if (member x counsel-org-tags)
-      (progn
-        (setq counsel-org-tags (delete x counsel-org-tags)))
-    (unless (equal x "")
-      (setq counsel-org-tags (append counsel-org-tags (list x)))
-      (unless (member x ivy--all-candidates)
-        (setq ivy--all-candidates (append ivy--all-candidates (list x))))))
-  (let ((prompt (counsel-org-tag-prompt)))
-    (setf (ivy-state-prompt ivy-last) prompt)
-    (setq ivy--prompt (concat "%-4d " prompt)))
-  (cond ((memq this-command '(ivy-done
-                              ivy-alt-done
-                              ivy-immediate-done))
-         (if (eq major-mode 'org-agenda-mode)
-             (if (null org-agenda-bulk-marked-entries)
-                 (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
-                                     (org-agenda-error))))
-                   (with-current-buffer (marker-buffer hdmarker)
-                     (goto-char hdmarker)
-                     (counsel-org--set-tags)))
-               (let ((add-tags (copy-sequence counsel-org-tags)))
-                 (dolist (m org-agenda-bulk-marked-entries)
-                   (with-current-buffer (marker-buffer m)
-                     (save-excursion
-                       (goto-char m)
-                       (setq counsel-org-tags
-                             (delete-dups
-                              (append (counsel--org-get-tags) add-tags)))
-                       (counsel-org--set-tags))))))
-           (counsel-org--set-tags)
-           (if (member x counsel-org-tags)
-               (hax/insert-logbook-tag-entry x 'added)
-             (hax/insert-logbook-tag-entry x 'removed)
-             (message "Tag %S has been removed." x))))
-        ((eq this-command 'ivy-call)
-         (with-selected-window (active-minibuffer-window)
-           (delete-minibuffer-contents)))))
+
 
 
 (defun hax/org-assign-tag ()
@@ -1005,6 +964,11 @@ the empty area."
    :desc "separator"
    :ni "M-i M-s" (cmd! (insert
                         (format "%s\n" (s-repeat fill-column "-"))))
+   :desc "- [timestamp]"
+   :ni [M-S-return] (cmd! (org-insert-item)
+                          (insert (hax/org-current-timestamp))
+                          (insert " "))
+
    :desc "timestamped element timestamp"
    :ni "M-i M-e M-t" (cmd! (insert (hax/org-current-timestamp)))
    :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
@@ -1642,6 +1606,49 @@ the empty area."
                                 ;; ("v" . "verse\n")
                                 ))
 
+(defun hax/counsel-org-tag-action (x)
+  "Add tag X to `counsel-org-tags'.
+If X is already part of the list, remove it instead.  Quit the selection if
+X is selected by either `ivy-done', `ivy-alt-done' or `ivy-immediate-done',
+otherwise continue prompting for tags."
+  (if (member x counsel-org-tags)
+      (progn
+        (setq counsel-org-tags (delete x counsel-org-tags)))
+    (unless (equal x "")
+      (setq counsel-org-tags (append counsel-org-tags (list x)))
+      (unless (member x ivy--all-candidates)
+        (setq ivy--all-candidates (append ivy--all-candidates (list x))))))
+  (let ((prompt (counsel-org-tag-prompt)))
+    (setf (ivy-state-prompt ivy-last) prompt)
+    (setq ivy--prompt (concat "%-4d " prompt)))
+  (cond ((memq this-command '(ivy-done
+                              ivy-alt-done
+                              ivy-immediate-done))
+         (if (eq major-mode 'org-agenda-mode)
+             (if (null org-agenda-bulk-marked-entries)
+                 (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
+                                     (org-agenda-error))))
+                   (with-current-buffer (marker-buffer hdmarker)
+                     (goto-char hdmarker)
+                     (counsel-org--set-tags)))
+               (let ((add-tags (copy-sequence counsel-org-tags)))
+                 (dolist (m org-agenda-bulk-marked-entries)
+                   (with-current-buffer (marker-buffer m)
+                     (save-excursion
+                       (goto-char m)
+                       (setq counsel-org-tags
+                             (delete-dups
+                              (append (counsel--org-get-tags) add-tags)))
+                       (counsel-org--set-tags))))))
+           (counsel-org--set-tags)
+           (if (member x counsel-org-tags)
+               (hax/insert-logbook-tag-entry x 'added)
+             (hax/insert-logbook-tag-entry x 'removed)
+             (message "Tag %S has been removed." x))))
+        ((eq this-command 'ivy-call)
+         (with-selected-window (active-minibuffer-window)
+           (delete-minibuffer-contents)))))
+
 (defun hax/org-mode-configure()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1974,22 +1981,11 @@ the empty area."
           (read-from-file (f-join hax/cache.d "org-clock-history"))))
   (when (not (f-exists? hax/tags-file)) (f-touch hax/tags-file))
   (setq org-tag-alist
-        (concatenate
-         'list
-         '((:startgroup . nil)
-           ("@work" . ?w)
-           ("@home" . ?h)
-           ("@university" . ?u)
-           ;; Personal code and other projects
-           ("@projects" . ?p)
-           ("@organization" . ?o)
-           ("@errands" . ?e)
-           (:endgroup . nil))
-         (--map
-          `(,(substring it 1 (length it)) . ??)
-          (--filter
-           (< 0 (length it))
-           (s-split "\n" (f-read hax/tags-file)))))))
+        (--map
+         `(,(substring it 1 (length it)) . ??)
+         (--filter
+          (< 0 (length it))
+          (s-split "\n" (f-read hax/tags-file))))))
 
 (after! org
   (hax/org-mode-configure))

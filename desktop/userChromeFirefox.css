@@ -1,0 +1,54 @@
+/* #TabsToolbar { visibility: collapse !important; } */
+
+/*** Remove items from image context menu ***/
+
+*
+{
+    font-family: "Iosevka" !important;
+    font-size: 16px !important;
+}
+
+/* Email Image... */
+#context-sendimage,
+
+/* Set Image as Desktop Background... (and preceding separator) */
+#context-sep-setbackground, #context-setDesktopBackground,
+
+/* Inspect Accessibility Properties */
+#context-inspect-a11y
+{
+  display: none !important;
+}
+
+#main-window statuspanel {
+  display: none !important;
+}
+
+#statuspanel[type="overLink"] #statuspanel-label
+#statuspanel[type="status"] #statuspanel-label[value^="Look"],
+#statuspanel[type="status"] #statuspanel-label[value^="Connect"],
+#statuspanel[type="status"] #statuspanel-label[value^="Send"],
+#statuspanel[type="status"] #statuspanel-label[value^="Transfer"],
+#statuspanel[type="status"] #statuspanel-label[value^="Read"],
+#statuspanel[type="status"] #statuspanel-label[value^="Wrote"],
+#statuspanel[type="status"] #statuspanel-label[value^="Wait"],
+#statuspanel[type="status"] #statuspanel-label[value*="TLS handshake"],
+#statuspanel[type="status"] #statuspanel-label[value*="FTP transaction"] {
+display:none!important;
+}
+
+#statuspanel {display:none!important;}
+
+/* #titlebar {
+    visibility: collapse;
+  }
+
+  #titlebar {
+    visibility: collapse;
+  } */
+
+  /* hides the native tabs */
+#TabsToolbar {
+    visibility: collapse;
+  }/* leaves space for the window buttons */
+
