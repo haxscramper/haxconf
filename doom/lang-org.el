@@ -1606,6 +1606,7 @@ the empty area."
                                 ;; ("v" . "verse\n")
                                 ))
 
+(require 'ivy)
 (defun hax/counsel-org-tag-action (x)
   "Add tag X to `counsel-org-tags'.
 If X is already part of the list, remove it instead.  Quit the selection if
