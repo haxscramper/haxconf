@@ -24,25 +24,13 @@ if test -n "$KITTY_INSTALLATION_DIR" -a -e "$KITTY_INSTALLATION_DIR/shell-integr
 fi
 # END_KITTY_SHELL_INTEGRATION
 
-# >>> xmake >>>
-[[ -s "$HOME/.xmake/profile" ]] && source "$HOME/.xmake/profile" # load xmake profile
-# <<< xmake <<<
 
-source $HOME/.config/broot/launcher/bash/br
-. "$HOME/.cargo/env"
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/haxscramper/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/haxscramper/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/haxscramper/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/haxscramper/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+log_bash_command() {
+  if [[ -n "$BASH_COMMAND" && "$BASH_COMMAND" != "trap" && "$BASH_COMMAND" != "log_bash_command" && ! "$BASH_COMMAND" =~ ^echo\ .* ]]; then
+    echo "{\"command\": \"${BASH_COMMAND//\"/\\\"}\", \"directory\": \"$(pwd)\", \"time\": \"$(date +"%Y-%m-%d %H:%M:%S")\"}" >> ~/.cache/bash_logs.json
+  fi
+}
+
+trap log_bash_command DEBUG
 

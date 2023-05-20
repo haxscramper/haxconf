@@ -34,14 +34,14 @@
     "csharp.suppressDotnetInstallWarning": true,
     "workbench.colorTheme": "High Contrast Theme",
     // What else?
-    "cmake.configureOnOpen": true,
+    "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
     // Because neovim extension is used
     "editor.lineNumbers": "relative",
     "files.autoSave": "onFocusChange",
     "[cpp]": {
         "editor.formatOnSave": true,
-        "editor.formatOnPaste": false
+        "editor.formatOnPaste": true
     },
     "[python]": {
         "editor.formatOnSave": true,
@@ -83,5 +83,14 @@
     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
     "githubPullRequests.pullBranch": "never",
     "editor.renderWhitespace": "none",
-    "C_Cpp.default.compilerPath": "/bin/clang++"
+    "C_Cpp.default.compilerPath": "/bin/clang++",
+    "cmake.configureOnEdit": false,
+    "vue.features.codeActions.savingTimeLimit": 5000,
+    "terminal.integrated.scrollback": 50000,
+    "git.openRepositoryInParentFolders": "never",
+    "vue.codeActions.savingTimeLimit": 10000,
+    "files.associations": {
+        "*.test": "Gherkin"
+    },
+    "cSpell.enabled": false
 }

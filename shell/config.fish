@@ -468,7 +468,6 @@ abbr mvdupes fdupes -rf . \|
 abbr mvf find -type f -print0 \|
 abbr mve fd -e
 abbr pathgr echo \$PATH \| tr \' \' \'\\n\' \| grep
-abbr pyenv virtualenv -p=/usr/bin/python venv \&\& source venv/bin/activate.fish
 abbr frnm for f in \*.ext \n mv \$f \(echo \$f \| sed \'s/CADP_//\'\)\nend
 abbr gckb git clone \(xclip -out\)
 abbr p3i pip3 install --user

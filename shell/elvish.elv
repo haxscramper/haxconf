@@ -29,6 +29,7 @@ set E:HAX_CONFIG_DIR = ~/.config/haxconf
 set E:HAX_CONFIG_FILES_DIR = $E:HAX_CONFIG_DIR/config
 set E:NPM_PACKAGES = $E:HOME"/.npm-packages"
 set E:EDITOR = nvim
+set E:PYENV_ROOT = $E:HOME"/.pyenv"
 
 set E:PATH = (
     cat $E:HAX_CONFIG_FILES_DIR/path_dirs.txt |
@@ -187,7 +188,17 @@ edit:add-var doom-debug~ {|@extra|
 }
 
 fn gic {
-  git checkout (str:trim (git branch -l --sort=committerdate | tac | fzf) ' *')
+  var target = (git for-each-ref --format='%(refname:short)' refs/heads refs/remotes |
+    sort |
+    uniq -u |
+    fzf)
+
+  if (str:has-prefix $target "origin") {
+    git checkout --track $target
+  } else {
+    git checkout $target
+  }
+
 }
 
 fn kt {
@@ -530,6 +541,42 @@ set edit:before-readline = [
     } catch e {
       echo $e
     }
+  }
+]
+
+fn terminal-name {|text|
+    print "\e]0;"$text"\a"
+}
+
+var last-command-dir = (pwd)
+var last-command-date = (date -Ins)
+
+set edit:after-readline = [
+  $@edit:after-readline
+  {|text|
+    terminal-name $text
+  }
+  {|text|
+    set last-command-dir = (pwd)
+    set last-command-date = (date -Ins)
+  }
+]
+
+set edit:after-command = [
+  $@edit:after-command
+  {|thing|
+    terminal-name (hostname)"/"(basename (pwd))
+  }
+  {|map|
+    var result = [
+      &started-at=$last-command-date
+      &ended-in=(pwd)
+      &started-in=$last-command-dir
+      &duration=$map[duration]
+      &src=$map[src]
+      &error=$map[error]
+    ]
+    put $result | to-json >> ~/.cache/elvish_exec_logs.json
   }
 ]
 

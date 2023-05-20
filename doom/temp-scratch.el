@@ -16,6 +16,8 @@
 
 (require 'dbus)
 
+(setq shell-file-name (executable-find "sh"))
+
 (defun my-dbus-method-handler (logical physical quote)
   (insert (format "- %s (%s) /\"%s\"/" logical physical quote))
   '(:boolean t))

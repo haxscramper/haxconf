@@ -1,6 +1,7 @@
 // NOTE_TODO this code was used in google chrome, so firefox might
 // need some tweaking and possible workaroundgs
 
+
 var remapArray = [
   [ ';', 'R' ],   // One tab right
   [ 'l', 'E' ],   // One tab left

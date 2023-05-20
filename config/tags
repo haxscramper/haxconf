@@ -476,11 +476,21 @@
 #software##obsidian
 #review##speech 
 #software##archivebox
-
+#software##globalprotect
+#software##ubuntu
 #software##gallery_dl
 #software##dbus
 #software##autokey
-
+#software##sourcetrail
+#@repeated
+#software##drawio
+#programming##pr##rebase
+#test##findings##issue
+#summary
+#activity##meeting
+#activity##write##personal
+#test##findings##feature
+#recollection##day
 #importance##must_have
 #importance##should_have
 #importance##could_have
@@ -512,6 +522,9 @@
 
 #activity##meeting##followup
 #test##bug
-
+#lesson_for_later
+#hardware##p11
+#configuration##kitty
+#software##kitty
 #activity##meeting
 #comment##news
