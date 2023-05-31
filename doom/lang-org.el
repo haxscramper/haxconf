@@ -138,11 +138,14 @@ mode"
                              :action action
                              :caller 'hax/org-assign-tag)))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
-      (f-append-text (concat "\n#" selected) 'utf-8 hax/tags-file)
-      (setq org-tag-alist (push (cons selected ??) org-tag-alist))
-      (message
-       "New tag %s"
-       (propertize selected 'face `(:foreground ,(doom-color 'red)))))
+      (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
+             (file (if is-private hax/private-tags-file hax/tags-file)))
+        (f-append-text (concat "\n#" selected) 'utf-8 file)
+        (setq org-tag-alist (push (cons selected ??) org-tag-alist))
+        (message
+         "New %s tag %s"
+         (if is-private "private" "public")
+         (propertize selected 'face `(:foreground ,(doom-color 'red))))))
     selected))
 
 (defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
@@ -368,6 +371,17 @@ selection result. Provide PROMPT for selection input"
         (concat (if cleanup-name-formatting (hax/org-unformat-title path) path)
                 (if with-tags tags ""))))))
 
+(defun hax/get-subtree-id-for-marker (marker)
+  (save-window-excursion
+    (save-excursion
+      (with-current-buffer (marker-buffer marker)
+        ;; Save excursion to avoid moving cursor in
+        ;; other buffers (or in the same buffer if
+        ;; linking within one file)
+        (save-excursion
+          (goto-char (marker-position marker))
+          (org-id-get-create)))) ))
+
 (defun hax/insert-subtree-link-cb
     (tree-car description last-n with-tags cleanup-name-formatting)
   ;; If function is called with prefix value
@@ -379,13 +393,7 @@ selection result. Provide PROMPT for selection input"
          ;; Go to position of the found entry, get IT's id (creating
          ;; one if it is missing), and then insert result into the
          ;; final output
-         (id (with-current-buffer (marker-buffer (cdr tree-car))
-               ;; Save excursion to avoid moving cursor in
-               ;; other buffers (or in the same buffer if
-               ;; linking within one file)
-               (save-excursion
-                 (goto-char (marker-position (cdr tree-car)))
-                 (org-id-get-create)))))
+         (id (hax/get-subtree-id-for-marker (cdr tree-car))))
     (insert (format "[[id:%s][%s]]" id (if description description name)))))
 
 (cl-defun hax/org-insert-link-to-subtree
@@ -1018,6 +1026,8 @@ the empty area."
    :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
                             :entries (hax/org-collect-active-entries)))
 
+   :desc "Insert link"
+   :ni "S-C-i" (cmd! (hydra-insert-link/body))
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
    :ni "M-i M-l M-d" (lambda (description)
                        (interactive "sLink description: ")
@@ -1589,6 +1599,7 @@ the empty area."
  hax/main.org (f-join hax/indexed.d "main.org")
  ;; Random junk notes that I generate, copy from other places etc.
  hax/notes.org (f-join hax/indexed.d "notes.org")
+ hax/repeated.org (f-join hax/indexed.d "repeated.org")
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
  hax/projects.org (f-join hax/indexed.d "projects.org")
@@ -1829,6 +1840,7 @@ otherwise continue prompting for tags."
    org-agenda-files (list hax/main.org
                           hax/inbox.org
                           hax/notes.org
+                          hax/repeated.org
                           hax/projects.org)
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
@@ -1973,6 +1985,8 @@ otherwise continue prompting for tags."
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-full "~/.config/tags"))
+  (setq hax/private-tags-file (f-full "~/.hax-private-tags"))
+  (setq hax/private-tags-prefix-list '("work##vizio" "work##epam"))
   (when (f-exists? (f-join hax/cache.d "org-clock-stack"))
     (setq hax/org-clock-stack
           (read-from-file (f-join hax/cache.d "org-clock-stack"))))
@@ -1982,11 +1996,17 @@ otherwise continue prompting for tags."
           (read-from-file (f-join hax/cache.d "org-clock-history"))))
   (when (not (f-exists? hax/tags-file)) (f-touch hax/tags-file))
   (setq org-tag-alist
-        (--map
-         `(,(substring it 1 (length it)) . ??)
-         (--filter
-          (< 0 (length it))
-          (s-split "\n" (f-read hax/tags-file))))))
+        (let ((tag-list
+               (append
+                (s-split "\n" (if (f-exists? hax/tags-file)
+                                  (f-read hax/tags-file) "") t)
+                (s-split "\n" (if (f-exists? hax/private-tags-file)
+                                  (f-read hax/private-tags-file) "") t))))
+          (cl-remove-duplicates
+           (--map
+            `(,(substring it 1 (length it)) . ??)
+            (--filter (< 0 (length it)) tag-list))
+           :test #'equal))))
 
 (after! org
   (hax/org-mode-configure))

@@ -3,7 +3,7 @@
 (setq user-full-name "haxscramper"
       user-mail-address "haxscramper@gmail.com")
 
-
+(setq shell-file-name (executable-find "sh"))
 
 (setq doom-font (font-spec :family "Iosevka" :size 18)
       doom-unicode-font (font-spec :family "Noto Sans Mono" :size 18)
