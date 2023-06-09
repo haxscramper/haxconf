@@ -65,6 +65,7 @@
     "xml.server.vmargs": "-Xmx128M",
     "workbench.tree.indent": 4,
     "editor.tabSize": 2,
+    "cmake.ignoreCMakeListsMissing": true,
     "files.insertFinalNewline": true,
     "todo-tree.filtering.ignoreGitSubmodules": false,
     "todo-tree.general.tags": [
@@ -92,5 +93,7 @@
     "files.associations": {
         "*.test": "Gherkin"
     },
-    "cSpell.enabled": false
+    "cSpell.enabled": false,
+    "editor.unicodeHighlight.invisibleCharacters": false,
+    "markdown.preview.scrollEditorWithPreview": false
 }
