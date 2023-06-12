@@ -28,7 +28,7 @@ fi
 
 log_bash_command() {
   if [[ -n "$BASH_COMMAND" && "$BASH_COMMAND" != "trap" && "$BASH_COMMAND" != "log_bash_command" && ! "$BASH_COMMAND" =~ ^echo\ .* ]]; then
-    echo "{\"command\": \"${BASH_COMMAND//\"/\\\"}\", \"directory\": \"$(pwd)\", \"time\": \"$(date +"%Y-%m-%d %H:%M:%S")\"}" >> ~/.cache/bash_logs.json
+    echo "{\"command\": \"${BASH_COMMAND//\"/\\\"}\", \"directory\": \"$(pwd)\", \"time\": \"$(date -Is)\"}" >> ~/.cache/bash_logs.json
   fi
 }
 

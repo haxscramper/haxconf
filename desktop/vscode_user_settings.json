@@ -40,8 +40,8 @@
     "editor.lineNumbers": "relative",
     "files.autoSave": "onFocusChange",
     "[cpp]": {
-        "editor.formatOnSave": true,
-        "editor.formatOnPaste": true
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false
     },
     "[python]": {
         "editor.formatOnSave": true,

@@ -2003,7 +2003,7 @@ otherwise continue prompting for tags."
    org-goto-interface 'outline-path-completionp
    org-image-actual-width (list 300)
    ;; Store seconds in the timestamp format
-   org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S>")
+   org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S %Z>")
    ;; Fontification of the 'headings' also affects checkbox items, and I
    ;; tend to them on several lines where heading fontification only
    ;; highlights first one. So essentially this features is pretty nice,
