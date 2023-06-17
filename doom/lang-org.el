@@ -179,7 +179,7 @@ mode"
         (insert
          (format "%s- Tag \"%s\" %s on %s"
                  (s-repeat (+ 1 (org-current-level)) " ")
-                 tag-name
+                 (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
                  (if (eq action 'added) "Added" "Removed")
                  current-time))))))
 
@@ -1342,6 +1342,7 @@ the empty area."
   (rx-define rx-month-name-or-digit (| rx-month-name rx-month-digit))
   (rx-define rx-day-digit (1+ digit))
   (rx-define rx-year (1+ digit))
+  (rx-define rx-space (| " " " "))
 
   (defun fixup-text-dates (str)
     "Automatically convert string timestamps from some unreadable and
@@ -1355,29 +1356,29 @@ the empty area."
      replacement-pairs
      (list
       (cons (rx "["
-                (group rx-day-digit) " "
-                (group rx-month-name) " "
+                (group rx-day-digit) rx-space
+                (group rx-month-name) rx-space
                 (group rx-year)
                 "]")
             "[\\3-\\2-\\1]")
       (cons (rx "["
                 (group (1+ digit)) ":"
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (| "AM" "PM"))
                 "]") "[\\1\\3:\\2]")
       (cons (rx "["
                 ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) " "
+                (group rx-month-name-or-digit) rx-space
                 (group rx-day-digit) ", "
                 (group (1+ digit))
                 "]") "[20\\3-\\1-\\2]")
       (cons (rx "["
                 ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) " "
+                (group rx-month-name-or-digit) rx-space
                 (group (1+ digit)) ", "
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (1+ digit)) ":"
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (| "AM" "PM"))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "["
@@ -1387,12 +1388,12 @@ the empty area."
                 (group (1+ digit))
                 (? " "
                    (group (1+ digit)) ":"
-                   (group (1+ digit)) " "
+                   (group (1+ digit)) rx-space
                    (group (| "AM" "PM")))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "2020" (group digit digit)) "20\\1")
       (cons (rx "20" (group digit digit digit digit)) "\\1")
-      (cons (rx "-" (group digit) (group (| " " "]"))) "-0\\1\\2")
+      (cons (rx "-" (group digit) (group (| rx-space "]"))) "-0\\1\\2")
       (cons (rx " :]") "]")))
 
     (dolist (pair replacement-pairs)
@@ -1868,7 +1869,7 @@ otherwise continue prompting for tags."
    org-goto-interface 'outline-path-completionp
    org-image-actual-width (list 300)
    ;; Store seconds in the timestamp format
-   org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S>")
+   org-time-stamp-formats '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M:%S %Z>")
    ;; Fontification of the 'headings' also affects checkbox items, and I
    ;; tend to them on several lines where heading fontification only
    ;; highlights first one. So essentially this features is pretty nice,

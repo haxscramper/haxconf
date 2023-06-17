@@ -145,6 +145,7 @@ class CommandExecutor(QObject):
             if return_code != 0:
                 log.error(f"Failed command: {command}")
                 break
+
         self.finished.emit()
 
     @pyqtSlot()
@@ -239,17 +240,17 @@ class DirectoryWatcher(QObject):
             match event.event_type:
                 case "modified":
                     if not event.is_directory:
-                        log.info(event.src_path)
+                        log.info(f"FILE MODIFIED: {event.src_path}")
                         self.file_modified.emit()
 
                 case "deleted":
                     if not event.is_directory:
-                        log.info(event.src_path)
+                        log.info(f"FILE MODIFIED: {event.src_path}")
                         self.file_deleted.emit()
 
                 case "created":
                     if not event.is_directory:
-                        log.info(event.src_path)
+                        log.info(f"FILE MODIFIED: {event.src_path}")
                         self.file_created.emit()
 
 
