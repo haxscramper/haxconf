@@ -1,5 +1,7 @@
 ;;; -*- lexical-binding: t; -*-
 
+
+
 (defun hax/org-update-all-cookies ()
   (interactive)
   (let ((current-prefix-arg '(4)))
@@ -138,12 +140,100 @@ mode"
                              :action action
                              :caller 'hax/org-assign-tag)))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
-      (f-append-text (concat "\n#" selected) 'utf-8 hax/tags-file)
-      (setq org-tag-alist (push (cons selected ??) org-tag-alist))
-      (message
-       "New tag %s"
-       (propertize selected 'face `(:foreground ,(doom-color 'red)))))
+      (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
+             (file (if is-private hax/private-tags-file hax/tags-file)))
+        (f-append-text (concat "\n#" selected) 'utf-8 file)
+        (setq org-tag-alist (push (cons selected ??) org-tag-alist))
+        (message
+         "New %s tag %s"
+         (if is-private "private" "public")
+         (propertize selected 'face `(:foreground ,(doom-color 'red))))))
     selected))
+
+
+(defun hax/select-from-list-or-add (list-name)
+  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt
+   If the user inputs a new value (not already in the list), update the file and print that the new value has been selected."
+  (let* ((git-root (vc-root-dir))
+         (filename (expand-file-name (f-join git-root (concat list-name ".txt"))))
+         (existing-items (if (file-exists-p filename)
+                             (with-temp-buffer
+                               (insert-file-contents filename)
+                               (split-string (buffer-string) "\n" t))
+                           nil)))
+    (ivy-read (concat "Select " list-name ": ")
+              (lambda (str pred action)
+                (if (eq action 'metadata)
+                    nil
+                  (complete-with-action action existing-items str pred)))
+              :require-match nil
+              :sort t
+              :caller 'hax/select-from-list-or-add
+              :action (lambda (x)
+                        (if (member x existing-items)
+                            (message "%s selected from existing items" x)
+                          (with-temp-buffer
+                            (when existing-items
+                              (insert (string-join existing-items "\n"))
+                              (insert "\n"))
+                            (insert x)
+                            (write-file filename)
+                            (message "%s added to the list and selected" x)))))))
+
+(defun hax/org-insert-link (type with-description)
+  (let* ((target-base (pcase type
+                        ('file (counsel-find-file))
+                        ('attachment (counsel-find-file))
+                        ('id (hax/org-select-subtree))
+                        ('tag (hax/select-tag nil))
+                        ('person (hax/select-from-list-or-add "person"))
+                        (_ (error (format "Unexpected type %s" type)))))
+
+         (target (pcase type
+                   ('id (hax/get-subtree-id-for-marker (cdr target-base)))
+                   (_ target-base)))
+
+         (default-desc (pcase type
+                         ('id (save-window-excursion
+                                (save-excursion
+                                  (org-goto-marker-or-bmk (cdr target-base))
+                                  (substring-no-properties (org-get-heading t t t t)))))
+                         ('person "")
+                         ('tag "")
+                         (_ (file-name-nondirectory target))))
+
+         (description (if with-description
+                          (read-string "Description: "
+                                       default-desc)
+                        "")))
+
+    (pcase type
+      ('tag (insert target))
+      (_ (if (string-empty-p description)
+             (insert (format "[[%s:%s]]" (symbol-name type) target))
+           (insert (format "[[%s:%s][%s]]" (symbol-name type) target description)))))))
+
+
+(defhydra hydra-insert-link (:color blue :hint nil)
+  "
+  Insert Link:
+  _f_: file         _F_: file
+  _a_: attachment   _A_: attachment
+  _i_: ID           _I_: ID
+  _t_: Tag          _T_: Tag
+  _p_: Person       _P_: Person
+  "
+  ("f" (hax/org-insert-link 'file nil))
+  ("F" (hax/org-insert-link 'file t))
+  ("a" (hax/org-insert-link 'attachment nil))
+  ("A" (hax/org-insert-link 'attachment t))
+  ("i" (hax/org-insert-link 'id nil))
+  ("I" (hax/org-insert-link 'id t))
+  ("t" (hax/org-insert-link 'tag nil))
+  ("T" (hax/org-insert-link 'tag t))
+  ("p" (hax/org-insert-link 'person nil))
+  ("P" (hax/org-insert-link 'person t))
+  ("q" nil "cancel"))
 
 (defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
 
@@ -218,16 +308,24 @@ interactive function call"
 
 (map! :n "M-s-d" (cmd! (hax/?? (hax/maybe-numeric-prefix))))
 
+(defun org-get-known-files ()
+  (save-excursion
+    (let (entries)
+      (dolist (b (buffer-list))
+        (with-current-buffer b
+          (when (derived-mode-p 'org-mode)
+            (setq entries (nconc entries (list b))))))
+      entries)))
+
 (defun org-collect-known-entries ()
   (let (entries)
-    (dolist (b (buffer-list))
+    (dolist (b (org-get-known-files))
       (with-current-buffer b
-        (when (derived-mode-p 'org-mode)
-          (setq entries
-                (nconc entries
-                       (counsel-outline-candidates
-                        (cdr (assq 'org-mode counsel-outline-settings))
-                        (counsel-org-goto-all--outline-path-prefix)))))))
+        (setq entries
+              (nconc entries
+                     (counsel-outline-candidates
+                      (cdr (assq 'org-mode counsel-outline-settings))
+                      (counsel-org-goto-all--outline-path-prefix))))))
     entries))
 
 
@@ -301,26 +399,59 @@ selection result. Provide PROMPT for selection input"
   (switch-to-buffer (marker-buffer marker))
   (goto-char (marker-position marker)))
 
-(defun hax/org-action-interactively (action &optional select-all)
+(defun hax/org-collect-repeated-entries ()
+  (save-window-excursion
+    (save-excursion
+      (--map
+       (car it)
+       (--filter
+        (and (cdr it) (s-contains? "+" (cdr it)))
+        (-map (lambda (tree)
+                (goto-marker (cdr tree))
+                (cons
+                 tree
+                 (or (org-entry-get (point) "DEADLINE")
+                     (org-entry-get (point) "SCHEDULED"))))
+              (org-collect-known-entries)))))))
+
+(defun hax/org-action-interactively (action &optional target)
   "Execution ACTION (function with no arguments) on the selected subtree position"
   (save-excursion
     (goto-marker (cdr (hax/org-select-subtree
-                       (if select-all
-                           (org-collect-known-entries)
-                         (hax/org-collect-active-entries t)))))
+                       (pcase target
+                         ('repeated (hax/org-collect-repeated-entries))
+                         ('active (hax/org-collect-active-entries t))
+                         (_ (org-collect-known-entries))))))
     (funcall action)))
 
-(defun hax/org-clock-in-interactively ()
+(defun hax/org-clock-in-interactively (&optional target)
   "Interactively select target to clock in using
 `hax/org-collect-active-entries'"
   (interactive)
-  (save-excursion
-    (hax/org-action-interactively
-     (lambda () (org-clock-in) (org-todo "WIP")))))
+  (save-window-excursion
+    (save-excursion
+      (hax/org-action-interactively
+       (lambda () (org-clock-in) (org-todo "WIP"))
+       target))))
+
+(cl-defun hax/org-complete-interactively (&optional (state "COMPLETED") target)
+  "Interactively select target to complete using
+`hax/org-collect-active-entries'"
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (hax/org-action-interactively
+       (lambda () (org-todo state))
+       target))))
 
 (map!
  :leader
  :n "oai" #'hax/org-clock-in-interactively
+ :desc "Clock in repeated tasks"
+ :n "oari" (cmd! (hax/org-clock-in-interactively 'repeated))
+ :desc "Complete repeated task"
+ :n "oarc" (cmd! (hax/org-complete-interactively "COMPLETED" 'repeated))
+
  :n "oao" #'org-clock-out
  :desc "Complete current clock"
  :n "oac" (cmd! (save-excursion
@@ -330,12 +461,7 @@ selection result. Provide PROMPT for selection input"
  :n "oag" #'hax/org-goto-select-active-subtree
  :n "oaC" #'hax/org-complete-interactively)
 
-(cl-defun hax/org-complete-interactively (&optional (state "COMPLETED"))
-  "Interactively select target to complete using
-`hax/org-collect-active-entries'"
-  (interactive)
-  (save-excursion
-    (hax/org-action-interactively (lambda () (org-todo state)))))
+
 
 
 (defun hax/org-goto-select-subtree ()
@@ -368,6 +494,17 @@ selection result. Provide PROMPT for selection input"
         (concat (if cleanup-name-formatting (hax/org-unformat-title path) path)
                 (if with-tags tags ""))))))
 
+(defun hax/get-subtree-id-for-marker (marker)
+  (save-window-excursion
+    (save-excursion
+      (with-current-buffer (marker-buffer marker)
+        ;; Save excursion to avoid moving cursor in
+        ;; other buffers (or in the same buffer if
+        ;; linking within one file)
+        (save-excursion
+          (goto-char (marker-position marker))
+          (org-id-get-create)))) ))
+
 (defun hax/insert-subtree-link-cb
     (tree-car description last-n with-tags cleanup-name-formatting)
   ;; If function is called with prefix value
@@ -379,13 +516,7 @@ selection result. Provide PROMPT for selection input"
          ;; Go to position of the found entry, get IT's id (creating
          ;; one if it is missing), and then insert result into the
          ;; final output
-         (id (with-current-buffer (marker-buffer (cdr tree-car))
-               ;; Save excursion to avoid moving cursor in
-               ;; other buffers (or in the same buffer if
-               ;; linking within one file)
-               (save-excursion
-                 (goto-char (marker-position (cdr tree-car)))
-                 (org-id-get-create)))))
+         (id (hax/get-subtree-id-for-marker (cdr tree-car))))
     (insert (format "[[id:%s][%s]]" id (if description description name)))))
 
 (cl-defun hax/org-insert-link-to-subtree
@@ -1018,6 +1149,8 @@ the empty area."
    :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
                             :entries (hax/org-collect-active-entries)))
 
+   :desc "Insert link"
+   :ni "S-C-i" (cmd! (hydra-insert-link/body))
    :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
    :ni "M-i M-l M-d" (lambda (description)
                        (interactive "sLink description: ")
@@ -1590,6 +1723,7 @@ the empty area."
  hax/main.org (f-join hax/indexed.d "main.org")
  ;; Random junk notes that I generate, copy from other places etc.
  hax/notes.org (f-join hax/indexed.d "notes.org")
+ hax/repeated.org (f-join hax/indexed.d "repeated.org")
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
  hax/projects.org (f-join hax/indexed.d "projects.org")
@@ -1830,6 +1964,7 @@ otherwise continue prompting for tags."
    org-agenda-files (list hax/main.org
                           hax/inbox.org
                           hax/notes.org
+                          hax/repeated.org
                           hax/projects.org)
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
@@ -1974,6 +2109,8 @@ otherwise continue prompting for tags."
           ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-full "~/.config/tags"))
+  (setq hax/private-tags-file (f-full "~/.hax-private-tags"))
+  (setq hax/private-tags-prefix-list '("work##vizio" "work##epam"))
   (when (f-exists? (f-join hax/cache.d "org-clock-stack"))
     (setq hax/org-clock-stack
           (read-from-file (f-join hax/cache.d "org-clock-stack"))))
@@ -1983,11 +2120,17 @@ otherwise continue prompting for tags."
           (read-from-file (f-join hax/cache.d "org-clock-history"))))
   (when (not (f-exists? hax/tags-file)) (f-touch hax/tags-file))
   (setq org-tag-alist
-        (--map
-         `(,(substring it 1 (length it)) . ??)
-         (--filter
-          (< 0 (length it))
-          (s-split "\n" (f-read hax/tags-file))))))
+        (let ((tag-list
+               (append
+                (s-split "\n" (if (f-exists? hax/tags-file)
+                                  (f-read hax/tags-file) "") t)
+                (s-split "\n" (if (f-exists? hax/private-tags-file)
+                                  (f-read hax/private-tags-file) "") t))))
+          (cl-remove-duplicates
+           (--map
+            `(,(substring it 1 (length it)) . ??)
+            (--filter (< 0 (length it)) tag-list))
+           :test #'equal))))
 
 (after! org
   (hax/org-mode-configure))
@@ -2564,3 +2707,5 @@ holding contextual information."
     (with-current-buffer (get-buffer-create "*element-inspect*")
       (delete-region (point-min) (point-max))
       (insert (format "%s" el)))))
+
+

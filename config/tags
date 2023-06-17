@@ -519,7 +519,6 @@
 #planning##day
 #work##bullshit
 #work
-
 #activity##meeting##followup
 #test##bug
 #lesson_for_later
@@ -528,7 +527,16 @@
 #software##kitty
 #activity##meeting
 #comment##news
-
 #planning##read
 #work##epam
 #code##js##lib##d3
+#project##haxconf
+#personal##health
+#programming##refactoring##deadcode
+#programming##track
+#programming##its
+#test##behavior##feature
+#status##pending_clarification
+#code##jq
+#recollection##long
+#programming##visualization

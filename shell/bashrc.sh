@@ -28,9 +28,25 @@ fi
 
 log_bash_command() {
   if [[ -n "$BASH_COMMAND" && "$BASH_COMMAND" != "trap" && "$BASH_COMMAND" != "log_bash_command" && ! "$BASH_COMMAND" =~ ^echo\ .* ]]; then
-    echo "{\"command\": \"${BASH_COMMAND//\"/\\\"}\", \"directory\": \"$(pwd)\", \"time\": \"$(date +"%Y-%m-%d %H:%M:%S")\"}" >> ~/.cache/bash_logs.json
+    echo "{\"command\": \"${BASH_COMMAND//\"/\\\"}\", \"directory\": \"$(pwd)\", \"time\": \"$(date -Is)\"}" >> ~/.cache/bash_logs.json
   fi
 }
 
 trap log_bash_command DEBUG
+
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/maxim_artemov/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/maxim_artemov/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/maxim_artemov/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/maxim_artemov/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
 
