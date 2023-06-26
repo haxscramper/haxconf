@@ -1,0 +1,18 @@
+#+latex_class_options: [a4paper,12pt]
+
+#+latex_header: \usepackage[margin=2cm]{geometry}
+# #+latex_header: \usepackage[pdfborder={0,0,0}]{hyperref}
+#+latex_header: \hypersetup{colorlinks=true,linkcolor=blue}
+
+#+latex_header: \usepackage[T1, T2A]{fontenc}
+#+latex_header: \usepackage[utf8]{inputenc}
+#+latex_header: \usepackage[english,russian]{babel}
+
+# #+latex_header: \usepackage{physics}
+# #+latex_header: \usepackage{newpxmath}
+# #+latex_header: \usepackage{multicol}
+# #+latex_header: \usepackage{latex_help}
+
+# Support svg in latex export
+#+latex_header: \usepackage{svg}
+#+latex_header: \usepackage{embedfile}
