@@ -1945,7 +1945,7 @@ otherwise continue prompting for tags."
       :empty-lines-after 1)
      ("P" "Subtree at the current point" entry
       (function point)
-      "** TODO %?
+      "* TODO %?
   :PROPERTIES:
   :CREATED: %U
   :END:
@@ -2753,30 +2753,28 @@ holding contextual information."
 (defun hax/org-refile-marker-position (target at-start)
   (save-window-excursion
     (save-excursion
-      (marker-position target)
+      ;; (message "Marker target is %s" target)
+      ;; (marker-position target)
       ;; (message "Target original target buffer and position is %s:%s"
       ;;          (marker-buffer target) (marker-position target))
-      ;; (with-current-buffer (marker-buffer target)
-      ;;   (goto-char (marker-position target))
-      ;;   (hax/dbg/looking-around)
-      ;;   (let ((subtree (org-element-at-point)))
-      ;;     (org-element-property :contents-begin subtree)))
-      )))
-
-(hax/org-refile-marker-position
- (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t)
-
+      (with-current-buffer (marker-buffer target)
+        (goto-char (marker-position target))
+        (hax/dbg/looking-around)
+        (let* ((subtree (org-element-at-point))
+               (final-position (org-element-property :contents-begin subtree)))
+          (save-excursion
+            (goto-char final-position)
+            (hax/dbg/looking-around)
+            final-position))))))
 
 (defun hax/org-refile-under-marker (target at-start)
-  (org-refile
-   nil
-   nil
-   (list
-    (get-headline-from-marker target)
-    (buffer-file-name (marker-buffer target))
-    nil
-    (hax/org-refile-marker-position target at-start))
-   nil))
+  (let ((refile-list (list
+                      (get-headline-from-marker target)
+                      (buffer-file-name (marker-buffer target))
+                      nil
+                      (hax/org-refile-marker-position target at-start))))
+    (message "Reile list target %s" refile-list)
+    (org-refile nil nil refile-list nil)))
 
 
 (defun hax/org-refile-to-staging ()
