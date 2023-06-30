@@ -150,11 +150,18 @@ mode"
          (propertize selected 'face `(:foreground ,(doom-color 'red))))))
     selected))
 
+(defun hax/org-capture-vc-root-dir ()
+  (if (bound-and-true-p org-capture-mode)
+      (let ((buffer (org-capture-get :original-buffer)))
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (vc-root-dir))))
+    (vc-root-dir)))
 
 (defun hax/select-from-list-or-add (list-name)
   "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt
    If the user inputs a new value (not already in the list), update the file and print that the new value has been selected."
-  (let* ((git-root (vc-root-dir))
+  (let* ((git-root (hax/org-capture-vc-root-dir))
          (filename (expand-file-name (f-join git-root (concat list-name ".txt"))))
          (existing-items (if (file-exists-p filename)
                              (with-temp-buffer
@@ -822,7 +829,7 @@ selection result. Provide PROMPT for selection input"
 
 (add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
 
-(defun hax/org-save-source-id-and-header ()
+(defun hax/org-save-source-id-and-header (&optional name file xxx pos)
   "Saves refile's source entry's id and header name to
   `hax/org-refile-refiled-from-id' and
   `hax/org-refile-refiled-from-header'. If refiling entry is
@@ -1269,6 +1276,13 @@ the empty area."
 
 (add-hook! 'org-capture-prepare-finalize-hook 'hax/org-capture-pre-finalize)
 (add-hook! 'org-capture-after-finalize-hook 'hax/org-capture-after-finalize)
+
+(setq org-latex-listings 'minted
+      org-latex-packages-alist '(("" "minted"))
+      org-latex-pdf-process
+      '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+
 
 
 (map!
@@ -1721,6 +1735,8 @@ the empty area."
  hax/inbox.org (f-join hax/indexed.d "inbox.org")
  ;; Main GTD organizer
  hax/main.org (f-join hax/indexed.d "main.org")
+ ;; Hot cache of immediately targeted tasks
+ hax/staging.org (f-join hax/indexed.d "staging.org")
  ;; Random junk notes that I generate, copy from other places etc.
  hax/notes.org (f-join hax/indexed.d "notes.org")
  hax/repeated.org (f-join hax/indexed.d "repeated.org")
@@ -1825,7 +1841,6 @@ otherwise continue prompting for tags."
       "* TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
@@ -1834,7 +1849,6 @@ otherwise continue prompting for tags."
       "* %? :idea:
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
@@ -1843,7 +1857,6 @@ otherwise continue prompting for tags."
       "** %U
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 
 %?"
@@ -1853,7 +1866,6 @@ otherwise continue prompting for tags."
       "** %U %(hax/immediate-note-tags)
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 
 %(hax/get-immediate-note-content)
@@ -1869,7 +1881,6 @@ otherwise continue prompting for tags."
       "* TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :prepend t
@@ -1893,7 +1904,6 @@ otherwise continue prompting for tags."
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :clock-in t
@@ -1908,7 +1918,6 @@ otherwise continue prompting for tags."
   DEADLINE: %(hax/org-end-of-the-day-stamp)
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
@@ -1920,7 +1929,6 @@ otherwise continue prompting for tags."
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
@@ -1932,17 +1940,25 @@ otherwise continue prompting for tags."
   DEADLINE: %(hax/org-end-of-the-day-stamp)
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
       :empty-lines-after 1)
+     ("P" "Subtree at the current point" entry
+      (function point)
+      "* TODO %?
+  :PROPERTIES:
+  :CREATED: %U
+  :END:
+"
+      :immediate-finish t
+      :empty-lines-after 1)
+
      ("A" "Subtask under active" entry
       (function hax/org-goto-select-active-subtree)
       "** TODO %?
   :PROPERTIES:
   :CREATED: %U
-  :ORIGIN: %(hax/capture-location)
   :END:
 "
       :empty-lines-before 1
@@ -1963,6 +1979,7 @@ otherwise continue prompting for tags."
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org
                           hax/inbox.org
+                          hax/staging.org
                           hax/notes.org
                           hax/repeated.org
                           hax/projects.org)
@@ -1970,7 +1987,8 @@ otherwise continue prompting for tags."
                         (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
-                        (,hax/inbox.org :maxlevel . 1)
+                        (,hax/notes.org :maxlevel . 3)
+                        (,hax/staging.org :maxlevel . 1)
                         (,hax/inbox.org :maxlevel . 2))
    ;; Yes, you can in fact consider the entry completed with some of the
    ;; `TODO' left over, this happens, in real life not all tasks must be
@@ -2277,28 +2295,31 @@ subtree can be found."
 (defun hax/dbg/looking-at ()
   (interactive)
   (message
-   "looking at: %s:%s..%s = [%s]"
+   "looking at: %s:%s..%s = [%s] in %s"
    (line-number-at-pos)
    (point)
    (line-end-position)
    (propertize
     (buffer-substring-no-properties (point) (line-end-position))
-    'face 'font-lock-warning-face)))
+    'face 'font-lock-warning-face)
+   (current-buffer)))
 
 
 (defun hax/dbg/looking-around ()
   (interactive)
   (message
-   "looking at: %s:%s..%s = [%s%s]"
+   "looking at: %s:%s..%s = [%s%s] in %s"
    (line-number-at-pos)
    (line-beginning-position)
    (line-end-position)
    (propertize
-    (buffer-substring-no-properties (line-beginning-position) (point)))
-   'face 'font-lock-variable-name-face)
-  (propertize
-   (buffer-substring-no-properties (point) (line-end-position))
-   'face 'font-lock-warning-face))
+    (buffer-substring-no-properties (line-beginning-position) (point))
+    'face 'font-lock-variable-name-face)
+   (propertize
+    (buffer-substring-no-properties (point) (line-end-position))
+    'face 'font-lock-warning-face)
+   (current-buffer)))
+
 
 (defun hax/dbg/point (p)
   (save-excursion
@@ -2460,6 +2481,7 @@ itself once again')"
   (hax/org-mode-hook)
   (find-file hax/inbox.org)
   (find-file hax/main.org)
+  (find-file hax/staging.org)
   (when hax/+roam (org-roam-db))
   (find-file hax/notes.org))
 
@@ -2709,3 +2731,59 @@ holding contextual information."
       (insert (format "%s" el)))))
 
 
+(defun get-capture-target-marker (location)
+  "Return a marker to the target location of an org-capture template."
+  (save-window-excursion
+    (save-excursion
+      (org-capture-set-target-location location)
+      (pop-to-buffer-same-window (org-capture-get :buffer))
+      (goto-char (org-capture-get :pos))
+      (point-marker))))
+
+(defun remove-string-properties (text)
+  (with-temp-buffer
+    (insert text)
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+(defun get-headline-from-marker (marker)
+  "Return the headline of the org subtree pointed to by MARKER."
+  (with-current-buffer (marker-buffer marker)
+    (goto-char marker)
+    (remove-string-properties (org-get-heading t t t t))))
+
+(defun hax/org-refile-marker-position (target at-start)
+  (save-window-excursion
+    (save-excursion
+      ;; (message "Marker target is %s" target)
+      ;; (marker-position target)
+      ;; (message "Target original target buffer and position is %s:%s"
+      ;;          (marker-buffer target) (marker-position target))
+      (with-current-buffer (marker-buffer target)
+        (goto-char (marker-position target))
+        (hax/dbg/looking-around)
+        (let* ((subtree (org-element-at-point))
+               (final-position (org-element-property :contents-begin subtree)))
+          (save-excursion
+            (goto-char final-position)
+            (hax/dbg/looking-around)
+            final-position))))))
+
+(defun hax/org-refile-under-marker (target at-start)
+  (let ((refile-list (list
+                      (get-headline-from-marker target)
+                      (buffer-file-name (marker-buffer target))
+                      nil
+                      (hax/org-refile-marker-position target at-start))))
+    (message "Reile list target %s" refile-list)
+    (org-refile nil nil refile-list nil)))
+
+
+(defun hax/org-refile-to-staging ()
+  (interactive)
+  (hax/org-refile-under-marker
+   (get-capture-target-marker '(file hax/staging.org)) t))
+
+(defun hax/org-refile-to-daily ()
+  (interactive)
+  (hax/org-refile-under-marker
+   (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
