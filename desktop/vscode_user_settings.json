@@ -47,6 +47,9 @@
         "editor.formatOnSave": true,
         "editor.tabSize": 4
     },
+    "[js]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
     // In most cases it is pretty useless
     "editor.minimap.enabled": false,
     "redhat.telemetry.enabled": false,
@@ -95,5 +98,8 @@
     },
     "cSpell.enabled": false,
     "editor.unicodeHighlight.invisibleCharacters": false,
-    "markdown.preview.scrollEditorWithPreview": false
+    "markdown.preview.scrollEditorWithPreview": false,
+    "[javascript]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    }
 }
