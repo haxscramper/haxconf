@@ -220,6 +220,12 @@ mode"
              (insert (format "[[%s:%s]]" (symbol-name type) target))
            (insert (format "[[%s:%s][%s]]" (symbol-name type) target description)))))))
 
+(defun hax/insert-q ()
+  (interactive)
+  (insert "\\q{")
+  (hax/org-insert-link 'person nil)
+  (insert "}{")
+  (save-excursion (insert "}")))
 
 (defhydra hydra-insert-link (:color blue :hint nil)
   "
