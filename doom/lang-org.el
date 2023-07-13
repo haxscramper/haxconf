@@ -900,6 +900,11 @@ selection result. Provide PROMPT for selection input"
 (advice-add
  'org-refile :before #'hax/org-save-source-id-and-header)
 
+(defun hax/disable-adapt-indentation (proc &rest args) (setq org-adapt-indentation nil))
+(defun hax/enable-adapt-indentation (proc &rest args) (setq org-adapt-indentation t))
+
+(advice-add 'org-refile :before #'hax/disable-adapt-indentation)
+(advice-add 'org-refile :after #'hax/enable-adapt-indentation)
 
 (defvar hax/org-src-use-full t
   "Org-src buffer edits should use full buffer, not small popup")
@@ -1131,6 +1136,16 @@ the empty area."
                             (delete-region (get-selected-region-start)
                                            (get-selected-region-end))
                             (hax/org-insert-clipboard-link text)))
+
+   :desc "Insert subtree"
+   :vi "M-i M-t" (cmd!
+                  (insert "\n* TODO ")
+                  (save-excursion
+                    (insert (format "
+  :PROPERTIES:
+  :CREATED:  [%s]
+  :END:
+" (format-time-string "%Y-%m-%d %a %H:%M:%S %Z" (current-time))))))
 
    :desc "link subtree, full name"
    :ni "M-i M-l M-t M-f" (cmd! (hax/org-insert-link-to-subtree))
@@ -1943,15 +1958,6 @@ otherwise continue prompting for tags."
 "
       :empty-lines-before 1
       :empty-lines-after 1)
-     ("P" "Subtree at the current point" entry
-      (function point)
-      "* TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :immediate-finish t
-      :empty-lines-after 1)
 
      ("A" "Subtask under active" entry
       (function hax/org-goto-select-active-subtree)
@@ -2760,12 +2766,14 @@ holding contextual information."
       (with-current-buffer (marker-buffer target)
         (goto-char (marker-position target))
         (hax/dbg/looking-around)
-        (let* ((subtree (org-element-at-point))
-               (final-position (org-element-property :contents-begin subtree)))
-          (save-excursion
-            (goto-char final-position)
-            (hax/dbg/looking-around)
-            final-position))))))
+        (point)
+        ;; (let* ((subtree (org-element-at-point))
+        ;;        (final-position (org-element-property :contents-begin subtree)))
+        ;;   (save-excursion
+        ;;     (goto-char final-position)
+        ;;     (hax/dbg/looking-around)
+        ;;     final-position))
+        ))))
 
 (defun hax/org-refile-under-marker (target at-start)
   (let ((refile-list (list
