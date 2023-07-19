@@ -95,5 +95,9 @@
     },
     "cSpell.enabled": false,
     "editor.unicodeHighlight.invisibleCharacters": false,
-    "markdown.preview.scrollEditorWithPreview": false
+    "markdown.preview.scrollEditorWithPreview": false,
+    "workbench.editor.tabSizing": "fixed",
+    "workbench.editor.tabSizingFixedMaxWidth": 120,
+    "workbench.editor.tabSizingFixedMinWidth": 120,
+    "svelte.enable-ts-plugin": true
 }

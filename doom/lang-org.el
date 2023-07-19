@@ -95,7 +95,7 @@ mode"
     (setq org-download-method 'directory)
     (setq org-download-heading-lvl nil)))
 
-(defun hax/org-paste-clipboard (&optional default-name)
+(defun hax/org-paste-clipboard (&optional default-name to-monochrome-image)
   (interactive "P")
   (require 'org-download)
   (let ((file
@@ -115,7 +115,12 @@ mode"
     ;; otherwise insert image. Mapybe `p' should work differently in
     ;; org-mode instead, but I'm not sure about that.
     (if (--any? (s-starts-with? "image/" it) out)
-        (org-download-clipboard file)
+        (progn
+          (org-download-clipboard file)
+          (when to-monochrome-image
+            (call-process
+             "convert" nil standard-output nil
+             file "-monochrome" file)))
       (evil-paste-after-without-register 1))))
 
 
@@ -900,8 +905,8 @@ selection result. Provide PROMPT for selection input"
 (advice-add
  'org-refile :before #'hax/org-save-source-id-and-header)
 
-(defun hax/disable-adapt-indentation (proc &rest args) (setq org-adapt-indentation nil))
-(defun hax/enable-adapt-indentation (proc &rest args) (setq org-adapt-indentation t))
+(defun hax/disable-adapt-indentation (&rest args) (setq org-adapt-indentation nil))
+(defun hax/enable-adapt-indentation (&rest args) (setq org-adapt-indentation t))
 
 (advice-add 'org-refile :before #'hax/disable-adapt-indentation)
 (advice-add 'org-refile :after #'hax/enable-adapt-indentation)
@@ -1055,6 +1060,8 @@ the empty area."
    ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
    :ni "C-S-j" nil
    :ni "C-S-k" nil
+   :n [S-up] #'hax/org-shiftup
+   :n [S-down] #'hax/org-shiftdown
 
    :ni "C-;" #'flyspell-correct-wrapper
    :nvi [M-return] #'hax/org-add-trailing-note
@@ -1815,7 +1822,7 @@ otherwise continue prompting for tags."
          (with-selected-window (active-minibuffer-window)
            (delete-minibuffer-contents)))))
 
-(defun hax/org-mode-configure()
+(defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
   ;; similar to a regular text.
@@ -1843,6 +1850,19 @@ otherwise continue prompting for tags."
       ("im" "I'm")
       ("ambig" "ambiguous")
       ("i" "I")))
+  (setq org-priority-highest ?A)
+  (setq org-priority-lowest ?X)
+  (setq org-priority-default ?B)
+
+  (setq org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold :underline t :overline t))
+                             (?B . (:foreground "#FD971F"))
+                             (?C . (:foreground "#66D9EF"))
+                             (?D . (:foreground "#A1EFE4"))
+                             (?E . (:foreground "#A6E22E" :weight light))
+                             (?F . (:foreground "#AE81FF" :weight light))
+                             (?S . (:foreground "#FD5FF0" :box t))
+                             (?X . (:foreground "red" :box (:line-width 2 :color "red")))))
+
   (setq
    org-capture-templates
    ;; agenda just includes everything that contains an "active time
@@ -2794,3 +2814,96 @@ holding contextual information."
   (interactive)
   (hax/org-refile-under-marker
    (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
+
+
+(setq hax/org-priority-list '(?X ?S ?A ?B ?C ?D ?E ?F))
+
+(defun hax/org-priority-set-p ()
+  (interactive)
+  (let* ((element (org-element-context))
+         (type (org-element-type element)))
+    (if (eq type 'headline) (org-element-property :priority element)
+      nil)))
+
+
+(defun hax/org-change-priority (direction)
+  (interactive)
+  (let* ((cur (string-to-char (org-entry-get (point) "PRIORITY")))
+         (new (char-to-string
+               (if (eq direction 'up)
+                   (or (nth 1 (member cur (reverse hax/org-priority-list)))
+                       org-priority-lowest)
+                 (or (nth 1 (member cur hax/org-priority-list))
+                     org-priority-highest)))))
+    (if (hax/org-priority-set-p)
+        (if (or (and (eq direction 'down) (equal cur ?F))
+                (and (eq direction 'up) (equal cur ?X)))
+            (hax/org-remove-priority-at-point)
+          (org-entry-put (point) "PRIORITY" new))
+      (org-entry-put (point) "PRIORITY" (char-to-string cur)))))
+
+(defun hax/org-remove-priority-at-point ()
+  (interactive)
+  (let* ((element (org-element-at-point))
+         (priority (org-element-property :priority element)))
+    (when priority  ;; Only operate on headlines with a priority
+      (save-excursion
+        (goto-char (org-element-property :begin element))
+        (re-search-forward "\\[#.\\]\s?" (org-element-property :end element))
+        (replace-match "")))))
+
+(defun hax/org-shiftup (&optional arg)
+  "Act on current element according to context.
+Call `org-timestamp-up' or `org-priority-up', or
+`org-previous-item', or `org-table-move-cell-up'.  See the
+individual commands for more information."
+  (interactive "P")
+  (cond
+   ((run-hook-with-args-until-success 'org-shiftup-hook))
+   ((and org-support-shift-select (org-region-active-p))
+    (org-call-for-shift-select 'previous-line))
+   ((org-at-timestamp-p 'lax)
+    (call-interactively (if org-edit-timestamp-down-means-later
+			    'org-timestamp-down 'org-timestamp-up)))
+   ((and (not (eq org-support-shift-select 'always))
+	 org-priority-enable-commands
+	 (org-at-heading-p))
+    (hax/org-change-priority 'up))
+   ((and (not org-support-shift-select) (org-at-item-p))
+    (call-interactively 'org-previous-item))
+   ((org-clocktable-try-shift 'up arg))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-up))
+   ((run-hook-with-args-until-success 'org-shiftup-final-hook))
+   (org-support-shift-select
+    (org-call-for-shift-select 'previous-line))
+   (t (org-shiftselect-error))))
+
+(defun hax/org-shiftdown (&optional arg)
+  "Act on current element according to context.
+Call `org-timestamp-down' or `org-priority-down', or
+`org-next-item', or `org-table-move-cell-down'.  See the
+individual commands for more information."
+  (interactive "P")
+  (cond
+   ((run-hook-with-args-until-success 'org-shiftdown-hook))
+   ((and org-support-shift-select (org-region-active-p))
+    (org-call-for-shift-select 'next-line))
+   ((org-at-timestamp-p 'lax)
+    (call-interactively (if org-edit-timestamp-down-means-later
+			    'org-timestamp-up 'org-timestamp-down)))
+   ((and (not (eq org-support-shift-select 'always))
+	 org-priority-enable-commands
+	 (org-at-heading-p))
+    (hax/org-change-priority 'down))
+   ((and (not org-support-shift-select) (org-at-item-p))
+    (call-interactively 'org-next-item))
+   ((org-clocktable-try-shift 'down arg))
+   ((and (not (eq org-support-shift-select 'always))
+	 (org-at-table-p))
+    (org-table-move-cell-down))
+   ((run-hook-with-args-until-success 'org-shiftdown-final-hook))
+   (org-support-shift-select
+    (org-call-for-shift-select 'next-line))
+   (t (org-shiftselect-error))))
