@@ -545,3 +545,6 @@
 #hardware##keyboard
 #software##rofi
 #test##findings##implementation
+#activity##planning
+#programming##refactoring##duplicates
+#software##recoll

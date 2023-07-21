@@ -47,8 +47,6 @@
         "editor.formatOnSave": true,
         "editor.tabSize": 4
     },
-    // In most cases it is pretty useless
-    "editor.minimap.enabled": false,
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -99,5 +97,6 @@
     "workbench.editor.tabSizing": "fixed",
     "workbench.editor.tabSizingFixedMaxWidth": 120,
     "workbench.editor.tabSizingFixedMinWidth": 120,
-    "svelte.enable-ts-plugin": true
+    "svelte.enable-ts-plugin": true,
+    "editor.minimap.enabled": false
 }
