@@ -100,10 +100,18 @@
     "cSpell.enabled": false,
     "editor.unicodeHighlight.invisibleCharacters": false,
     "markdown.preview.scrollEditorWithPreview": false,
+<<<<<<< HEAD
     "[javascript]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "terminal.integrated.inheritEnv": false,
     "workbench.editor.languageDetection": false,
     "workbench.editor.historyBasedLanguageDetection": false
+=======
+    "workbench.editor.tabSizing": "fixed",
+    "workbench.editor.tabSizingFixedMaxWidth": 120,
+    "workbench.editor.tabSizingFixedMinWidth": 120,
+    "svelte.enable-ts-plugin": true,
+    "editor.minimap.enabled": false
+>>>>>>> gitlab/laptop-3
 }
