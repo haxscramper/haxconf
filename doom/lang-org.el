@@ -2793,3 +2793,18 @@ holding contextual information."
   (interactive)
   (hax/org-refile-under-marker
    (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
+
+(defun hax/org-prevent-same-state-change (func arg &optional _start)
+  "Prevent state changes that don't actually change the state.
+This function is meant to be used as advice before `org-todo'.
+If the state to change to (ARG) is the same as the current state,
+use `:override' advice to do nothing and prevent `org-todo' from
+being called."
+
+  (let ((current-state (remove-string-properties (org-get-todo-state))))
+    (if (string-equal current-state arg)
+        (message "State is already \"%s\"" current-state)
+      ;; (message "Override transitioning states %s -> %s" current-state arg)
+      (cl-return-from org-todo))))
+
+;; (advice-add 'org-todo :around #'hax/org-prevent-same-state-change)
