@@ -475,3 +475,31 @@ Prompt for a choice."
             (message "Copied path: %s" path)
           (user-error "Couldn't copy filename in current buffer")))
     (error "Couldn't find filename in current buffer")))
+
+(defun hax/get-line-location-with-git-info ()
+  (let* ((root (magit-toplevel))
+         (file (buffer-file-name))
+         (line (line-number-at-pos))
+         (sha (magit-rev-parse "HEAD")))
+    (when (and root file sha)
+      ;; Make file relative to git root
+      (setq file (file-relative-name file root))
+      ;; Shorten SHA
+      (setq sha (substring sha 0 7))
+      (format "%s:%d at %s" file line sha))))
+
+(defun hax/copy-git-location-info ()
+  (interactive)
+  (let ((info (hax/get-line-location-with-git-info)))
+    (when info
+      (kill-new info)
+      (message "Copied: %s" info))))
+
+(defun hax/copy-git-location-and-content ()
+  (interactive)
+  (let* ((content (string-trim (thing-at-point 'line t)))
+         (location (hax/get-line-location-with-git-info))
+         (info (format "%s in %s" content location)))
+    (when info
+      (kill-new info)
+      (message "Copied: %s" info))))

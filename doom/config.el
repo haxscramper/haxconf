@@ -245,7 +245,7 @@ more nitpickery about stuff I write in my configuration files."
         :nv "gcE" (cmd!
                    (magit-stage-modified)
                    (magit-git-command
-                    (format "git commit --amend --no-edit && git push --force origin %s"
+                    (format "git commit --amend --no-edit && git push origin %s"
                             (magit-get-current-branch)))
                    ;; (push 'amend-published magit-no-confirm)
                    ;; (magit-commit-extend)

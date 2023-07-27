@@ -1866,6 +1866,7 @@ otherwise continue prompting for tags."
                              (?X . (:foreground "red" :box (:line-width 2 :color "red")))))
 
   (setq
+   org-cycle-separator-lines 60
    org-capture-templates
    ;; agenda just includes everything that contains an "active time
    ;; stamp". An active time stamp is any time stamp in angular
@@ -2522,9 +2523,9 @@ itself once again')"
   (find-file hax/inbox.org)
   (find-file hax/main.org)
   (find-file hax/staging.org)
+  (find-file hax/repeated.org)
   (when hax/+roam (org-roam-db))
   (find-file hax/notes.org))
-
 
 (defun hax/org-element-get-logbook ()
   "Get org-element of the `:LOGBOOK:' entry for a current tree if
