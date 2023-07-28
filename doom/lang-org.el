@@ -14,6 +14,7 @@ anything context-aware. It simply inserts new 'TODO' entry after
 the current one."
   (interactive)
   (org-end-of-subtree)
+  (setq org-adapt-indentation t)
   (insert "\n\n" (make-string (or (org-current-level) 1) ?*) " TODO ")
   (setq org-expiry-inactive-timestamps t)
   (org-expiry-insert-created)
@@ -1873,6 +1874,7 @@ otherwise continue prompting for tags."
                              (?X . (:foreground "red" :box (:line-width 2 :color "red")))))
 
   (setq
+   org-cycle-separator-lines 12000
    org-capture-templates
    ;; agenda just includes everything that contains an "active time
    ;; stamp". An active time stamp is any time stamp in angular
@@ -2955,3 +2957,26 @@ individual commands for more information."
    (org-support-shift-select
     (org-call-for-shift-select 'next-line))
    (t (org-shiftselect-error))))
+
+(defun hax/org-subtree-has-children (&optional invisible)
+  ;; Return non-nil if entry at point has child headings.
+  ;; Only children are considered, not other descendants.
+  ;; Code from `org-cycle-internal-local'.
+  (save-excursion
+    (let ((level (funcall outline-level)))
+      (outline-next-heading)
+      (and (org-at-heading-p t)
+           (> (funcall outline-level) level)))))
+
+(defun hax/org-sort-entries-recursive-multi (&optional keys)
+  "Call `hax/org-sort-entries-recursive'.
+If KEYS, call it for each of them; otherwise call interactively
+until \\[keyboard-quit] is pressed."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (org-at-heading-p)) (outline-next-heading))
+    (while (org-at-heading-p)
+      (hax/dbg/looking-around)
+      (when (hax/org-subtree-has-children) (org-sort-entries nil ?o))
+      (outline-next-heading))))

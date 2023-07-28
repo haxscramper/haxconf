@@ -20,9 +20,9 @@
     "hotkey": {
         "modifiers": [
             "<ctrl>",
-            "<super>"
+            "<shift>"
         ],
-        "hotKey": "<np_right>"
+        "hotKey": "<page_up>"
     },
     "filter": {
         "regex": null,
