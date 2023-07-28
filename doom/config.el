@@ -216,7 +216,7 @@
 more nitpickery about stuff I write in my configuration files."
     (interactive)
     (magit-git-command
-     (format "git push --force origin %s"
+     (format "git push origin %s"
              (magit-get-current-branch))))
 
 
