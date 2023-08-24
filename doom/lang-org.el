@@ -856,6 +856,7 @@ selection result. Provide PROMPT for selection input"
     (if (org-up-heading-safe)
         ;; If we are in some outline, assign
         (progn
+          (setq org-adapt-indentation t)
           ;; Store original node ID, optionally creating it if missing
           (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
           ;; Get original heading path, without tags, todo, priority elements

@@ -11,6 +11,9 @@ release+Mod2+Mod4+Control + c
 release+Mod2+Mod4 + r
 
 "xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
+release+Mod2+Mod4 + q
+
+"xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + w
 
 "emacsclient-window"
@@ -22,7 +25,7 @@ release+Control+Mod2+Mod4 + p
 "res=$(find $HOME/defaultdirs/input -maxdepth 2 -type f \( -name "*.html" -or -name "*.txt" \) | rofi -dmenu) && [[ ! -z res ]] && firefox-developer-edition "$res""
 release+Control+Mod2+Mod4 + h
 
-"sxiv -t ~/defaultdirs/input "
+"sxiv -t ~/defaultdirs/input /tmp"
 release+Control+Mod2+Mod4 + s
 
 "killall -9 xbindkeys && xbindkeys && echo [log][$(date +%T)] xbindkeys reloaded >> ~/.config/hax-local/log/$(date -I) ; notify-send -t 2000 'Reloaded xbindkeys'"

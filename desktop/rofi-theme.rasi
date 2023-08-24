@@ -20,7 +20,8 @@
     bright-magenta: #ff03ff;
     bright-cyan:    #0ef0ff;
     bright-white:   #f8f8f8;
-    font: "JetBrains Mono 12";
+
+    font: "Iosevka 12";
 
     selected-normal-foreground:  @bright-white;
     foreground:                  @bright-yellow;
@@ -52,6 +53,12 @@
     active-background:           rgba ( 0, 43, 55, 100 % );
     selected-active-background:  rgba ( 0, 54, 66, 100 % );
 }
+
+element-text {
+    background-color: inherit;
+    text-color:       inherit;
+}
+
 #window {
     background-color: @background;
     border:           1;

@@ -19,10 +19,23 @@
                                            "Apple Symbols"
                                            "Noto"))
 
+(defun hax/counsel-fonts ()
+  "Show a list of all supported font families for a particular frame.
+
+You can insert or kill the name of the selected font."
+  (interactive)
+  (let ((current-font
+         (symbol-name (font-get (face-attribute 'default :font) :family))))
+    (ivy-read "Font: " (delete-dups (font-family-list))
+              :preselect current-font
+              :require-match t
+              :history 'counsel-fonts-history
+              :caller 'hax/counsel-fonts)))
+
 (defun hax/buffer-face-mode-variable ()
   "Set current buffer fase to a different configuration"
   (interactive)
-  (setq buffer-face-mode-face '(:family "Noto Sans Mono"))
+  (setq buffer-face-mode-face `(:family ,(hax/counsel-fonts)))
   (buffer-face-mode))
 
 

@@ -1,0 +1,21 @@
+# -*- mode: snippet -*-
+# name: click-cli
+# key: click-cli
+# uuid: click-cli
+# --
+
+import rich_click as click
+
+@click.group()
+def $1():
+    pass
+
+@$1.command("dot")
+@click.argument("file", type=click.Path())
+def $2(file):
+    pass
+
+
+if __name__ == '__main__':
+   cmd = click.CommandCollection(sources=[$1])
+   cmd()

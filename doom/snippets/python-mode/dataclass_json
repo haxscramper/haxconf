@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: dataclass_json
+# uuid: dataclass_json
+# key: dataclass_json
+# condition: t
+# --
+
+@dataclass_json
+@dataclass
+class $1:
+    $2
