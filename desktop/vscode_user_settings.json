@@ -1,6 +1,8 @@
 {
+    "editor.occurrencesHighlight": false,
     "explorer.confirmDragAndDrop": false,
     "explorer.autoReveal": false,
+    "vim.disableExtension": true,
     "explorer.confirmDelete": false,
     "security.workspace.trust.untrustedFiles": "open",
     // Yes, I'm smart enough to not donwload garbage in the first place, but once I've

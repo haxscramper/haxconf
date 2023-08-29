@@ -1891,7 +1891,7 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1)
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U
+      "** %U W%<%U>
   :PROPERTIES:
   :CREATED: %U
   :END:
@@ -2137,7 +2137,7 @@ otherwise continue prompting for tags."
            ;; vague idea about next restart time.
            "WIP(w!)"            ;; Working on it
            "STALLED(s!)"        ;; Technically WIP but almost no progress
-           "BLOCKED(b@/@)"        ;; External event is preventing further work
+           "BLOCKED(b@/@)"      ;; External event is preventing further work
            "MAYBE(m!)"          ;; Not Guaranteed to happen
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "|"
@@ -2148,6 +2148,7 @@ otherwise continue prompting for tags."
            "COMPLETED(c!/@)"    ;; Task completed
            "NUKED(N@/!)"        ;; Completed but angry
            "PARTIALLY(p@/!)"    ;; Can be considered completed
+           "UNDER_REVIEW(u!/!)"
            "FUCKING___DONE(F)"  ;; Completed but very angry
            )))
   (setq org-todo-keyword-faces
@@ -2166,6 +2167,7 @@ otherwise continue prompting for tags."
           ("REVIEW" . "SteelBlue")
           ("FAILED" . ,(doom-color 'red))
           ("FUCKING___DONE" . "gold1")
+          ("UNDER_REVIEW" . "blue")
           ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-full "~/.config/tags"))
   (setq hax/private-tags-file (f-full "~/.hax-private-tags"))
