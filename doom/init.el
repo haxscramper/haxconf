@@ -14,6 +14,7 @@
        ;; Main editor/window UI look
        doom doom-dashboard modeline
        hl-todo
+       minimap
        ophints
        ;; More manageable popup windows
        (popup
