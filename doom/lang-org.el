@@ -1824,6 +1824,24 @@ otherwise continue prompting for tags."
          (with-selected-window (active-minibuffer-window)
            (delete-minibuffer-contents)))))
 
+(defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.4)))
+  "Face for bold text in Org mode.")
+
+(defface org-italic '((t :inherit italic))
+  "Face for bold text in Org mode.")
+
+(defface org-underline '((t :inherit underline))
+  "Face for bold text in Org mode.")
+
+;; Update the org-emphasis-alist
+(setq org-emphasis-alist
+      '(("*" org-bold)
+        ("/" org-italic)
+        ("_" org-underline)
+        ("=" org-verbatim)
+        ("~" org-code)
+        ("+" (:strike-through t))))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1855,6 +1873,8 @@ otherwise continue prompting for tags."
   (setq org-priority-highest ?A)
   (setq org-priority-lowest ?X)
   (setq org-priority-default ?B)
+
+
 
   (setq org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold :underline t :overline t))
                              (?B . (:foreground "#FD971F"))

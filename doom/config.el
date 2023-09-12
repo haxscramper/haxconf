@@ -329,7 +329,7 @@ more nitpickery about stuff I write in my configuration files."
     ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
 
 (set-formatter! 'pyfmt
-  '("black" "--line-length" "75" "-")
+  '("yapf")
   :modes '(python-mode)
   )
 

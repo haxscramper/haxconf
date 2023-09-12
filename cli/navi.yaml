@@ -19,6 +19,7 @@ cheats:
     - ~/.config/navi-denisidoro
     - ~/.config/navi-denisidoro-cheats
     - ~/.config/navi-denisidoro-tldr
+    - ~/.config/navi-private
 
 shell:
   command: bash

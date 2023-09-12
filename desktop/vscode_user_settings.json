@@ -65,6 +65,7 @@
     "xml.server.vmargs": "-Xmx128M",
     "workbench.tree.indent": 4,
     "editor.tabSize": 2,
+    "githubPullRequests.commentExpandState": "collapseAll",
     "cmake.ignoreCMakeListsMissing": true,
     "files.insertFinalNewline": true,
     "todo-tree.filtering.ignoreGitSubmodules": false,
@@ -100,5 +101,6 @@
     "workbench.editor.tabSizingFixedMaxWidth": 120,
     "workbench.editor.tabSizingFixedMinWidth": 120,
     "svelte.enable-ts-plugin": true,
-    "editor.minimap.enabled": false
+    "editor.minimap.enabled": false,
+    "vale.valeCLI.path": "/home/maxim_artemov/software/vale"
 }
