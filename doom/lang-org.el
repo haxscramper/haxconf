@@ -14,6 +14,7 @@ anything context-aware. It simply inserts new 'TODO' entry after
 the current one."
   (interactive)
   (org-end-of-subtree)
+  (setq org-adapt-indentation t)
   (insert "\n\n" (make-string (or (org-current-level) 1) ?*) " TODO ")
   (setq org-expiry-inactive-timestamps t)
   (org-expiry-insert-created)
@@ -225,6 +226,12 @@ mode"
              (insert (format "[[%s:%s]]" (symbol-name type) target))
            (insert (format "[[%s:%s][%s]]" (symbol-name type) target description)))))))
 
+(defun hax/insert-q ()
+  (interactive)
+  (insert "\\q{")
+  (hax/org-insert-link 'person nil)
+  (insert "}{")
+  (save-excursion (insert "}")))
 
 (defhydra hydra-insert-link (:color blue :hint nil)
   "
@@ -281,7 +288,7 @@ mode"
         (insert
          (format "%s- Tag \"%s\" %s on %s"
                  (s-repeat (+ 1 (org-current-level)) " ")
-                 tag-name
+                 (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
                  (if (eq action 'added) "Added" "Removed")
                  current-time))))))
 
@@ -849,6 +856,7 @@ selection result. Provide PROMPT for selection input"
     (if (org-up-heading-safe)
         ;; If we are in some outline, assign
         (progn
+          (setq org-adapt-indentation t)
           ;; Store original node ID, optionally creating it if missing
           (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
           ;; Get original heading path, without tags, todo, priority elements
@@ -1513,6 +1521,7 @@ the empty area."
   (rx-define rx-month-name-or-digit (| rx-month-name rx-month-digit))
   (rx-define rx-day-digit (1+ digit))
   (rx-define rx-year (1+ digit))
+  (rx-define rx-space (| " " " "))
 
   (defun fixup-text-dates (str)
     "Automatically convert string timestamps from some unreadable and
@@ -1526,29 +1535,29 @@ the empty area."
      replacement-pairs
      (list
       (cons (rx "["
-                (group rx-day-digit) " "
-                (group rx-month-name) " "
+                (group rx-day-digit) rx-space
+                (group rx-month-name) rx-space
                 (group rx-year)
                 "]")
             "[\\3-\\2-\\1]")
       (cons (rx "["
                 (group (1+ digit)) ":"
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (| "AM" "PM"))
                 "]") "[\\1\\3:\\2]")
       (cons (rx "["
                 ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) " "
+                (group rx-month-name-or-digit) rx-space
                 (group rx-day-digit) ", "
                 (group (1+ digit))
                 "]") "[20\\3-\\1-\\2]")
       (cons (rx "["
                 ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) " "
+                (group rx-month-name-or-digit) rx-space
                 (group (1+ digit)) ", "
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (1+ digit)) ":"
-                (group (1+ digit)) " "
+                (group (1+ digit)) rx-space
                 (group (| "AM" "PM"))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "["
@@ -1558,12 +1567,12 @@ the empty area."
                 (group (1+ digit))
                 (? " "
                    (group (1+ digit)) ":"
-                   (group (1+ digit)) " "
+                   (group (1+ digit)) rx-space
                    (group (| "AM" "PM")))
                 "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
       (cons (rx "2020" (group digit digit)) "20\\1")
       (cons (rx "20" (group digit digit digit digit)) "\\1")
-      (cons (rx "-" (group digit) (group (| " " "]"))) "-0\\1\\2")
+      (cons (rx "-" (group digit) (group (| rx-space "]"))) "-0\\1\\2")
       (cons (rx " :]") "]")))
 
     (dolist (pair replacement-pairs)
@@ -1886,7 +1895,7 @@ otherwise continue prompting for tags."
                              (?X . (:foreground "red" :box (:line-width 2 :color "red")))))
 
   (setq
-   org-cycle-separator-lines 60
+   org-cycle-separator-lines 12000
    org-capture-templates
    ;; agenda just includes everything that contains an "active time
    ;; stamp". An active time stamp is any time stamp in angular
@@ -2853,6 +2862,20 @@ holding contextual information."
   (hax/org-refile-under-marker
    (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
 
+(defun hax/org-prevent-same-state-change (func arg &optional _start)
+  "Prevent state changes that don't actually change the state.
+This function is meant to be used as advice before `org-todo'.
+If the state to change to (ARG) is the same as the current state,
+use `:override' advice to do nothing and prevent `org-todo' from
+being called."
+
+  (let ((current-state (remove-string-properties (org-get-todo-state))))
+    (if (string-equal current-state arg)
+        (message "State is already \"%s\"" current-state)
+      ;; (message "Override transitioning states %s -> %s" current-state arg)
+      (cl-return-from org-todo))))
+
+;; (advice-add 'org-todo :around #'hax/org-prevent-same-state-change)
 
 (setq hax/org-priority-list '(?X ?S ?A ?B ?C ?D ?E ?F))
 
@@ -2957,3 +2980,26 @@ individual commands for more information."
    (org-support-shift-select
     (org-call-for-shift-select 'next-line))
    (t (org-shiftselect-error))))
+
+(defun hax/org-subtree-has-children (&optional invisible)
+  ;; Return non-nil if entry at point has child headings.
+  ;; Only children are considered, not other descendants.
+  ;; Code from `org-cycle-internal-local'.
+  (save-excursion
+    (let ((level (funcall outline-level)))
+      (outline-next-heading)
+      (and (org-at-heading-p t)
+           (> (funcall outline-level) level)))))
+
+(defun hax/org-sort-entries-recursive-multi (&optional keys)
+  "Call `hax/org-sort-entries-recursive'.
+If KEYS, call it for each of them; otherwise call interactively
+until \\[keyboard-quit] is pressed."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (org-at-heading-p)) (outline-next-heading))
+    (while (org-at-heading-p)
+      (hax/dbg/looking-around)
+      (when (hax/org-subtree-has-children) (org-sort-entries nil ?o))
+      (outline-next-heading))))

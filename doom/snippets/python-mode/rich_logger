@@ -2,6 +2,7 @@
 # name: rich-logger
 # key: rich-logger
 # uuid: rich-logger
+# expand-env: ((yas-indent-line 'fixed))
 # --
 
 

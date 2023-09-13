@@ -520,7 +520,6 @@
 #planning##day
 #work##bullshit
 #work
-
 #activity##meeting##followup
 #test##bug
 #lesson_for_later
@@ -529,7 +528,9 @@
 #software##kitty
 #activity##meeting
 #comment##news
-
+#planning##read
+#work##epam
+#code##js##lib##d3
 #project##haxconf
 #personal##health
 #programming##refactoring##deadcode
@@ -540,8 +541,7 @@
 #code##jq
 #recollection##long
 #programming##visualization
-
-#epg-
+#recollection##month
 #hardware##keyboard
 #software##rofi
 #test##findings##implementation
@@ -558,3 +558,10 @@
 #duration##1day
 #duration##2weeks
 #test##findings##rca
+#activity##organization
+#software##valgrind
+#code##cpp##lib##gteste
+#code##cpp##lib##gtest
+#recollection##event
+#code##ts##lib##sprotty
+#code##js##lib##elk

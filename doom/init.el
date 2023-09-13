@@ -40,6 +40,7 @@
        rust
        zig
        sql
+       (scheme +guile)
        emacs-lisp
        ;; Configuration, serialization
        json yaml xml

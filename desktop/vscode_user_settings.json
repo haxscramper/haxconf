@@ -1,5 +1,31 @@
 {
     "editor.occurrencesHighlight": false,
+    "clangd.checkUpdates": false,
+	"code-runner.enableAppInsights": false,
+	"docker-explorer.enableTelemetry": false,
+	"extensions.ignoreRecommendations": true,
+	"gitlens.showWelcomeOnInstall": false,
+	"gitlens.showWhatsNewAfterUpgrades": false,
+	"java.help.firstView": "none",
+	"java.help.showReleaseNotes": false,
+	"julia.enableTelemetry": false,
+	"kite.showWelcomeNotificationOnStartup": false,
+	"liveServer.settings.donotShowInfoMsg": true,
+	"Lua.telemetry.enable": false,
+	"material-icon-theme.showWelcomeMessage": false,
+	"pros.showWelcomeOnStartup": false,
+	"pros.useGoogleAnalytics": false,
+	"redhat.telemetry.enabled": false,
+	"rpcServer.showStartupMessage": false,
+	"shellcheck.disableVersionCheck": true,
+	"sonarlint.disableTelemetry": true,
+	"telemetry.enableCrashReporter": false,
+	"telemetry.enableTelemetry": false,
+	"telemetry.telemetryLevel": "off",
+	"terraform.telemetry.enabled": false,
+	"update.showReleaseNotes": false,
+	"vsicons.dontShowNewVersionMessage": true,
+	"workbench.welcomePage.walkthroughs.openOnInstall": false,
     "explorer.confirmDragAndDrop": false,
     "explorer.autoReveal": false,
     "vim.disableExtension": true,
@@ -43,12 +69,18 @@
     "files.autoSave": "onFocusChange",
     "[cpp]": {
         "editor.formatOnSave": false,
-        "editor.formatOnPaste": false
+        "editor.formatOnPaste": false,
+        "editor.defaultFormatter": "xaver.clang-format"
     },
     "[python]": {
         "editor.formatOnSave": true,
         "editor.tabSize": 4
     },
+    "[js]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    // In most cases it is pretty useless
+    "editor.minimap.enabled": false,
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -97,10 +129,20 @@
     "cSpell.enabled": false,
     "editor.unicodeHighlight.invisibleCharacters": false,
     "markdown.preview.scrollEditorWithPreview": false,
+    "[javascript]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "terminal.integrated.inheritEnv": false,
+    "workbench.editor.languageDetection": false,
+    "workbench.editor.historyBasedLanguageDetection": false,
     "workbench.editor.tabSizing": "fixed",
     "workbench.editor.tabSizingFixedMaxWidth": 120,
     "workbench.editor.tabSizingFixedMinWidth": 120,
     "svelte.enable-ts-plugin": true,
     "editor.minimap.enabled": false,
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale"
+    "[typescript]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "git.confirmSync": false,
 }

@@ -660,11 +660,6 @@ set -g fish_key_bindings my_bindings
 
 abbr jlab cd \~ \&\& jupyter lab --no-browser
 abbr jlabf cd \~ \&\& jupyter lab --browser firefox
-function anaconda_venv
-    eval $HOME/miniconda3/bin/conda "shell.fish" "hook" $argv | source
-end
-
-eval (perl -I$HOME/perl5/lib/perl5 -Mlocal::lib)
 
 function use_java_11_first
     set -l java_11_bin (
@@ -824,11 +819,12 @@ end
 
 starship init fish | source
 zoxide init fish | source
+direnv hook fish | source
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-if test -f /home/maxim_artemov/miniconda3/bin/conda
-    eval /home/maxim_artemov/miniconda3/bin/conda "shell.fish" "hook" $argv | source
+if test -f /opt/miniconda3/bin/conda
+    eval /opt/miniconda3/bin/conda "shell.fish" "hook" $argv | source
 end
 # <<< conda initialize <<<
 
