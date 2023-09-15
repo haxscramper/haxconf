@@ -3,20 +3,23 @@
 import click
 import os
 import json
-from collections import Counter
-
+from datetime import datetime
+from collections import defaultdict
 
 def load_history(cache_file):
+    result = defaultdict(lambda: {"count": 0, "time": 0})
+
     if os.path.exists(cache_file):
         with open(cache_file, "r") as f:
-            return Counter(json.load(f))
-    return Counter()
+            for key, value in json.load(f).items():
+                result[key] = value
+
+    return result
 
 
 def save_history(counter, cache_file):
     with open(cache_file, "w") as f:
-        json.dump(dict(counter), f)
-
+        json.dump(counter, f, indent=2)
 
 @click.group()
 def cli():
@@ -25,7 +28,8 @@ def cli():
 
 @cli.command()
 @click.argument("cache_file", type=click.Path())
-def get(cache_file):
+@click.option("--order", type=click.Choice(["frequency", "time"]))
+def get(cache_file, order):
     """Sorts the piped-in lines by their frequency of appearance, as stored in a cache file."""
     # Load history from cache file
     history = load_history(cache_file)
@@ -35,10 +39,16 @@ def get(cache_file):
         line.strip() for line in click.get_text_stream("stdin").readlines()
     ]
 
-    # Sort options based on frequency
-    sorted_options = sorted(options, key=lambda x: -history[x])
-    click.echo("\n".join(sorted_options))
+    def get_value(key):
+        if order == "time":
+            return -history[key]["time"]
 
+        else:
+            return -history[key]["count"]
+
+    # Sort options based on frequency
+    sorted_options = sorted(options, key=lambda x: get_value(x))
+    click.echo("\n".join(sorted_options))
 
 @cli.command()
 @click.argument("cache_file", type=click.Path())
@@ -49,7 +59,8 @@ def store(cache_file, selected_value):
     history = load_history(cache_file)
 
     # Update history
-    history[selected_value] += 1
+    history[selected_value]["count"] += 1
+    history[selected_value]["time"] = datetime.now().timestamp()
 
     # Save updated history
     save_history(history, cache_file)

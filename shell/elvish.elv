@@ -188,10 +188,11 @@ edit:add-var doom-debug~ {|@extra|
 }
 
 fn gic {
+  var basename = (basename (git rev-parse --show-toplevel))
   var target = (git for-each-ref --format='%(refname:short)' refs/heads refs/remotes |
     sort |
     uniq -u |
-    fzf)
+    fzf_wrap.sh $E:HOME"/.cache/"$basename"-gic.json" --order=time)
 
   if (str:has-prefix $target "origin") {
     git checkout --track $target

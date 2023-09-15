@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 set -o nounset
 set -o errexit
+set -o xtrace
 
-selection=$(selector_history.py get "$1" | fzf -i)
+selection=$(selector_history.py get "$@" | fzf -i)
 selector_history.py store "$1" "$selection"
 echo "$selection"
