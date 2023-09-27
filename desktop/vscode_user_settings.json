@@ -73,9 +73,12 @@
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "[python]": {
-        "editor.formatOnSave": true,
-        "editor.tabSize": 4
+        "editor.formatOnSave": false,
+        "editor.tabSize": 4,
+        "formatting.provider": "yapf",
+        "editor.defaultFormatter": "yapf"
     },
+    "python.formatting.provider": "yapf",
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
@@ -144,4 +147,20 @@
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "git.confirmSync": false,
+    "codemap.test": [
+        {
+            "pattern": "^(\\s*)Scenario (.*)",
+            "clear": "^(\\s*)Scenario ",
+            "prefix": "",
+            "icon": "level2",
+            "levelIndent": 0
+        }, 
+        {
+            "pattern": "^(\\s*)Environment\\s?(.*)",
+            "clear": "^(\\s*)Environment",
+            "prefix": "",
+            "icon": "level1",
+            "levelIndent": 0
+        }
+    ]
 }

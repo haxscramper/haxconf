@@ -423,8 +423,8 @@ more nitpickery about stuff I write in my configuration files."
 
 (defface-derive hl-todo-DOC hl-todo-TODO "DOC")
 (defface-derive hl-todo-ERROR error "ERROR")
-(defface-derive hl-todo-WARNING warning "WARNING")
-(defface-derive hl-todo-QUESTION warning "WARNING")
+(defface-derive hl-todo-WARNING warning "WARNING" :underline t :slant italic :overline t)
+(defface-derive hl-todo-QUESTION warning "WARNING" :underline t :slant italic)
 (defface-derive hl-todo-TEMP hl-todo-IDEA "TEMP")
 (defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
 (defface-derive hl-todo-TEST hl-todo-TODO "TEST")
