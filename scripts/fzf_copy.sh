@@ -16,6 +16,7 @@ else
 fi
 if [ "$fzo" != "" ]
 then
-    echo -n "$fzo" | xclip -se c
+    export DISPLAY=:1
+    echo -n "$fzo" | nohup xclip -loops 0 -sel p -sel s -sel c
     echo "$fzo"
 fi

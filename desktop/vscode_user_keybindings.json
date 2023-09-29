@@ -192,5 +192,9 @@
     {
         "key": "ctrl+k ctrl+o",
         "command": "workbench.action.closeEditorsInOtherGroups"
+    },
+    {
+        "key": "shift+space shift+w",
+        "command": "editor.emmet.action.wrapWithAbbreviation"
     }
 ]
