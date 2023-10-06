@@ -162,5 +162,8 @@
             "icon": "level1",
             "levelIndent": 0
         }
-    ]
+    ],
+    "workbench.editorAssociations": {
+        "*.png": "imagePreview.previewEditor"
+    }
 }
