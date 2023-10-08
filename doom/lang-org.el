@@ -2034,7 +2034,7 @@ otherwise continue prompting for tags."
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
-                        (,hax/projects.org :maxlevel . 3)
+                        (,hax/projects.org :maxlevel . 5)
                         (,hax/notes.org :maxlevel . 3)
                         (,hax/staging.org :maxlevel . 1)
                         (,hax/inbox.org :maxlevel . 2))
@@ -2981,6 +2981,9 @@ until \\[keyboard-quit] is pressed."
       (hax/dbg/looking-around)
       (when (hax/org-subtree-has-children) (org-sort-entries nil ?o))
       (outline-next-heading))))
+
+;; (custom-set-faces!
+;;   '(minimap-font-face :family "BlockFont" :height 30 :group 'minimap))
 
 (defun hax/rice-org ()
   (interactive)

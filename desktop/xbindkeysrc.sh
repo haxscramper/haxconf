@@ -22,6 +22,9 @@ release+Mod2+Mod4 + e
 "$HOME/.config/haxconf/scripts/rofi-select-pdf.sh"
 release+Control+Mod2+Mod4 + p
 
+"$HOME/.config/haxconf/scripts/rofi_add_strawberry_item.sh"
+release+Control+Mod2+Mod4 + a
+
 "res=$(find $HOME/defaultdirs/input -maxdepth 2 -type f \( -name "*.html" -or -name "*.txt" \) | rofi -dmenu) && [[ ! -z res ]] && firefox-developer-edition "$res""
 release+Control+Mod2+Mod4 + h
 

@@ -36,15 +36,13 @@
        :os tty
        :lang
        cc qt sh
-       arduino
        lua
        rust
        zig
-       sql
        (scheme +guile)
        emacs-lisp
        ;; Configuration, serialization
-       json yaml xml
+       json yaml
        ;; Markup languages
        latex markdown rst (org +dragndrop ;; +roam2
                                )

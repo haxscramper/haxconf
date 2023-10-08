@@ -5,8 +5,8 @@ xset s off
 xset -dpms
 xset s noblank
 
-xbindkeys                                 # Shortcuts
-copyq & # Clibpard manager
+xbindkeys # Shortcuts
+copyq &   # Clibpard manager
 flameshot &
 #picom &
 

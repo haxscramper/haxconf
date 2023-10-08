@@ -71,8 +71,9 @@
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "[python]": {
-        "editor.formatOnSave": true,
-        "editor.tabSize": 4
+        "editor.formatOnSave": false,
+        "editor.tabSize": 4,
+        "editor.defaultFormatter": "ms-python.python"
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
@@ -140,4 +141,20 @@
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "git.confirmSync": false,
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfPath": "yapf",
+    "workbench.startupEditor": "none",
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.cache": true,
+        "**/.mypy_cache": true,
+        "**/.pidf": true,
+        "**/.pids": true,
+        "**/.pytest_cache": true,
+        "**/.ruff_cache": true,
+        "**/.venv": true,
+        "**/.vscode": true,
+        "**/.xmake": true,
+        "**/CMakeLists.txt.user": true
+    }
 }
