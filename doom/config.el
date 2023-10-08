@@ -229,7 +229,7 @@ You can insert or kill the name of the selected font."
 more nitpickery about stuff I write in my configuration files."
     (interactive)
     (magit-git-command
-     (format "git push --force origin %s"
+     (format "git push origin %s"
              (magit-get-current-branch))))
 
 
@@ -258,7 +258,7 @@ more nitpickery about stuff I write in my configuration files."
         :nv "gcE" (cmd!
                    (magit-stage-modified)
                    (magit-git-command
-                    (format "git commit --amend --no-edit && git push --force origin %s"
+                    (format "git commit --amend --no-edit && git push origin %s"
                             (magit-get-current-branch)))
                    ;; (push 'amend-published magit-no-confirm)
                    ;; (magit-commit-extend)
@@ -342,7 +342,7 @@ more nitpickery about stuff I write in my configuration files."
     ("-ln" "%s" (pcase sh-shell (`bash "bash") (`mksh "mksh") (_ "posix")))))
 
 (set-formatter! 'pyfmt
-  '("black" "--line-length" "75" "-")
+  '("yapf")
   :modes '(python-mode)
   )
 
@@ -423,8 +423,8 @@ more nitpickery about stuff I write in my configuration files."
 
 (defface-derive hl-todo-DOC hl-todo-TODO "DOC")
 (defface-derive hl-todo-ERROR error "ERROR")
-(defface-derive hl-todo-WARNING warning "WARNING")
-(defface-derive hl-todo-QUESTION warning "WARNING")
+(defface-derive hl-todo-WARNING warning "WARNING" :underline t :slant italic :overline t)
+(defface-derive hl-todo-QUESTION warning "WARNING" :underline t :slant italic)
 (defface-derive hl-todo-TEMP hl-todo-IDEA "TEMP")
 (defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
 (defface-derive hl-todo-TEST hl-todo-TODO "TEST")
@@ -436,21 +436,18 @@ more nitpickery about stuff I write in my configuration files."
           ("DOC" . hl-todo-DOC)
           ("FIXME" . hl-todo-FIXME)
           ("HACK" . hl-todo-HACK)
-          ("REVIEW" . hl-todo-REVIEW)
           ("IDEA" . hl-todo-IDEA)
           ("NOTE" . hl-todo-NOTE)
           ("DEPRECATED" . hl-todo-DEPRECATED)
           ("REFACTOR" . hl-todo-REFACTOR)
           ("STYLE" . hl-todo-STYLE)
           ("BUG" . hl-todo-BUG)
-          ("MAYBE" . hl-todo-MAYBE)
           ("XXX" . hl-todo-XXX)
           ("XXXX" . hl-todo-XXX)
           ("xxx" . hl-todo-XXX)
           ("IMPLEMENT" . hl-todo-IMPLEMENT)
           ("IMPORTANT" . hl-todo-IMPORTANT)
           ("QUESTION" . hl-todo-QUESTION)
-          ("NEXT" . hl-todo-NEXT)
           ("TEST" . hl-todo-TEST)
           ("WARNING" . hl-todo-WARNING)
           ("ERROR" . hl-todo-ERROR)

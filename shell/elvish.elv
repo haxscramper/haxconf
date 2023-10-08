@@ -188,10 +188,11 @@ edit:add-var doom-debug~ {|@extra|
 }
 
 fn gic {
+  var basename = (basename (git rev-parse --show-toplevel))
   var target = (git for-each-ref --format='%(refname:short)' refs/heads refs/remotes |
     sort |
     uniq -u |
-    fzf)
+    fzf_wrap.sh $E:HOME"/.cache/"$basename"-gic.json" --order=time)
 
   if (str:has-prefix $target "origin") {
     git checkout --track $target
@@ -598,3 +599,30 @@ fn erg {|glob search|
 fn rrg {|search|
   rg --no-heading --line-number $search | sd '\(:\d+:\)' ':$1: '
 }
+
+fn fzf_history {||
+  if ( not (has-external "fzf") ) {
+    edit:history:start
+    return
+  }
+  var new-cmd = (
+    edit:command-history &dedup &newest-first &cmd-only |
+    to-terminated "\x00" |
+    try {
+      fzf ^
+        --no-multi ^
+        --height=60% ^
+        --no-sort ^
+        --read0 ^
+        --info=hidden ^
+        --exact ^
+        --query=$edit:current-command | slurp
+    } catch {
+      edit:redraw &full=$true
+      return
+    }
+  )
+  edit:redraw &full=$true
+  set edit:current-command = $new-cmd
+}
+set edit:insert:binding[Ctrl-R] = {|| fzf_history >/dev/tty 2>&1 }

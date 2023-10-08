@@ -37,6 +37,7 @@
 
     # Kitty terminal
     ~/.config/kitty/kitty.conf: cli/kitty.conf
+    ~/.config/kitty/tab_bar.py: cli/kitty_tab_bar.py
 
     # Allows to use multiple emacs profiles at once
     ~/.emacs-profiles.el: emacs/emacs-profiles.el

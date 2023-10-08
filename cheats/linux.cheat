@@ -25,3 +25,6 @@ grep -o
 tar -xvf <file>
 
 $ file: fd -uu -e bz2
+
+# Convert clipboard HTML copy to org-mode text
+xclip -selection clipboard -o -t text/html | pandoc --wrap=none -f html -t org

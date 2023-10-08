@@ -1833,6 +1833,8 @@ otherwise continue prompting for tags."
          (with-selected-window (active-minibuffer-window)
            (delete-minibuffer-contents)))))
 
+
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1840,6 +1842,24 @@ otherwise continue prompting for tags."
   (set-face-attribute
    'org-latex-and-related nil
    :foreground "dim gray")
+
+  (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.4)))
+    "Face for bold text in Org mode.")
+
+  (defface org-italic '((t :inherit italic))
+    "Face for bold text in Org mode.")
+
+  (defface org-underline '((t :inherit underline))
+    "Face for bold text in Org mode.")
+
+  ;; Update the org-emphasis-alist
+  (setq org-emphasis-alist
+        '(("*" org-bold)
+          ("/" org-italic)
+          ("_" org-underline)
+          ("=" org-verbatim)
+          ("~" org-code)
+          ("+" (:strike-through t))))
 
   (global-company-mode -1)
   (org-link-set-parameters "coords" :follow #'org-coords-open)
@@ -1864,6 +1884,8 @@ otherwise continue prompting for tags."
   (setq org-priority-highest ?A)
   (setq org-priority-lowest ?X)
   (setq org-priority-default ?B)
+
+
 
   (setq org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold :underline t :overline t))
                              (?B . (:foreground "#FD971F"))
@@ -1900,7 +1922,7 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1)
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U
+      "** %U W%<%U>
   :PROPERTIES:
   :CREATED: %U
   :END:
@@ -2138,43 +2160,29 @@ otherwise continue prompting for tags."
            ;; TODO twice here. I don't know what is
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
-           "LATER(l!)"          ;; Can be done sometimes later. Like
-           ;; POSTPONED but without any idea when the
-           ;; work can start again
-           "NEXT(n!)"           ;; Next task after current
-           "POSTPONED(P!/!)"    ;; Work is temporarily paused, but I have a
+           "PAUSED(p@/!)"    ;; Work is temporarily paused, but I have a
            ;; vague idea about next restart time.
            "WIP(w!)"            ;; Working on it
-           "STALLED(s!)"        ;; Technically WIP but almost no progress
-           "BLOCKED(b@/@)"        ;; External event is preventing further work
+           "BLOCKED(b@/@)"      ;; External event is preventing further work
            "MAYBE(m!)"          ;; Not Guaranteed to happen
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "|"
            "TIMEOUT(T)"         ;; Cannot be done due to time limits
-           "FAILED(f@/!)"       ;; Tried to finish the task but failed
-           "CANCELED(C@/!)"
-           "DONE(d!/@)"         ;; Task completed
+           "FAILED(f@/@)"       ;; Tried to finish the task but failed
+           "CANCELED(C@/@)"
            "COMPLETED(c!/@)"    ;; Task completed
-           "NUKED(N@/!)"        ;; Completed but angry
-           "PARTIALLY(p@/!)"    ;; Can be considered completed
-           "FUCKING___DONE(F)"  ;; Completed but very angry
+           "PARTIALLY(P@/@)"    ;; Can be considered completed
            )))
   (setq org-todo-keyword-faces
         `(("TODO" . "orange")
-          ("LATER" . "DeepPink")
-          ("NEXT" . "DarkRed")
-          ("POSTPONED" . "coral")
-          ("DONE" . ,(doom-color 'green))
-          ("MAYBE" . ,(doom-color 'blue))
-          ("NUKED" . ,(doom-color 'purple))
+          ("PAUSED" . "coral")
           ("CANCELED" . "snow")
-          ("PARTIALLY" . "goldenrod")
           ("WIP" . "tan")
-          ("STALLED" . "gold")
-          ("BLOCKED" . "black")
+          ("BLOCKED" . "purple")
+
+          ("PARTIALLY" . "goldenrod")
           ("REVIEW" . "SteelBlue")
           ("FAILED" . ,(doom-color 'red))
-          ("FUCKING___DONE" . "gold1")
           ("TIMEOUT" . ,(doom-color 'red))))
   (setq hax/tags-file (f-full "~/.config/tags"))
   (setq hax/private-tags-file (f-full "~/.hax-private-tags"))
@@ -2532,9 +2540,9 @@ itself once again')"
   (find-file hax/inbox.org)
   (find-file hax/main.org)
   (find-file hax/staging.org)
+  (find-file hax/repeated.org)
   (when hax/+roam (org-roam-db))
   (find-file hax/notes.org))
-
 
 (defun hax/org-element-get-logbook ()
   "Get org-element of the `:LOGBOOK:' entry for a current tree if
@@ -3026,3 +3034,27 @@ until \\[keyboard-quit] is pressed."
         org-fontify-done-headline t
         org-fontify-quote-and-verse-blocks t)
   )
+
+(defun org-export-gfm-to-clipboard ()
+  "Export selected text or current subtree in org-mode buffer as GitHub-flavored markdown and copy it to clipboard."
+  (interactive)
+  (require 'ox-gfm)
+  (let ((region-p (region-active-p))
+        export-str)
+    (if region-p
+        (setq export-str (buffer-substring (region-beginning) (region-end)))
+      (save-excursion
+        (org-back-to-heading t)
+        (setq export-str (buffer-substring (point) (org-end-of-subtree t)))))
+    (with-temp-buffer
+      (insert export-str)
+      (let* ((org-mode-hook nil)  ; avoid running org-mode hooks
+             (backend (org-export-get-backend 'gfm))
+             (org-export-with-toc nil))
+        (org-mode)
+        (org-export-to-buffer backend "*Org GFM Export*")
+        (kill-ring-save (point-min) (point-max))
+        (kill-buffer "*Org GFM Export*")))
+    (if region-p
+        (deactivate-mark))
+    (message "Exported to GFM and copied to clipboard.")))

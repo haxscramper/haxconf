@@ -548,7 +548,16 @@
 #activity##planning
 #programming##refactoring##duplicates
 #software##recoll
-
+#code##racket
+#review##anime
+#programming##ticket##triage
+#quote
+#duration##2days
+#duration##quick
+#duration##moderate
+#duration##1day
+#duration##2weeks
+#test##findings##rca
 #activity##organization
 #software##valgrind
 #code##cpp##lib##gteste
@@ -568,3 +577,8 @@
 #haxorg##sem
 #haxorg##lex
 #haxorg##export
+#test##findings##behavior
+#duration##2hours
+#test##findings##observation
+#programming##spec_wording
+#programming##profiling
