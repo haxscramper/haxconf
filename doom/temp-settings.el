@@ -503,3 +503,15 @@ Prompt for a choice."
     (when info
       (kill-new info)
       (message "Copied: %s" info))))
+
+(defun hax/copy-git-location-as-src-block ()
+  (interactive)
+  (let* ((content (string-trim (thing-at-point 'line t)))
+         (lang (pcase (file-name-extension (buffer-file-name))
+                 ("el" "elisp")
+                 (ext ext)))
+         (location (hax/get-line-location-with-git-info))
+         (info (format "#+caption: %s\n#+begin_src %s\n%s\n#+end_src"
+                       location lang content)))
+    (when info
+      (kill-new info))))

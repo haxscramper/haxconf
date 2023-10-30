@@ -607,7 +607,7 @@ fn fzf_history {||
   }
   var new-cmd = (
     edit:command-history &dedup &newest-first &cmd-only |
-    to-terminated "\x00" |
+    to-terminated "\x00" | sed -z 's/^\n*//; s/\n*$//' |
     try {
       fzf ^
         --no-multi ^
@@ -626,3 +626,15 @@ fn fzf_history {||
   set edit:current-command = $new-cmd
 }
 set edit:insert:binding[Ctrl-R] = {|| fzf_history >/dev/tty 2>&1 }
+
+fn watch-and-execute {|callback|
+    var files = (from-lines | str:join "\n")
+    try { $callback "" } catch e { echo $e }
+    while $true {
+        var changed-file = (
+          echo $files | inotifywait -q -e modify --format '%w' --fromfile -
+        )
+
+        try { $callback $changed-file } catch e { echo $e }
+    }
+}

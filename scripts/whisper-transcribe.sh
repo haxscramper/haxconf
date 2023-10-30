@@ -14,6 +14,12 @@ if [[ -z $2 ]]; then
     exit 1
 fi
 
+if [[ -z $3 ]]; then
+    LANG="en"
+else
+    LANG="$3"
+fi
+
 
 input_file=$(realpath "$1")
 output_file=$(realpath "$2")
@@ -23,7 +29,7 @@ cd ~/software/whisper.cpp
 ffmpeg -i "$input_file" -acodec pcm_s16le -ac 2 -ar 16000 "$temp_file"
 ./main \
     --print-progress \
-    --language en \
+    --language "$LANG" \
     --output-file "$output_file" \
     --output-vtt \
     --output-csv \
