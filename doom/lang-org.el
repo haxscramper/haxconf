@@ -2161,18 +2161,19 @@ otherwise continue prompting for tags."
            ;; TODO twice here. I don't know what is
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
-           "PAUSED(p@/!)"    ;; Work is temporarily paused, but I have a
-           ;; vague idea about next restart time.
            "WIP(w!)"            ;; Working on it
-           "BLOCKED(b@/@)"      ;; External event is preventing further work
            "MAYBE(m!)"          ;; Not Guaranteed to happen
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "|"
-           "TIMEOUT(T)"         ;; Cannot be done due to time limits
-           "FAILED(f@/@)"       ;; Tried to finish the task but failed
+           ;; Work is temporarily paused, but I have a vague idea about
+           ;; next restart time.
+           "PAUSED(p@/!)"
+           "BLOCKED(b@/@)"   ;; External event is preventing further work
+           "TIMEOUT(T)"      ;; Cannot be done due to time limits
+           "FAILED(f@/@)"    ;; Tried to finish the task but failed
            "CANCELED(C@/@)"
-           "COMPLETED(c!/@)"    ;; Task completed
-           "PARTIALLY(P@/@)"    ;; Can be considered completed
+           "COMPLETED(c!/@)" ;; Task completed
+           "PARTIALLY(P@/@)" ;; Can be considered completed
            )))
   (setq org-todo-keyword-faces
         `(("TODO" . "orange")
@@ -3060,3 +3061,4 @@ until \\[keyboard-quit] is pressed."
         (deactivate-mark))
     (message "Exported to GFM and copied to clipboard.")))
 
+(defun org-get-x-clipboard (value) "")
