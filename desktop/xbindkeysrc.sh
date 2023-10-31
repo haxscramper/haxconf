@@ -10,8 +10,11 @@ release+Mod2+Mod4+Control + c
 "xkb-switch -s us && rofi -show drun -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + r
 
-"xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
+"xkb-switch -s us && rofi -show window -matching prefix"
 release+Mod2+Mod4 + q
+
+"xkb-switch -s us && rofi -show window -matching prefix"
+F1
 
 "xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + w

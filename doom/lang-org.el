@@ -1104,6 +1104,7 @@ the empty area."
    :n ",ts" #'hax/org-insert-timestamp
    :n ",tS" #'hax/org-insert-timestamped-parens
    :ni "M-i M-i" #'hax/org-paste-clipboard
+   :ni "M-i M-C-i" (cmd! (hax/org-paste-clipboard nil t))
    :desc "math"
    :ni "M-i M-m" (lambda (text)
                    (interactive "sMath: ")
@@ -3058,3 +3059,4 @@ until \\[keyboard-quit] is pressed."
     (if region-p
         (deactivate-mark))
     (message "Exported to GFM and copied to clipboard.")))
+

@@ -57,7 +57,6 @@
         }
     ],
     // Stop the buzz
-    "extensions.ignoreRecommendations": true,
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
     "workbench.colorTheme": "High Contrast Theme",
@@ -75,19 +74,10 @@
     "[python]": {
         "editor.formatOnSave": false,
         "editor.tabSize": 4,
-<<<<<<< HEAD
-        "editor.defaultFormatter": "ms-python.python"
-=======
-        "formatting.provider": "yapf",
-        "editor.defaultFormatter": "yapf"
->>>>>>> gitlab/laptop-3
     },
-    "python.formatting.provider": "yapf",
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
-    // In most cases it is pretty useless
-    "editor.minimap.enabled": false,
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -146,14 +136,10 @@
     "workbench.editor.tabSizingFixedMaxWidth": 120,
     "workbench.editor.tabSizingFixedMinWidth": 120,
     "svelte.enable-ts-plugin": true,
-    "editor.minimap.enabled": false,
     "[typescript]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "git.confirmSync": false,
-<<<<<<< HEAD
-    "python.formatting.provider": "yapf",
-    "python.formatting.yapfPath": "yapf",
     "workbench.startupEditor": "none",
     "files.exclude": {
         "**/__pycache__": true,
@@ -166,8 +152,13 @@
         "**/.venv": true,
         "**/.vscode": true,
         "**/.xmake": true,
-        "**/CMakeLists.txt.user": true
-=======
+        "**/CMakeLists.txt.user": true,
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
     "codemap.test": [
         {
             "pattern": "^(\\s*)Scenario (.*)",
@@ -186,6 +177,19 @@
     ],
     "workbench.editorAssociations": {
         "*.png": "imagePreview.previewEditor"
->>>>>>> gitlab/laptop-3
+    },
+    "trunk.trunkGrayOutNonBlockingIssues": false,
+    "files.watcherExclude": {
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
+    "editor.defaultFormatter": "trunk.io",
+    "editor.minimap.enabled": false,
+    "trunk.showPreexistingIssues": false,
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
     }
 }
