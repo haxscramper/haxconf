@@ -19,6 +19,11 @@ else
     LANG="$3"
 fi
 
+if [[ -z $4 ]]; then
+    MODEL="models/ggml-base.en.bin"
+else
+    MODEL="$4"
+fi
 
 input_file=$(realpath "$1")
 output_file=$(realpath "$2")
@@ -29,6 +34,7 @@ ffmpeg -i "$input_file" -acodec pcm_s16le -ac 2 -ar 16000 "$temp_file"
 ./main \
     --print-progress \
     --language "$LANG" \
+    --model "$MODEL" \
     --output-file "$output_file" \
     --output-vtt \
     --output-csv \

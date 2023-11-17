@@ -1326,12 +1326,8 @@ the empty area."
  :n [M-f7] (cmd! (org-agenda nil "*"))
  :desc "New note"
  :n [M-f8] (cmd! (org-capture nil "d"))
- :desc "New todo"
- :n [M-f9] (cmd! (org-capture nil "t"))
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
- :desc "New note for clock"
- :n [M-f11] (cmd! (org-capture nil "c"))
  :desc "New capture"
  :n [M-insert] #'org-capture)
 
@@ -1763,8 +1759,6 @@ the empty area."
  org-id-locations-file (f-join org-directory ".org-id-locations")
  ;; Directory for todo management and other indexed entries
  hax/indexed.d (f-join org-directory "indexed")
- ;; GTD inbox
- hax/inbox.org (f-join hax/indexed.d "inbox.org")
  ;; Main GTD organizer
  hax/main.org (f-join hax/indexed.d "main.org")
  ;; Hot cache of immediately targeted tasks
@@ -1905,22 +1899,6 @@ otherwise continue prompting for tags."
    ;; timestamps - creation date should not be inserted in the agenda.
    '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
      ;; just dump everything in it, refile later.
-     ("t" "GTD todo inbox" entry (file hax/inbox.org)
-      "* TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
-     ("I" "Idea" entry (file hax/inbox.org)
-      "* %? :idea:
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
       "** %U W%<%U>
   :PROPERTIES:
@@ -2048,7 +2026,6 @@ otherwise continue prompting for tags."
   (setq
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org
-                          hax/inbox.org
                           hax/staging.org
                           hax/notes.org
                           hax/repeated.org
@@ -2058,8 +2035,7 @@ otherwise continue prompting for tags."
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 3)
                         (,hax/notes.org :maxlevel . 3)
-                        (,hax/staging.org :maxlevel . 1)
-                        (,hax/inbox.org :maxlevel . 2))
+                        (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the
    ;; `TODO' left over, this happens, in real life not all tasks must be
    ;; closed with 100% accuracy.
@@ -2535,11 +2511,9 @@ itself once again')"
 
 (defun hax/open-org ()
   (interactive)
-  (find-file hax/inbox.org)
+  (find-file hax/main.org)
   (hax/org-mode-configure)
   (hax/org-mode-hook)
-  (find-file hax/inbox.org)
-  (find-file hax/main.org)
   (find-file hax/staging.org)
   (find-file hax/repeated.org)
   (when hax/+roam (org-roam-db))
