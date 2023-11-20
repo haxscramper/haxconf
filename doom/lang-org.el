@@ -1328,6 +1328,8 @@ the empty area."
  :n [M-f8] (cmd! (org-capture nil "d"))
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
+ :desc "New staging item"
+ :n [M-f11] (cmd! (org-capture nil "s"))
  :desc "New capture"
  :n [M-insert] #'org-capture)
 
@@ -2137,7 +2139,8 @@ otherwise continue prompting for tags."
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
            "WIP(w!)"            ;; Working on it
-           "MAYBE(m!)"          ;; Not Guaranteed to happen
+           "TRIAGED(T!)"        ;; Investigated the issue in some detail,
+           ;; might work on it later
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "|"
            ;; Work is temporarily paused, but I have a vague idea about
@@ -2990,3 +2993,60 @@ until \\[keyboard-quit] is pressed."
     (message "Exported to GFM and copied to clipboard.")))
 
 (defun org-get-x-clipboard (value) "")
+
+
+(when t
+  (defun hax/tag-to-state (tags)
+    "Convert tags to a state string."
+    (mapconcat
+     'identity
+     (delq nil
+           (mapcar
+            (lambda (tag)
+              (pcase tag
+                ("status##pending_clarification" "QUESTION")
+                ("status##not_reproducible" "*NO REPRO*")
+                ((or "COMPLETED" "BLOCKED" "WIP") (concat "*" tag "*"))
+                ;; Add more tag-to-state mappings here
+                ))
+            tags))
+     ", "))
+
+  (defun hax/process-subtree ()
+    "Process the current subtree and generate a checklist item."
+    (let ((title (org-get-heading t t))
+          (tags (org-get-tags))
+          (todo-keyword (org-get-todo-state)))
+      (let* ((state (hax/tag-to-state (append tags (list todo-keyword))))
+             (id (org-id-get-create))
+             (formatted-title (if (string-match "=\\(\\w+-\\w+\\)=" title)
+                                  (match-string 1 title)
+                                ""))
+             (remainder-title (replace-regexp-in-string "=.*?=" "" title))
+             (truncated-title (if (> (length remainder-title) 100)
+                                  (substring remainder-title 0 100)
+                                remainder-title)))
+        (concat "- "
+                (if (> (length state) 0) (concat state " "))
+                "[[" id "][" formatted-title "]] "
+                "_" (s-trim truncated-title) "_"))))
+
+  (defun hax/generate-todo-checklist ()
+    "Generate a todo checklist from all matching subtrees."
+    (interactive)
+    (let ((checklist '()))
+      (org-map-entries
+       (lambda ()
+         (when (string-match "=.*?=" (org-get-heading t t))
+           (push (hax/process-subtree) checklist)))
+       "LEVEL=1")
+      (substring-no-properties (mapconcat 'identity (nreverse checklist) "\n"))))
+
+  (defun hax/generate-todo-checklist-file (filename)
+    "Generate a todo checklist from all matching subtrees in the file specified by FILENAME."
+    (with-current-buffer (find-file-noselect filename)
+      (hax/generate-todo-checklist)))
+
+  (defun hax/insert-todo-checklist-staging ()
+    (interactive)
+    (insert (hax/generate-todo-checklist-file hax/staging.org))))
