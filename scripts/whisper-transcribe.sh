@@ -20,7 +20,7 @@ else
 fi
 
 if [[ -z $4 ]]; then
-    MODEL="models/ggml-base.en.bin"
+    MODEL="base"
 else
     MODEL="$4"
 fi
@@ -29,14 +29,11 @@ input_file=$(realpath "$1")
 output_file=$(realpath "$2")
 temp_file=$(mktemp).wav
 
-cd ~/software/whisper.cpp
-ffmpeg -i "$input_file" -acodec pcm_s16le -ac 2 -ar 16000 "$temp_file"
-./main \
-    --print-progress \
+whisper_transcribe.py \
+    transcribe \
+    "$input_file" \
+    --csv-path "${output_file}.csv" \
+    --vtt-path "${output_file}.vtt" \
     --language "$LANG" \
-    --model "$MODEL" \
-    --output-file "$output_file" \
-    --output-vtt \
-    --output-csv \
-    --print-colors \
-    "$temp_file"
+    --model "$MODEL"
+

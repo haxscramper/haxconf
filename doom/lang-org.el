@@ -1175,6 +1175,10 @@ the empty area."
                                 (hax/org-insert-link-to-subtree
                                  :description text
                                  :last-n 1)))
+   :desc "link subtree, manual description"
+   :ni "M-i M-l M-t M-d" (lambda (description)
+                           (interactive "sLink description: ")
+                           (hax/org-insert-link-to-subtree :description description))
 
    :desc "subtree, only short name"
    :ni "M-i M-l M-t M-n" (cmd! (hax/org-select-subtree-callback
@@ -1831,6 +1835,8 @@ otherwise continue prompting for tags."
 
 
 
+(setq org-duration-format '((special . h:mm)))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1839,13 +1845,13 @@ otherwise continue prompting for tags."
    'org-latex-and-related nil
    :foreground "dim gray")
 
-  (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.4)))
+  (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.7)))
     "Face for bold text in Org mode.")
 
-  (defface org-italic '((t :inherit italic))
+  (defface org-italic `((t :inherit italic :foreground ,(doom-lighten 'yellow 0.7)))
     "Face for bold text in Org mode.")
 
-  (defface org-underline '((t :inherit underline))
+  (defface org-underline `((t :inherit underline :foreground ,(doom-lighten 'cyan 0.7)))
     "Face for bold text in Org mode.")
 
   ;; Update the org-emphasis-alist
@@ -1968,22 +1974,9 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1
       )
-     ;; For todo items that I want to finish today. If they are not properly
-     ;; finalized, they stay visible for a week in agenda view, so I can
-     ;; return to them anyway.
-     ("u" "Subtask under; Deadline today" entry
-      (function hax/org-goto-select-subtree)
-      "** TODO %?
-  DEADLINE: %(hax/org-end-of-the-day-stamp)
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
      ;; Todo items that don't have a concrete deadline yet, but must be
      ;; positioned under some task
-     ("U" "Subtask under" entry
+     ("u" "Subtask under" entry
       (function hax/org-goto-select-subtree)
       "** TODO %?
   :PROPERTIES:
@@ -1993,18 +1986,7 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1
       )
-     ("a" "Subtask under active; Deadline today" entry
-      (function hax/org-goto-select-active-subtree)
-      "** TODO %?
-  DEADLINE: %(hax/org-end-of-the-day-stamp)
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
-
-     ("A" "Subtask under active" entry
+     ("a" "Subtask under active" entry
       (function hax/org-goto-select-active-subtree)
       "** TODO %?
   :PROPERTIES:
@@ -3006,6 +2988,9 @@ until \\[keyboard-quit] is pressed."
               (pcase tag
                 ("status##pending_clarification" "QUESTION")
                 ("status##not_reproducible" "*NO REPRO*")
+                ("status##waiting_review" "*ON REVIEW*")
+                ("status##need_help" "*NEED HELP*")
+                ("status##blocking_dependency" "*DEPENDENCY*")
                 ((or "COMPLETED" "BLOCKED" "WIP") (concat "*" tag "*"))
                 ;; Add more tag-to-state mappings here
                 ))
@@ -3023,13 +3008,14 @@ until \\[keyboard-quit] is pressed."
                                   (match-string 1 title)
                                 ""))
              (remainder-title (replace-regexp-in-string "=.*?=" "" title))
-             (truncated-title (if (> (length remainder-title) 100)
-                                  (substring remainder-title 0 100)
+             (prefix (concat "- "
+                             (if (> (length state) 0) (concat state " "))
+                             "[[" id "][" formatted-title "]] "))
+             (prefix-len (- 88 (- (length prefix) (+ 2 (length id)))))
+             (truncated-title (if (> (length remainder-title) prefix-len)
+                                  (substring remainder-title 0 prefix-len)
                                 remainder-title)))
-        (concat "- "
-                (if (> (length state) 0) (concat state " "))
-                "[[" id "][" formatted-title "]] "
-                "_" (s-trim truncated-title) "_"))))
+        (concat prefix "_" (s-trim truncated-title) "_"))))
 
   (defun hax/generate-todo-checklist ()
     "Generate a todo checklist from all matching subtrees."
@@ -3037,9 +3023,8 @@ until \\[keyboard-quit] is pressed."
     (let ((checklist '()))
       (org-map-entries
        (lambda ()
-         (when (string-match "=.*?=" (org-get-heading t t))
-           (push (hax/process-subtree) checklist)))
-       "LEVEL=1")
+         (when (string-match "=.*?-.*?=" (org-get-heading t t))
+           (push (hax/process-subtree) checklist))))
       (substring-no-properties (mapconcat 'identity (nreverse checklist) "\n"))))
 
   (defun hax/generate-todo-checklist-file (filename)
