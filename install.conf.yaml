@@ -112,6 +112,10 @@
       # location
       force: false
 
+    ~/vale-styles/Vocab/hax-spelling/accept.txt: config/dict
+    ~/vale.ini: shell/vale.ini
+
+
 - create:
     # Default directory
     - ~/defaultdirs

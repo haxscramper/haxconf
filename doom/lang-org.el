@@ -1339,6 +1339,7 @@ the empty area."
 
 (defun hax/agenda-mode-hook ()
   (interactive)
+  (setq org-agenda-max-title-length (- (window-width) 10))
   ;; I want to be able to use fX __**EVERYWHERE**__.
   (local-set-key (kbd "<f1>") 'winum-select-window-1)
   (local-set-key (kbd "<f2>") 'winum-select-window-2)
@@ -1408,22 +1409,34 @@ the empty area."
             "    "))
       "    ")))
 
+(defun hax/org-agenda-clocked-time ()
+  "Safely calculate the clocked time for the current agenda item."
+  (condition-case nil
+      (save-excursion
+        (format "[%s]"
+                (s-pad-left 5 "0" (org-duration-from-minutes (org-clock-sum-current-item)))))
+    (error "")))
+
 (setq
- org-agenda-prefix-format '(;; For regular agenda items, show (?whatever?)
-                            ;; first, then align time to five characters,
-                            ;; then 12 for scheduled information. Title and
-                            ;; all the other data will be placed afterwards.
-                            ;;
-                            ;; 'e' is for time estimates.
-                            (agenda . "%(hax/maybe-relative-time) %-12t %-6e")
-                            (todo . "%(hax/parent-subtrees) %-6e")
-                            (tags . "%(hax/parent-subtrees) %-6e")
-                            (search . "%(hax/parent-subtrees) %-6e"))
+ org-agenda-prefix-format
+ '(;; For regular agenda items, show (?whatever?)
+   ;; first, then align time to five characters,
+   ;; then 12 for scheduled information. Title and
+   ;; all the other data will be placed afterwards.
+   ;;
+   ;; 'e' is for time estimates.
+   (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
+   ;; Indentation to align effort time
+   (todo . "%-5(hax/org-agenda-clocked-time) ")
+   (tags . "%-5(hax/org-agenda-clocked-time) ")
+   (search . "%-5(hax/org-agenda-clocked-time) "))
  org-agenda-start-on-weekday nil
  org-agenda-ndays 14
  org-agenda-show-all-dates t
  org-agenda-skip-deadline-if-done t
  org-agenda-skip-scheduled-if-done t
+ org-agenda-hide-tags-regexp ".*"
+ org-agenda-block-separator nil
  org-agenda-repeating-timestamp-show-all nil
  org-deadline-warning-days 14
  org-agenda-time-grid '(;; Unconditionally show time grid for today
@@ -1837,6 +1850,47 @@ otherwise continue prompting for tags."
 
 (setq org-duration-format '((special . h:mm)))
 
+(defun hax/org-agenda-hook ()
+  (display-line-numbers-mode 1)
+  )
+
+(add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
+
+(defun hax/org-agenda-skip-recurring ()
+  (let* ((org-repeater-regexp
+          (rx
+           (group
+            "<"  ; Opening angle bracket
+            (seq (repeat 4 digit)
+                 "-"
+                 (repeat 2 digit)
+                 "-"
+                 (repeat 2 digit)  ; Date: YYYY-MM-DD
+                 (seq " "
+                      (repeat 3 alpha))  ; Optional day of week: %a
+                 (seq " "
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)  ; Optional time: HH:MM:SS
+                      (optional ; Optional timezone: %Z
+                       " +"
+                       (repeat 2 digit)))
+                 (seq " "
+                      (one-or-more (any ".+-"))  ; Repeater prefix
+                      (one-or-more digit)
+                      (any "dwmy")  ; Repeater
+                      (optional "/" (one-or-more digit) (any "dwmy")))
+                                        ; Secondary spacing
+                 ">"))  ; Closing angle bracket
+
+           ))
+         (subtree-end (save-excursion (org-end-of-subtree t))))
+    (if (re-search-forward org-repeater-regexp subtree-end t)
+        (progn subtree-end)
+      nil)))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -2069,23 +2123,31 @@ otherwise continue prompting for tags."
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
 
+
+
   (setq
    org-agenda-custom-commands
    `(("l" "Long"
       ((agenda
         ""
-        ((org-agenda-span 90)
+        ((org-agenda-span 30)
          (org-agenda-start-day "-7d")
          (org-deadline-warning-days 35)))))
      ("*" "All"
-      ((todo "WIP" ((org-agenda-files '(,hax/notes.org))))
-       (todo "TODO" ((org-agenda-files '(,hax/notes.org))))
+      ((todo
+        "TODO"
+        ((org-agenda-overriding-header "Staging and notes todo")
+         (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
+       (todo "WIP")
+       (todo "PAUSED")
+       (todo "BLOCKED")
        ;; Show unfinished tasks for the last week, without filling all the
        ;; days - only show todo items.
        (agenda
         ""
         ((org-agenda-span 7)
          (org-agenda-start-day "-7d")
+         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
          (org-agenda-show-all-dates nil)
          (org-deadline-warning-days 0)))
        ;; Show all todo items for the next two weeks with filled days.
@@ -2095,12 +2157,10 @@ otherwise continue prompting for tags."
          ;; Start showing events from today onwards, when quickly assessing
          ;; target tasks I don't really need to focus on the past events.
          (org-agenda-start-day "-0d")
+         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
          ;; I show planned and deadlined events for the next two weeks - no
          ;; need to repeat the same information again for today.
-         (org-deadline-warning-days 0)))
-
-       (todo "WIP")
-       (todo "POSTPONED")))))
+         (org-deadline-warning-days 0)))))))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -2991,7 +3051,9 @@ until \\[keyboard-quit] is pressed."
                 ("status##waiting_review" "*ON REVIEW*")
                 ("status##need_help" "*NEED HELP*")
                 ("status##blocking_dependency" "*DEPENDENCY*")
-                ((or "COMPLETED" "BLOCKED" "WIP") (concat "*" tag "*"))
+                ;; Use status block reason
+                ("BLOCKED" nil)
+                ((or "COMPLETED" "WIP") (concat "*" tag "*"))
                 ;; Add more tag-to-state mappings here
                 ))
             tags))

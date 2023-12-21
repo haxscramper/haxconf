@@ -1,5 +1,5 @@
 {
-    "editor.occurrencesHighlight": false,
+    "editor.occurrencesHighlight": "off",
     "clangd.checkUpdates": false,
 	"code-runner.enableAppInsights": false,
 	"docker-explorer.enableTelemetry": false,
@@ -165,5 +165,7 @@
     ],
     "workbench.editorAssociations": {
         "*.png": "imagePreview.previewEditor"
-    }
+    },
+    "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
+    "cmake.showOptionsMovedNotification": false
 }
