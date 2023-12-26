@@ -81,9 +81,11 @@
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.config/sxiv/exec/key-handler: desktop/sxiv_key_handler.sh
 
+    ~/.config/fontconfig/fonts.conf: desktop/fonts.conf
+
     ~/.config/Code/User/settings.json: desktop/vscode_user_settings.json
     ~/.config/Code/User/keybindings.json: desktop/vscode_user_keybindings.json
-    ~/.config/Code/User/snippets: desktop/vscode_snippets
+    ~/.config/Code/User/snippets: desktop/vscode_user_snippets
 
     ~/.config/zathura/zathurarc: desktop/zathurarc.conf
 

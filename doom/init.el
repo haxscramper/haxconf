@@ -38,8 +38,6 @@
        cc qt sh
        lua
        rust
-       zig
-       (scheme +guile)
        emacs-lisp
        ;; Configuration, serialization
        json yaml

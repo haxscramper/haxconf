@@ -566,7 +566,7 @@ set edit:after-readline = [
 set edit:after-command = [
   $@edit:after-command
   {|thing|
-    terminal-name (hostname)"/"(basename (pwd))
+    terminal-name "/"(basename (pwd))
   }
   {|map|
     var result = [
@@ -577,7 +577,9 @@ set edit:after-command = [
       &src=$map[src]
       &error=$map[error]
     ]
-    put $result | to-json >> ~/.cache/elvish_exec_logs.json
+    if (< (count $map[src][code]) 10000) {
+      put $result | to-json >> ~/.cache/elvish_exec_logs.json
+    }
   }
 ]
 
