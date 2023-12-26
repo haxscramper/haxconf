@@ -138,3 +138,4 @@
 
 (package! mpv)
 
+(package! org-appear)

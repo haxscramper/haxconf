@@ -193,5 +193,6 @@
     "[yaml]": {
         "editor.defaultFormatter": "redhat.vscode-yaml"
     },
+    "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
     "cmake.showOptionsMovedNotification": false
 }

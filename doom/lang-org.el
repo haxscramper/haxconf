@@ -1176,6 +1176,10 @@ the empty area."
                                 (hax/org-insert-link-to-subtree
                                  :description text
                                  :last-n 1)))
+   :desc "link subtree, manual description"
+   :ni "M-i M-l M-t M-d" (lambda (description)
+                           (interactive "sLink description: ")
+                           (hax/org-insert-link-to-subtree :description description))
 
    :desc "subtree, only short name"
    :ni "M-i M-l M-t M-n" (cmd! (hax/org-select-subtree-callback
@@ -1327,17 +1331,16 @@ the empty area."
  :n [M-f7] (cmd! (org-agenda nil "*"))
  :desc "New note"
  :n [M-f8] (cmd! (org-capture nil "d"))
- :desc "New todo"
- :n [M-f9] (cmd! (org-capture nil "t"))
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
- :desc "New note for clock"
- :n [M-f11] (cmd! (org-capture nil "c"))
+ :desc "New staging item"
+ :n [M-f11] (cmd! (org-capture nil "s"))
  :desc "New capture"
  :n [M-insert] #'org-capture)
 
 (defun hax/agenda-mode-hook ()
   (interactive)
+  (setq org-agenda-max-title-length (- (window-width) 10))
   ;; I want to be able to use fX __**EVERYWHERE**__.
   (local-set-key (kbd "<f1>") 'winum-select-window-1)
   (local-set-key (kbd "<f2>") 'winum-select-window-2)
@@ -1407,22 +1410,34 @@ the empty area."
             "    "))
       "    ")))
 
+(defun hax/org-agenda-clocked-time ()
+  "Safely calculate the clocked time for the current agenda item."
+  (condition-case nil
+      (save-excursion
+        (format "[%s]"
+                (s-pad-left 5 "0" (org-duration-from-minutes (org-clock-sum-current-item)))))
+    (error "")))
+
 (setq
- org-agenda-prefix-format '(;; For regular agenda items, show (?whatever?)
-                            ;; first, then align time to five characters,
-                            ;; then 12 for scheduled information. Title and
-                            ;; all the other data will be placed afterwards.
-                            ;;
-                            ;; 'e' is for time estimates.
-                            (agenda . "%(hax/maybe-relative-time) %-12t %-6e")
-                            (todo . "%(hax/parent-subtrees) %-6e")
-                            (tags . "%(hax/parent-subtrees) %-6e")
-                            (search . "%(hax/parent-subtrees) %-6e"))
+ org-agenda-prefix-format
+ '(;; For regular agenda items, show (?whatever?)
+   ;; first, then align time to five characters,
+   ;; then 12 for scheduled information. Title and
+   ;; all the other data will be placed afterwards.
+   ;;
+   ;; 'e' is for time estimates.
+   (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
+   ;; Indentation to align effort time
+   (todo . "%-5(hax/org-agenda-clocked-time) ")
+   (tags . "%-5(hax/org-agenda-clocked-time) ")
+   (search . "%-5(hax/org-agenda-clocked-time) "))
  org-agenda-start-on-weekday nil
  org-agenda-ndays 14
  org-agenda-show-all-dates t
  org-agenda-skip-deadline-if-done t
  org-agenda-skip-scheduled-if-done t
+ org-agenda-hide-tags-regexp ".*"
+ org-agenda-block-separator nil
  org-agenda-repeating-timestamp-show-all nil
  org-deadline-warning-days 14
  org-agenda-time-grid '(;; Unconditionally show time grid for today
@@ -1764,8 +1779,6 @@ the empty area."
  org-id-locations-file (f-join org-directory ".org-id-locations")
  ;; Directory for todo management and other indexed entries
  hax/indexed.d (f-join org-directory "indexed")
- ;; GTD inbox
- hax/inbox.org (f-join hax/indexed.d "inbox.org")
  ;; Main GTD organizer
  hax/main.org (f-join hax/indexed.d "main.org")
  ;; Hot cache of immediately targeted tasks
@@ -1836,6 +1849,49 @@ otherwise continue prompting for tags."
 
 
 
+(setq org-duration-format '((special . h:mm)))
+
+(defun hax/org-agenda-hook ()
+  (display-line-numbers-mode 1)
+  )
+
+(add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
+
+(defun hax/org-agenda-skip-recurring ()
+  (let* ((org-repeater-regexp
+          (rx
+           (group
+            "<"  ; Opening angle bracket
+            (seq (repeat 4 digit)
+                 "-"
+                 (repeat 2 digit)
+                 "-"
+                 (repeat 2 digit)  ; Date: YYYY-MM-DD
+                 (seq " "
+                      (repeat 3 alpha))  ; Optional day of week: %a
+                 (seq " "
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)  ; Optional time: HH:MM:SS
+                      (optional ; Optional timezone: %Z
+                       " +"
+                       (repeat 2 digit)))
+                 (seq " "
+                      (one-or-more (any ".+-"))  ; Repeater prefix
+                      (one-or-more digit)
+                      (any "dwmy")  ; Repeater
+                      (optional "/" (one-or-more digit) (any "dwmy")))
+                                        ; Secondary spacing
+                 ">"))  ; Closing angle bracket
+
+           ))
+         (subtree-end (save-excursion (org-end-of-subtree t))))
+    (if (re-search-forward org-repeater-regexp subtree-end t)
+        (progn subtree-end)
+      nil)))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1844,13 +1900,13 @@ otherwise continue prompting for tags."
    'org-latex-and-related nil
    :foreground "dim gray")
 
-  (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.4)))
+  (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.7)))
     "Face for bold text in Org mode.")
 
-  (defface org-italic '((t :inherit italic))
+  (defface org-italic `((t :inherit italic :foreground ,(doom-lighten 'yellow 0.7)))
     "Face for bold text in Org mode.")
 
-  (defface org-underline '((t :inherit underline))
+  (defface org-underline `((t :inherit underline :foreground ,(doom-lighten 'cyan 0.7)))
     "Face for bold text in Org mode.")
 
   ;; Update the org-emphasis-alist
@@ -1906,22 +1962,6 @@ otherwise continue prompting for tags."
    ;; timestamps - creation date should not be inserted in the agenda.
    '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
      ;; just dump everything in it, refile later.
-     ("t" "GTD todo inbox" entry (file hax/inbox.org)
-      "* TODO %?
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
-     ("I" "Idea" entry (file hax/inbox.org)
-      "* %? :idea:
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
       "** %U W%<%U>
   :PROPERTIES:
@@ -1989,22 +2029,9 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1
       )
-     ;; For todo items that I want to finish today. If they are not properly
-     ;; finalized, they stay visible for a week in agenda view, so I can
-     ;; return to them anyway.
-     ("u" "Subtask under; Deadline today" entry
-      (function hax/org-goto-select-subtree)
-      "** TODO %?
-  DEADLINE: %(hax/org-end-of-the-day-stamp)
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
      ;; Todo items that don't have a concrete deadline yet, but must be
      ;; positioned under some task
-     ("U" "Subtask under" entry
+     ("u" "Subtask under" entry
       (function hax/org-goto-select-subtree)
       "** TODO %?
   :PROPERTIES:
@@ -2014,18 +2041,7 @@ otherwise continue prompting for tags."
       :empty-lines-before 1
       :empty-lines-after 1
       )
-     ("a" "Subtask under active; Deadline today" entry
-      (function hax/org-goto-select-active-subtree)
-      "** TODO %?
-  DEADLINE: %(hax/org-end-of-the-day-stamp)
-  :PROPERTIES:
-  :CREATED: %U
-  :END:
-"
-      :empty-lines-before 1
-      :empty-lines-after 1)
-
-     ("A" "Subtask under active" entry
+     ("a" "Subtask under active" entry
       (function hax/org-goto-select-active-subtree)
       "** TODO %?
   :PROPERTIES:
@@ -2049,7 +2065,6 @@ otherwise continue prompting for tags."
   (setq
    ;; Agenda is a main todo file and inbox
    org-agenda-files (list hax/main.org
-                          hax/inbox.org
                           hax/staging.org
                           hax/notes.org
                           hax/repeated.org
@@ -2059,8 +2074,7 @@ otherwise continue prompting for tags."
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 5)
                         (,hax/notes.org :maxlevel . 3)
-                        (,hax/staging.org :maxlevel . 1)
-                        (,hax/inbox.org :maxlevel . 2))
+                        (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the
    ;; `TODO' left over, this happens, in real life not all tasks must be
    ;; closed with 100% accuracy.
@@ -2110,23 +2124,31 @@ otherwise continue prompting for tags."
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
 
+
+
   (setq
    org-agenda-custom-commands
    `(("l" "Long"
       ((agenda
         ""
-        ((org-agenda-span 90)
+        ((org-agenda-span 30)
          (org-agenda-start-day "-7d")
          (org-deadline-warning-days 35)))))
      ("*" "All"
-      ((todo "WIP" ((org-agenda-files '(,hax/notes.org))))
-       (todo "TODO" ((org-agenda-files '(,hax/notes.org))))
+      ((todo
+        "TODO"
+        ((org-agenda-overriding-header "Staging and notes todo")
+         (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
+       (todo "WIP")
+       (todo "PAUSED")
+       (todo "BLOCKED")
        ;; Show unfinished tasks for the last week, without filling all the
        ;; days - only show todo items.
        (agenda
         ""
         ((org-agenda-span 7)
          (org-agenda-start-day "-7d")
+         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
          (org-agenda-show-all-dates nil)
          (org-deadline-warning-days 0)))
        ;; Show all todo items for the next two weeks with filled days.
@@ -2136,12 +2158,10 @@ otherwise continue prompting for tags."
          ;; Start showing events from today onwards, when quickly assessing
          ;; target tasks I don't really need to focus on the past events.
          (org-agenda-start-day "-0d")
+         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
          ;; I show planned and deadlined events for the next two weeks - no
          ;; need to repeat the same information again for today.
-         (org-deadline-warning-days 0)))
-
-       (todo "WIP")
-       (todo "POSTPONED")))))
+         (org-deadline-warning-days 0)))))))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -2162,7 +2182,8 @@ otherwise continue prompting for tags."
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
            "WIP(w!)"            ;; Working on it
-           "MAYBE(m!)"          ;; Not Guaranteed to happen
+           "TRIAGED(T!)"        ;; Investigated the issue in some detail,
+           ;; might work on it later
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
            "|"
            ;; Work is temporarily paused, but I have a vague idea about
@@ -2536,11 +2557,9 @@ itself once again')"
 
 (defun hax/open-org ()
   (interactive)
-  (find-file hax/inbox.org)
+  (find-file hax/main.org)
   (hax/org-mode-configure)
   (hax/org-mode-hook)
-  (find-file hax/inbox.org)
-  (find-file hax/main.org)
   (find-file hax/staging.org)
   (find-file hax/repeated.org)
   (when hax/+roam (org-roam-db))
@@ -3062,3 +3081,65 @@ until \\[keyboard-quit] is pressed."
     (message "Exported to GFM and copied to clipboard.")))
 
 (defun org-get-x-clipboard (value) "")
+
+
+(when t
+  (defun hax/tag-to-state (tags)
+    "Convert tags to a state string."
+    (mapconcat
+     'identity
+     (delq nil
+           (mapcar
+            (lambda (tag)
+              (pcase tag
+                ("status##pending_clarification" "QUESTION")
+                ("status##not_reproducible" "*NO REPRO*")
+                ("status##waiting_review" "*ON REVIEW*")
+                ("status##need_help" "*NEED HELP*")
+                ("status##blocking_dependency" "*DEPENDENCY*")
+                ;; Use status block reason
+                ("BLOCKED" nil)
+                ((or "COMPLETED" "WIP") (concat "*" tag "*"))
+                ;; Add more tag-to-state mappings here
+                ))
+            tags))
+     ", "))
+
+  (defun hax/process-subtree ()
+    "Process the current subtree and generate a checklist item."
+    (let ((title (org-get-heading t t))
+          (tags (org-get-tags))
+          (todo-keyword (org-get-todo-state)))
+      (let* ((state (hax/tag-to-state (append tags (list todo-keyword))))
+             (id (org-id-get-create))
+             (formatted-title (if (string-match "=\\(\\w+-\\w+\\)=" title)
+                                  (match-string 1 title)
+                                ""))
+             (remainder-title (replace-regexp-in-string "=.*?=" "" title))
+             (prefix (concat "- "
+                             (if (> (length state) 0) (concat state " "))
+                             "[[" id "][" formatted-title "]] "))
+             (prefix-len (- 88 (- (length prefix) (+ 2 (length id)))))
+             (truncated-title (if (> (length remainder-title) prefix-len)
+                                  (substring remainder-title 0 prefix-len)
+                                remainder-title)))
+        (concat prefix "_" (s-trim truncated-title) "_"))))
+
+  (defun hax/generate-todo-checklist ()
+    "Generate a todo checklist from all matching subtrees."
+    (interactive)
+    (let ((checklist '()))
+      (org-map-entries
+       (lambda ()
+         (when (string-match "=.*?-.*?=" (org-get-heading t t))
+           (push (hax/process-subtree) checklist))))
+      (substring-no-properties (mapconcat 'identity (nreverse checklist) "\n"))))
+
+  (defun hax/generate-todo-checklist-file (filename)
+    "Generate a todo checklist from all matching subtrees in the file specified by FILENAME."
+    (with-current-buffer (find-file-noselect filename)
+      (hax/generate-todo-checklist)))
+
+  (defun hax/insert-todo-checklist-staging ()
+    (interactive)
+    (insert (hax/generate-todo-checklist-file hax/staging.org))))

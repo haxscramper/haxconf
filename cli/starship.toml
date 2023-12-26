@@ -2,6 +2,7 @@
 
 format = """
 [#](bold green) $username\
+$time\
 $hostname\
 $localip\
 $shlvl\
@@ -17,16 +18,8 @@ $git_status\
 $docker_context\
 $c\
 $python\
-$rlang\
-$red\
-$rust\
-$terraform\
-$vagrant\
 $zig\
 $buf\
-$nix_shell\
-$conda\
-$spack\
 $memory_usage\
 $env_var\
 $custom\
@@ -34,7 +27,6 @@ $sudo\
 $cmd_duration\
 $line_break\
 $jobs\
-$time\
 $status\
 $container\
 [#](bold green) $character"""
@@ -50,3 +42,9 @@ min_time = 1
 show_milliseconds = false
 disabled = false
 style = "bold italic red"
+
+[time]
+disabled = false
+format = '[\[$time\]]($style) '
+time_format = '%T'
+utc_time_offset = '+4'
