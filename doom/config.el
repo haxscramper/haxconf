@@ -5,7 +5,7 @@
 
 (setq shell-file-name (executable-find "sh"))
 
-(setq doom-font (font-spec :family "Monaspace Krypton" :size 18)
+(setq doom-font (font-spec :family "Iosevka" :size 18)
       doom-unicode-font (font-spec :family "Noto Sans Mono" :size 18)
       doom-serif-font doom-font
       doom-variable-pitch-font doom-font

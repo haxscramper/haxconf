@@ -76,7 +76,7 @@
         "editor.formatOnSave": false,
         "editor.tabSize": 4,
         "formatting.provider": "yapf",
-        "editor.defaultFormatter": "yapf"
+        "editor.defaultFormatter": "eeyore.yapf"
     },
     "python.formatting.provider": "yapf",
     "[js]": {
@@ -119,7 +119,7 @@
     ],
     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
     "githubPullRequests.pullBranch": "never",
-    "editor.renderWhitespace": "none",
+    "editor.renderWhitespace": "all",
     "C_Cpp.default.compilerPath": "/bin/clang++",
     "cmake.configureOnEdit": false,
     "vue.features.codeActions.savingTimeLimit": 5000,
@@ -167,5 +167,7 @@
         "*.png": "imagePreview.previewEditor"
     },
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
-    "cmake.showOptionsMovedNotification": false
+    "cmake.showOptionsMovedNotification": false,
+    "git.detectSubmodules": false,
+    "git.autoRepositoryDetection": "openEditors"
 }
