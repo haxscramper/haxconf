@@ -1331,6 +1331,8 @@ the empty area."
  :n [M-f7] (cmd! (org-agenda nil "*"))
  :desc "New note"
  :n [M-f8] (cmd! (org-capture nil "d"))
+ :desc "Item under clocked"
+ :n [M-f9] (cmd! (org-capture nil "c"))
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
  :desc "New staging item"
@@ -2630,9 +2632,9 @@ all known agenda entries."
 ;; (hax/closest-unicode-fraction 0.5)
 
 (defun hax/relative-hour-fraction (tdiff)
-(/ (if (< 0 tdiff)
-       (mod (/ tdiff 60) 60)
-     (- 60 (mod (/ tdiff 60) 60))) 60))
+  (/ (if (< 0 tdiff)
+         (mod (/ tdiff 60) 60)
+       (- 60 (mod (/ tdiff 60) 60))) 60))
 
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.
