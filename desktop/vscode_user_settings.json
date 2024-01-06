@@ -74,7 +74,8 @@
     "[python]": {
         "editor.formatOnSave": false,
         "editor.tabSize": 4,
-        "editor.defaultFormatter": "trunk.io",
+        "formatting.provider": "yapf",
+        "editor.defaultFormatter": "eeyore.yapf"
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
@@ -114,7 +115,7 @@
     ],
     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
     "githubPullRequests.pullBranch": "never",
-    "editor.renderWhitespace": "none",
+    "editor.renderWhitespace": "all",
     "C_Cpp.default.compilerPath": "/bin/clang++",
     "cmake.configureOnEdit": false,
     "vue.features.codeActions.savingTimeLimit": 5000,
@@ -194,5 +195,7 @@
         "editor.defaultFormatter": "redhat.vscode-yaml"
     },
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
-    "cmake.showOptionsMovedNotification": false
+    "cmake.showOptionsMovedNotification": false,
+    "git.detectSubmodules": false,
+    "git.autoRepositoryDetection": "openEditors"
 }

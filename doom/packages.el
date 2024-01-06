@@ -20,6 +20,7 @@
 ;; Using `:lang nim' in the `init.el' would've added nim support for
 ;; org-mode automatically, but here I have to configure this from scratch.
 (package! ob-nim)
+(package! ob-mermaid)
 
 ;; underscore -> UPCASE -> CamelCase conversion of names
 (package! string-inflection)
@@ -139,3 +140,4 @@
 (package! mpv)
 
 (package! org-appear)
+(package! mermaid-mode)

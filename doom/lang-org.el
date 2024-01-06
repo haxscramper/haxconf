@@ -1414,11 +1414,13 @@ the empty area."
 
 (defun hax/org-agenda-clocked-time ()
   "Safely calculate the clocked time for the current agenda item."
+  (require 'org-clock)
   (condition-case nil
       (save-excursion
         (format "[%s]"
                 (s-pad-left 5 "0" (org-duration-from-minutes (org-clock-sum-current-item)))))
     (error "")))
+
 
 (setq
  org-agenda-prefix-format
@@ -1439,7 +1441,7 @@ the empty area."
  org-agenda-skip-deadline-if-done t
  org-agenda-skip-scheduled-if-done t
  org-agenda-hide-tags-regexp ".*"
- org-agenda-block-separator nil
+ org-agenda-block-separator (s-repeat 45 "-")
  org-agenda-repeating-timestamp-show-all nil
  org-deadline-warning-days 14
  org-agenda-time-grid '(;; Unconditionally show time grid for today
@@ -2170,8 +2172,13 @@ otherwise continue prompting for tags."
    '((C . t)
      (nim . t)
      (shell . t)
+     (mermaid . t)
      (sqlite . t)
      (python . t)))
+  ;; Because fucking mmdc is /so/ stupid it cannot find `(which chromium-browser)'
+  (setenv "PUPPETEER_EXECUTABLE_PATH" "/bin/chromium-browser")
+  ;; And yes, whatever regular npm install does, it manages to fuck it up.
+  (setq ob-mermaid-cli-path (f-expand "~/software/node_modules/.bin/mmdc"))
   (setq org-latex-listings 'minted)
   (setq org-todo-keywords
         ;; I don't use most of these keywords as well, and sometimes they
