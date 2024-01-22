@@ -33,3 +33,4 @@ log_bash_command() {
 }
 
 trap log_bash_command DEBUG
+. "$HOME/.cargo/env"

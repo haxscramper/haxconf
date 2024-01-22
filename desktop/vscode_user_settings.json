@@ -169,5 +169,7 @@
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
     "cmake.showOptionsMovedNotification": false,
     "git.detectSubmodules": false,
-    "git.autoRepositoryDetection": "openEditors"
+    "git.autoRepositoryDetection": "openEditors",
+    "diffEditor.ignoreTrimWhitespace": false,
+    "window.menuBarVisibility": "hidden"
 }
