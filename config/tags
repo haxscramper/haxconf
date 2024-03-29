@@ -565,7 +565,6 @@
 #recollection##event
 #code##ts##lib##sprotty
 #code##js##lib##elk
-
 #test##findings##behavior
 #duration##2hours
 #test##findings##observation
@@ -586,3 +585,9 @@
 #software##pycharm
 #programming##rfc
 #haxorh
+#software##treesheets
+#hardware##tab_mini_c
+#waitint
+
+#work##reuters
+#recollection##now

@@ -117,11 +117,16 @@ mode"
     ;; org-mode instead, but I'm not sure about that.
     (if (--any? (s-starts-with? "image/" it) out)
         (progn
+          ;; (when to-monochrome-image
+          ;;   (shell-command-to-string
+          ;;    "xclip -selection clipboard -t image/png -o > /tmp/org-down-colored.png")
+          ;;   (shell-command-to-string
+          ;;    "convert /tmp/org-down-colored.png -monochrome /tmp/monochrome.png")
+          ;;   (shell-command-to-string
+          ;;    "xclip -sel cli -t image/png -i /tmp/monochrome.png")
+          ;;   )
           (org-download-clipboard file)
-          (when to-monochrome-image
-            (call-process
-             "convert" nil standard-output nil
-             file "-monochrome" file)))
+          )
       (evil-paste-after-without-register 1))))
 
 
@@ -1104,6 +1109,7 @@ the empty area."
    :n ",ts" #'hax/org-insert-timestamp
    :n ",tS" #'hax/org-insert-timestamped-parens
    :ni "M-i M-i" #'hax/org-paste-clipboard
+   :ni "M-i M-b" (cmd! (hax/org-paste-clipboard nil t))
    :desc "math"
    :ni "M-i M-m" (lambda (text)
                    (interactive "sMath: ")
@@ -1964,7 +1970,7 @@ otherwise continue prompting for tags."
    '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
      ;; just dump everything in it, refile later.
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U W%<%U>
+      "** %U W%<%U> :recollection##day:
   :PROPERTIES:
   :CREATED: %U
   :END:
@@ -2820,7 +2826,7 @@ holding contextual information."
   "Return a marker to the target location of an org-capture template."
   (save-window-excursion
     (save-excursion
-      (org-capture-set-target-location location)
+      ;; (org-capture-set-target-location location)
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))

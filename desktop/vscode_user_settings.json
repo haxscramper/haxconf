@@ -171,5 +171,6 @@
     "git.detectSubmodules": false,
     "git.autoRepositoryDetection": "openEditors",
     "diffEditor.ignoreTrimWhitespace": false,
-    "window.menuBarVisibility": "hidden"
+    "window.menuBarVisibility": "hidden",
+    "files.simpleDialog.enable": true
 }
