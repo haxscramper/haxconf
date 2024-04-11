@@ -436,8 +436,12 @@ selection result. Provide PROMPT for selection input"
                 (goto-marker (cdr tree))
                 (cons
                  tree
-                 (or (org-entry-get (point) "DEADLINE")
-                     (org-entry-get (point) "SCHEDULED"))))
+                 (and
+                  (org-get-todo-state)
+                  (-contains? '("TODO" "WIP" "POSTPONED" "NEXT")
+                              (remove-string-properties (org-get-todo-state)))
+                  (or (org-entry-get (point) "DEADLINE")
+                      (org-entry-get (point) "SCHEDULED")))))
               (org-collect-known-entries)))))))
 
 (defun hax/org-action-interactively (action &optional target)

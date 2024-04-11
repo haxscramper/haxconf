@@ -60,7 +60,7 @@
     "extensions.ignoreRecommendations": true,
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
-    "workbench.colorTheme": "High Contrast Theme",
+    "workbench.colorTheme": "Dracula",
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
