@@ -52,11 +52,6 @@
 ;; https://github.com/hlissner/doom-emacs/issues/4498#issuecomment-753692913
 (package! benchmark-init)
 
-;; Sometimes regex is not enough. I don't really use folding, but I /do/
-;; plan to use this for various code manipulation magic.
-(package! tree-sitter)
-(package! tree-sitter-langs)
-
 ;; I could not configure built-in spellchecking via spellfu, so using
 ;; old-fashioned flyspell - at least it works properly.
 (package! flyspell)
@@ -64,21 +59,10 @@
 ;; Editing vim configuration files
 (package! vimrc-mode)
 
-;; Emacs as a telegram client. Still hangs and crashes randomly, but maybe
-;; I will figure out what is wrong (eventually). When it works it is a lot
-;; better for focused discussions - single chat that you have to write
-;; messages longer than one line.
-(package! telega :pin nil)
-
 ;; Better interfaces for spellcheck correction and candidate selection
 (package! flyspell-correct)
 (package! consult-flyspell
   :recipe (:type git :host gitlab :repo "OlMon/consult-flyspell"
-           :branch "master"))
-
-
-(package! jinja2-mode
-  :recipe (:type git :host github :repo "paradoxxxzero/jinja2-mode"
            :branch "master"))
 
 (package! uuidgen
@@ -89,9 +73,7 @@
   :recipe (:type git :host github :repo "emacs-evil/evil-surround"
            :branch "master"))
 
-
 (package! lorem-ipsum)
-
 (package! origami)
 
 ;; Easily setup frame with multiple choice selection at the `(point)'
@@ -102,8 +84,6 @@
 (package! org-download)
 
 (package! simpleclip)
-
-(package! ninja-mode)
 
 (package! graphviz-dot-mode)
 
@@ -121,15 +101,8 @@
 
 (package! ts)
 ;; https://github.com/alphapapa/org-sidebar
-(package! org-sidebar)
 
 (package! olivetti)
-(when hax/+roam
-  (unpin! org-roam)
-  (package! org-roam-ui))
-(package! howdoyou)
-
-
 (package! elisp-format)
 
 (package! sdcv)

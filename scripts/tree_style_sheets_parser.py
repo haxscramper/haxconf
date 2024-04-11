@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 
 import struct
-from dataclasses import dataclass
-from typing import List, Optional, List
+from dataclasses import dataclass, asdict
+from typing import List, Optional, List, Any
 from pprint import pprint
-from enum import Enum
+from enum import IntEnum
 import zlib
 import io
 import argparse
+import json
 
+def dataclass_to_dict(dataclass_obj: Any) -> dict:
+    return asdict(dataclass_obj)
+
+def dict_to_dataclass(dict_obj: dict, dataclass_type: Any) -> Any:
+    return dataclass_type(**dict_obj)
 
 @dataclass
 class FileHeader:
@@ -59,7 +65,7 @@ class String:
         file.write(encoded_text)  # Write string
 
 
-class CellStyle(Enum):
+class CellStyle(IntEnum):
     STYLE_BOLD = 1
     STYLE_ITALIC = 2
     STYLE_FIXED = 4
@@ -159,14 +165,14 @@ class CellGrid:
             cell.to_stream(file)
 
 
-class CellContentType(Enum):
+class CellContentType(IntEnum):
     TS_TEXT = 0
     TS_GRID = 1
     TS_BOTH = 2
     TS_NEITHER = 3
 
 
-class CellType(Enum):
+class CellType(IntEnum):
     CT_DATA = 0
     CT_CODE = 1
     CT_VARD = 2
@@ -175,7 +181,7 @@ class CellType(Enum):
     CT_VIEWV = 5
 
 
-class CellDrawStyle(Enum):
+class CellDrawStyle(IntEnum):
     DS_GRID = 0
     DS_BLOBSHIER = 1
     DS_BLOBLINE = 3
@@ -374,7 +380,8 @@ def unpack(input_file: str, output_file: str) -> None:
         content = File.from_stream(file)
 
     with open(output_file, "w") as file:
-        pprint(content, stream=file)
+        # pprint(asdict(content), stream=file)
+        file.write(json.dumps(asdict(content), indent=2))
 
     buffer = io.BytesIO()
     content.to_stream(buffer)
@@ -405,12 +412,7 @@ def unpack(input_file: str, output_file: str) -> None:
     ])
 
     # Compare the original and reconverted data
-    if original_data == reconverted_data:
-        print("Success: No data loss detected.")
-    else:
-        with open("/tmp/result_file.cts", "wb") as file:
-            content.to_stream(file)
-            
+    if original_data != reconverted_data:
         print(f"Error: Data loss detected.\n{concat}")
 
 

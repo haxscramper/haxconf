@@ -377,19 +377,19 @@ created today."
          (begin-1 (ts-adjust 'day -1 (ts-now)))
          (end+1 (ts-adjust 'day +1 (ts-now))))
      (org-ql-select (org-agenda-files)
-       `(or
-         (todo "POSTPONED" "WIP" "NEXT")
-         (and (todo "TODO")
-              (or
-               ;; Explicitly marked as an inbox entry
-               (tags "@inbox")
-               ;; track activity in daily notes for one week before and after
-               (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
-               ;; Track general planning in 14-day frame
-               (planning :from ,begin-7 :to ,end+7)
-               ;; Track any entries that were created/stamped today
-               (ts :on today))))
-       :action 'element-with-markers))))
+                    `(or
+                      (todo "POSTPONED" "WIP" "NEXT")
+                      (and (todo "TODO")
+                           (or
+                            ;; Explicitly marked as an inbox entry
+                            (tags "@inbox")
+                            ;; track activity in daily notes for one week before and after
+                            (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
+                            ;; Track general planning in 14-day frame
+                            (planning :from ,begin-7 :to ,end+7)
+                            ;; Track any entries that were created/stamped today
+                            (ts :on today))))
+                    :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
@@ -1320,7 +1320,7 @@ the empty area."
       '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
         "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
-
+(setq warning-minimum-level :error)
 
 (map!
  :n ",nt" (cmd! (org-capture nil "t"))
@@ -1900,9 +1900,9 @@ otherwise continue prompting for tags."
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
   ;; similar to a regular text.
-  (set-face-attribute
-   'org-latex-and-related nil
-   :foreground "dim gray")
+  ;; (set-face-attribute
+  ;;  'org-latex-and-related nil
+  ;;  :foreground "dim gray")
 
   (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.7)))
     "Face for bold text in Org mode.")

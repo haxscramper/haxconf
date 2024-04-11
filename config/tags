@@ -598,5 +598,13 @@
 #hardware##ser7
 #hardware##p52
 #software##pycharm
-
 #software##treesheets
+#issue
+#issue##solved
+#programming##refactoring##legacy
+#code##python##lib##hypothesis
+#todo##implement
+#todo##test
+#hardware##monitor
+
+#hardware##mini_tab_c

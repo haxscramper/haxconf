@@ -80,6 +80,9 @@
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
+    "[cmake]": {
+        "editor.defaultFormatter": "cheshirekow.cmake-format"
+    },
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -197,5 +200,20 @@
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
     "cmake.showOptionsMovedNotification": false,
     "git.detectSubmodules": false,
-    "git.autoRepositoryDetection": "openEditors"
+    "git.autoRepositoryDetection": "openEditors",
+    "nim.provider": "none",
+    "outline-map.hiddenItem": [
+        "field",
+        "number",
+        "string",
+        "null",
+        "object"
+    ],
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "workbench.editor.enablePreviewFromCodeNavigation": true,
+    "python.testing.pytestArgs": [
+        "--color=yes"
+    ],
+    "explorer.excludeGitIgnore": true,
+    "window.menuBarVisibility": "toggle"
 }

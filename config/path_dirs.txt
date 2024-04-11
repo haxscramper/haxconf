@@ -49,3 +49,4 @@ $HOME/.ghcup/bin
 $HOME/.config/hax-software/hmisc
 $HOME/.emacs.doom.d/bin
 /usr/local/go/bin
+$HOME/.asdf/bin
