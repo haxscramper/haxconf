@@ -20,7 +20,7 @@ the current one."
   (org-expiry-insert-created)
   (evil-insert-state)
   (hax/org-update-all-cookies)
-  (org-todo "TODO"))
+  (hax/ensure-todo "TODO"))
 
 (defun hax/popup-mode-hook ()
   (interactive)
@@ -454,6 +454,9 @@ selection result. Provide PROMPT for selection input"
                          (_ (org-collect-known-entries))))))
     (funcall action)))
 
+(defun hax/ensure-todo (state)
+  (unless (s-equals? (substring-no-properties (org-get-todo-state)) state) (org-todo state)))
+
 (defun hax/org-clock-in-interactively (&optional target)
   "Interactively select target to clock in using
 `hax/org-collect-active-entries'"
@@ -461,7 +464,7 @@ selection result. Provide PROMPT for selection input"
   (save-window-excursion
     (save-excursion
       (hax/org-action-interactively
-       (lambda () (org-clock-in) (org-todo "WIP"))
+       (lambda () (org-clock-in) (hax/ensure-todo "WIP"))
        target))))
 
 (cl-defun hax/org-complete-interactively (&optional (state "COMPLETED") target)
@@ -471,7 +474,7 @@ selection result. Provide PROMPT for selection input"
   (save-window-excursion
     (save-excursion
       (hax/org-action-interactively
-       (lambda () (org-todo state))
+       (lambda () (hax/ensure-todo state))
        target))))
 
 (map!
@@ -487,7 +490,7 @@ selection result. Provide PROMPT for selection input"
  :n "oac" (cmd! (save-excursion
                   (org-clock-goto)
                   (org-clock-out)
-                  (org-todo "COMPLETED")))
+                  (hax/ensure-todo "COMPLETED")))
  :n "oag" #'hax/org-goto-select-active-subtree
  :n "oaC" #'hax/org-complete-interactively)
 
@@ -1227,7 +1230,7 @@ the empty area."
    :nv ",ci" #'org-clock-in
    :nv ",co" #'org-clock-out
    :desc "start WIP clocking"
-   :nv ",cw" (cmd! (org-todo "WIP") (org-clock-in)))
+   :nv ",cw" (cmd! (hax/ensure-todo "WIP") (org-clock-in)))
 
 
 
@@ -1903,6 +1906,24 @@ otherwise continue prompting for tags."
         (progn subtree-end)
       nil)))
 
+(defun hax/org-has-tag (tag)
+  "Skip all entries that correspond to TAG.
+
+If OTHERS is true, skip all entries that do not correspond to TAG."
+
+  (let* ((subtree-point (or (and (org-at-heading-p) (point))
+                            (save-excursion (org-back-to-heading) (point))))
+         (current-subtree (org-get-tags-at subtree-point)))
+    ;; (message "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
+    (if (member tag current-subtree)
+        (goto-char (org-end-of-subtree current-subtree))
+      nil)))
+
+
+(defun hax/org-agenda-skip ()
+  (or (hax/org-has-tag "no_agenda")
+      (hax/org-agenda-skip-recurring)))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -2149,6 +2170,7 @@ otherwise continue prompting for tags."
       ((todo
         "TODO"
         ((org-agenda-overriding-header "Staging and notes todo")
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
        (todo "WIP")
        (todo "PAUSED")
@@ -2159,7 +2181,7 @@ otherwise continue prompting for tags."
         ""
         ((org-agenda-span 7)
          (org-agenda-start-day "-7d")
-         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-show-all-dates nil)
          (org-deadline-warning-days 0)))
        ;; Show all todo items for the next two weeks with filled days.
@@ -2169,7 +2191,7 @@ otherwise continue prompting for tags."
          ;; Start showing events from today onwards, when quickly assessing
          ;; target tasks I don't really need to focus on the past events.
          (org-agenda-start-day "-0d")
-         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          ;; I show planned and deadlined events for the next two weeks - no
          ;; need to repeat the same information again for today.
          (org-deadline-warning-days 0)))))))
@@ -2391,7 +2413,7 @@ subtree can be found."
 
 (defun hax/dbg/looking-at ()
   (interactive)
-  (message
+  (format
    "looking at: %s:%s..%s = [%s] in %s"
    (line-number-at-pos)
    (point)
