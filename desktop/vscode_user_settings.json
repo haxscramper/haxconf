@@ -215,5 +215,6 @@
         "--color=yes"
     ],
     "explorer.excludeGitIgnore": true,
-    "window.menuBarVisibility": "toggle"
+    "window.menuBarVisibility": "toggle",
+    "editor.stickyScroll.enabled": true
 }
