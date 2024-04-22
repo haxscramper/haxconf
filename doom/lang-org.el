@@ -20,7 +20,7 @@ the current one."
   (org-expiry-insert-created)
   (evil-insert-state)
   (hax/org-update-all-cookies)
-  (org-todo "TODO"))
+  (hax/ensure-todo "TODO"))
 
 (defun hax/popup-mode-hook ()
   (interactive)
@@ -117,11 +117,16 @@ mode"
     ;; org-mode instead, but I'm not sure about that.
     (if (--any? (s-starts-with? "image/" it) out)
         (progn
+          ;; (when to-monochrome-image
+          ;;   (shell-command-to-string
+          ;;    "xclip -selection clipboard -t image/png -o > /tmp/org-down-colored.png")
+          ;;   (shell-command-to-string
+          ;;    "convert /tmp/org-down-colored.png -monochrome /tmp/monochrome.png")
+          ;;   (shell-command-to-string
+          ;;    "xclip -sel cli -t image/png -i /tmp/monochrome.png")
+          ;;   )
           (org-download-clipboard file)
-          (when to-monochrome-image
-            (call-process
-             "convert" nil standard-output nil
-             file "-monochrome" file)))
+          )
       (evil-paste-after-without-register 1))))
 
 
@@ -431,8 +436,12 @@ selection result. Provide PROMPT for selection input"
                 (goto-marker (cdr tree))
                 (cons
                  tree
-                 (or (org-entry-get (point) "DEADLINE")
-                     (org-entry-get (point) "SCHEDULED"))))
+                 (and
+                  (org-get-todo-state)
+                  (-contains? '("TODO" "WIP" "POSTPONED" "NEXT")
+                              (remove-string-properties (org-get-todo-state)))
+                  (or (org-entry-get (point) "DEADLINE")
+                      (org-entry-get (point) "SCHEDULED")))))
               (org-collect-known-entries)))))))
 
 (defun hax/org-action-interactively (action &optional target)
@@ -445,6 +454,9 @@ selection result. Provide PROMPT for selection input"
                          (_ (org-collect-known-entries))))))
     (funcall action)))
 
+(defun hax/ensure-todo (state)
+  (unless (s-equals? (substring-no-properties (org-get-todo-state)) state) (org-todo state)))
+
 (defun hax/org-clock-in-interactively (&optional target)
   "Interactively select target to clock in using
 `hax/org-collect-active-entries'"
@@ -452,7 +464,7 @@ selection result. Provide PROMPT for selection input"
   (save-window-excursion
     (save-excursion
       (hax/org-action-interactively
-       (lambda () (org-clock-in) (org-todo "WIP"))
+       (lambda () (org-clock-in) (hax/ensure-todo "WIP"))
        target))))
 
 (cl-defun hax/org-complete-interactively (&optional (state "COMPLETED") target)
@@ -462,7 +474,7 @@ selection result. Provide PROMPT for selection input"
   (save-window-excursion
     (save-excursion
       (hax/org-action-interactively
-       (lambda () (org-todo state))
+       (lambda () (hax/ensure-todo state))
        target))))
 
 (map!
@@ -478,7 +490,7 @@ selection result. Provide PROMPT for selection input"
  :n "oac" (cmd! (save-excursion
                   (org-clock-goto)
                   (org-clock-out)
-                  (org-todo "COMPLETED")))
+                  (hax/ensure-todo "COMPLETED")))
  :n "oag" #'hax/org-goto-select-active-subtree
  :n "oaC" #'hax/org-complete-interactively)
 
@@ -1104,7 +1116,7 @@ the empty area."
    :n ",ts" #'hax/org-insert-timestamp
    :n ",tS" #'hax/org-insert-timestamped-parens
    :ni "M-i M-i" #'hax/org-paste-clipboard
-   :ni "M-i M-C-i" (cmd! (hax/org-paste-clipboard nil t))
+   :ni "M-i M-b" (cmd! (hax/org-paste-clipboard nil t))
    :desc "math"
    :ni "M-i M-m" (lambda (text)
                    (interactive "sMath: ")
@@ -1218,7 +1230,7 @@ the empty area."
    :nv ",ci" #'org-clock-in
    :nv ",co" #'org-clock-out
    :desc "start WIP clocking"
-   :nv ",cw" (cmd! (org-todo "WIP") (org-clock-in)))
+   :nv ",cw" (cmd! (hax/ensure-todo "WIP") (org-clock-in)))
 
 
 
@@ -1896,6 +1908,24 @@ otherwise continue prompting for tags."
         (progn subtree-end)
       nil)))
 
+(defun hax/org-has-tag (tag)
+  "Skip all entries that correspond to TAG.
+
+If OTHERS is true, skip all entries that do not correspond to TAG."
+
+  (let* ((subtree-point (or (and (org-at-heading-p) (point))
+                            (save-excursion (org-back-to-heading) (point))))
+         (current-subtree (org-get-tags-at subtree-point)))
+    ;; (message "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
+    (if (member tag current-subtree)
+        (goto-char (org-end-of-subtree current-subtree))
+      nil)))
+
+
+(defun hax/org-agenda-skip ()
+  (or (hax/org-has-tag "no_agenda")
+      (hax/org-agenda-skip-recurring)))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -1967,7 +1997,7 @@ otherwise continue prompting for tags."
    '(;; Add new entry to the inbox. No sorting, no hierarchical placement,
      ;; just dump everything in it, refile later.
      ("d" "Daily" entry (file+olp+datetree hax/notes.org)
-      "** %U W%<%U>
+      "** %U W%<%U> :recollection##day:
   :PROPERTIES:
   :CREATED: %U
   :END:
@@ -2142,6 +2172,7 @@ otherwise continue prompting for tags."
       ((todo
         "TODO"
         ((org-agenda-overriding-header "Staging and notes todo")
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
        (todo "WIP")
        (todo "PAUSED")
@@ -2152,7 +2183,7 @@ otherwise continue prompting for tags."
         ""
         ((org-agenda-span 7)
          (org-agenda-start-day "-7d")
-         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-show-all-dates nil)
          (org-deadline-warning-days 0)))
        ;; Show all todo items for the next two weeks with filled days.
@@ -2162,7 +2193,7 @@ otherwise continue prompting for tags."
          ;; Start showing events from today onwards, when quickly assessing
          ;; target tasks I don't really need to focus on the past events.
          (org-agenda-start-day "-0d")
-         (org-agenda-skip-function #'hax/org-agenda-skip-recurring)
+         (org-agenda-skip-function #'hax/org-agenda-skip)
          ;; I show planned and deadlined events for the next two weeks - no
          ;; need to repeat the same information again for today.
          (org-deadline-warning-days 0)))))))
@@ -2384,7 +2415,7 @@ subtree can be found."
 
 (defun hax/dbg/looking-at ()
   (interactive)
-  (message
+  (format
    "looking at: %s:%s..%s = [%s] in %s"
    (line-number-at-pos)
    (point)
@@ -2823,7 +2854,7 @@ holding contextual information."
   "Return a marker to the target location of an org-capture template."
   (save-window-excursion
     (save-excursion
-      (org-capture-set-target-location location)
+      ;; (org-capture-set-target-location location)
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))
@@ -3152,3 +3183,17 @@ until \\[keyboard-quit] is pressed."
   (defun hax/insert-todo-checklist-staging ()
     (interactive)
     (insert (hax/generate-todo-checklist-file hax/staging.org))))
+
+(defun +default/yank-buffer-path (&optional root)
+  "Copy the current buffer's path to the kill ring."
+  (interactive)
+  (if-let (filename (or (buffer-file-name (buffer-base-buffer))
+                        (bound-and-true-p list-buffers-directory)))
+      (let ((path (if root
+                      (file-relative-name filename root)
+                    filename)))
+        (kill-new path)
+        (if (string= path (car kill-ring))
+            (message "Copied path: %s" path)
+          (user-error "Couldn't copy filename in current buffer")))
+    (error "Couldn't find filename in current buffer")))

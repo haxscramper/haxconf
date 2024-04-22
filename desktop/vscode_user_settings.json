@@ -59,7 +59,7 @@
     // Stop the buzz
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
-    "workbench.colorTheme": "High Contrast Theme",
+    "workbench.colorTheme": "Dracula",
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
@@ -215,6 +215,7 @@
         "--color=yes"
     ],
     "explorer.excludeGitIgnore": true,
-    "window.menuBarVisibility": "toggle",
-    "editor.stickyScroll.enabled": true
+    "editor.stickyScroll.enabled": true,
+    "diffEditor.ignoreTrimWhitespace": false,
+    "files.simpleDialog.enable": true
 }
