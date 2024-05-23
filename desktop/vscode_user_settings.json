@@ -59,7 +59,7 @@
     // Stop the buzz
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
-    "workbench.colorTheme": "Dracula",
+    "workbench.colorTheme": "High Contrast Theme",
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
@@ -75,7 +75,8 @@
         "editor.formatOnSave": false,
         "editor.tabSize": 4,
         "formatting.provider": "yapf",
-        "editor.defaultFormatter": "eeyore.yapf"
+        "editor.defaultFormatter": "eeyore.yapf",
+        "editor.formatOnType": false
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
@@ -191,7 +192,6 @@
         "**/.trunk/*out/": true,
         "**/.trunk/*plugins/": true
     },
-    "editor.defaultFormatter": "trunk.io",
     "editor.minimap.enabled": false,
     "trunk.showPreexistingIssues": false,
     "[yaml]": {
@@ -215,7 +215,6 @@
         "--color=yes"
     ],
     "explorer.excludeGitIgnore": true,
-    "editor.stickyScroll.enabled": true,
     "diffEditor.ignoreTrimWhitespace": false,
-    "files.simpleDialog.enable": true
+    "window.menuBarVisibility": "toggle"
 }

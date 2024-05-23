@@ -2106,7 +2106,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
-                        (,hax/projects.org :maxlevel . 5)
+                        (,hax/projects.org :maxlevel . 7)
                         (,hax/notes.org :maxlevel . 3)
                         (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 # bash
+set -x
 set -o nounset
 set -o errexit
 

@@ -1,4 +1,4 @@
-version: 3
+version: 7
 profiles:
   - type: local
     name: default elvish
@@ -8,6 +8,18 @@ profiles:
       env: {}
       args: []
     id: local:custom:elvish:36171298-17ea-4d05-83da-615872de883a
+  - type: ssh
+    name: runpod
+    icon: fas fa-desktop
+    options:
+      host: 64.247.206.99
+      port: 46338
+      algorithms: {}
+      input: {}
+      privateKeys:
+        - file:///home/haxscramper/.ssh/id_ed25519
+    weight: -1
+    id: ssh:custom:runpod:6c40a401-a3a2-4670-83ab-055ec300f8f3
 hotkeys:
   toggle-window: []
   ctrl-c:
@@ -169,6 +181,8 @@ hotkeys:
     - - Ctrl-Shift-P
   close-pane:
     - - Ctrl-Shift-W
+  reconnect-tab: []
+  disconnect-tab: []
 terminal:
   searchOptions: {}
   colorScheme:
@@ -201,7 +215,12 @@ terminal:
   paneResizeStep: 0.2
   background: colorScheme
   warnOnMultilinePaste: false
-ssh: {}
+ssh:
+  knownHosts:
+    - host: 64.247.206.99
+      port: 46338
+      type: ecdsa-sha2-nistp256
+      digest: M5oXjRhYFQ+KfXsocrZEhREHY4fuusGDhrxgVLyvTm0=
 configSync:
   parts: {}
 clickableLinks: {}
@@ -219,3 +238,7 @@ saveOutput:
   autoSaveDirectory: /home/haxscramper/.cache/tabby-out
 docker: {}
 recoverTabs: false
+groups: []
+providerBlacklist: []
+commandBlacklist: []
+profileBlacklist: []
