@@ -1719,6 +1719,17 @@ the empty area."
   "Open org-mode link with coordinates"
   (browse-url (format "https://www.openstreetmap.org/#map=16/%s" path)))
 
+
+(defun hax/org-insert-subtree-comment ()
+  (interactive)
+  (insert (format "%s COMMENT" (s-repeat (+ 1 (org-current-level)) "*")))
+  (org-expiry-insert-created))
+
+(defun hax/org-insert-subtree (title)
+  (interactive "sTitle: ")
+  (insert (format "%s %s" (s-repeat (+ 1 (org-current-level)) "*") title))
+  (org-expiry-insert-created))
+
 (defun hax/org-end-of-the-day-stamp ()
   (format-time-string "<%Y-%m-%d %a 23:59:59>"))
 

@@ -216,5 +216,9 @@
     ],
     "explorer.excludeGitIgnore": true,
     "diffEditor.ignoreTrimWhitespace": false,
-    "window.menuBarVisibility": "toggle"
+    "window.menuBarVisibility": "toggle",
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ]
 }
