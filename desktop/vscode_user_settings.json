@@ -60,7 +60,7 @@
     "extensions.ignoreRecommendations": true,
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
-    "workbench.colorTheme": "Dracula",
+    "workbench.colorTheme": "Visual Studio 2017 Light - C++",
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
@@ -119,7 +119,7 @@
     ],
     "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
     "githubPullRequests.pullBranch": "never",
-    "editor.renderWhitespace": "all",
+    "editor.renderWhitespace": "none",
     "C_Cpp.default.compilerPath": "/bin/clang++",
     "cmake.configureOnEdit": false,
     "vue.features.codeActions.savingTimeLimit": 5000,
@@ -172,5 +172,6 @@
     "git.autoRepositoryDetection": "openEditors",
     "diffEditor.ignoreTrimWhitespace": false,
     "window.menuBarVisibility": "hidden",
-    "files.simpleDialog.enable": true
+    "hediet.vscode-drawio.resizeImages": null,
+    "editor.stickyScroll.enabled": false
 }

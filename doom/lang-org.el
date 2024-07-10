@@ -965,7 +965,9 @@ selection result. Provide PROMPT for selection input"
   (if (= (- (line-end-position) 1) (point))
       (progn
         (goto-char (+ 1 (point)))
-        (insert " ")
+        (when (not (or (= (char-after) ?\s)
+                       (= (char-before) ?\s)))
+          (insert " "))
         (funcall expr))
     (progn
       (when (not (= (char-after) ?\s)) (insert " "))
@@ -2126,7 +2128,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    org-log-refile nil
    ;; This looks nice but has a lot of random glitches on this
    ;; configuration
-   org-startup-indented nil
+   org-startup-indented t
    ;; Start week on monday like any normal human being
    calendar-week-start-day 1
    ;; Insert newlines before heading, but plain lists should be packed
