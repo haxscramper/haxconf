@@ -18,7 +18,9 @@ def focus_on_window(window_name):
     current_desktop = int(xprop("-root", "_NET_CURRENT_DESKTOP").split()[-1])
     base_tag = (current_desktop // 9) * 9
 
-    windows = [it for it in wmctrl("-l").splitlines() if it.startswith("0x")]
+    windows = [
+        it for it in wmctrl(("-l", "-x")).splitlines() if it.startswith("0x")
+    ]
     print(f"Current desktop: {current_desktop}")
     for w in windows:
         print(w)
