@@ -965,7 +965,9 @@ selection result. Provide PROMPT for selection input"
   (if (= (- (line-end-position) 1) (point))
       (progn
         (goto-char (+ 1 (point)))
-        (insert " ")
+        (when (not (or (= (char-after) ?\s)
+                       (= (char-before) ?\s)))
+          (insert " "))
         (funcall expr))
     (progn
       (when (not (= (char-after) ?\s)) (insert " "))
@@ -1045,8 +1047,8 @@ the empty area."
   (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
   (flyspell-mode 1)
-  (org-indent-mode -1)
   (hax/org-mode-flyspell)
+  (org-indent-mode t)
   ;; Indentation guides slow down org-mode when there are multiple folds
   ;; (at least I was able to identifiy the implementation ot that point)
   ;; (highlight-indent-guides-mode -1)
@@ -1977,6 +1979,8 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
       nil)))
 
 
+(setq org-startup-indented t)
+
 (defun hax/org-agenda-skip ()
   (or (hax/org-has-tag "no_agenda")
       (hax/org-agenda-skip-recurring)))
@@ -2185,7 +2189,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    org-log-refile nil
    ;; This looks nice but has a lot of random glitches on this
    ;; configuration
-   org-startup-indented nil
+   org-startup-indented t
    ;; Start week on monday like any normal human being
    calendar-week-start-day 1
    ;; Insert newlines before heading, but plain lists should be packed

@@ -616,7 +616,6 @@
 #recollection##now
 #software##xfce4
 #no_agenda
-
 #project##fic##used
 #project##fic##meta
 #project##fic##export
@@ -626,3 +625,19 @@
 #software##typst
 #hardware##streamdeck
 #software##pacman
+#project##haxorg##test
+#project##haxorg##cov
+#project##haxorg##ci
+#project##haxorg##editor
+#project##haxorg##mmap
+#hardware##elgato
+#software##stablediffusion
+#project##haxorg##lang
+#hardware
+#project##fic##meta
+#project##fic##plan
+#project##fic##process
+#sprint##review
+#software##typst
+#software##qgis
+#planning##week

@@ -177,7 +177,6 @@ occurrence of symbol"
  ;; more efficiently.
  :nv "f" #'evil-snipe-f
  :nv "F" #'evil-snipe-F
-
  :nv "C-f" #'avy-goto-char-2
  )
 

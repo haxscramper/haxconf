@@ -407,6 +407,8 @@ more nitpickery about stuff I write in my configuration files."
   :weight bold :underline t)
 (defface-derive hl-todo-NOTE success "NOTE"
   :weight bold :underline t)
+(defface-derive hl-todo-DONE success "DONE"
+  :weight bold :underline t)
 (defface-derive hl-todo-DEPRECATED font-lock-doc-face "DEPRECATED"
   :weight bold :underline t)
 (defface-derive hl-todo-REFACTOR font-lock-comment-face "REFACTOR"
@@ -433,6 +435,7 @@ more nitpickery about stuff I write in my configuration files."
 (after! hl-todo
   (setq hl-todo-keyword-faces
         '(("TODO" . hl-todo-TODO)
+          ("DONE" . hl-todo-DONE)
           ("DOC" . hl-todo-DOC)
           ("FIXME" . hl-todo-FIXME)
           ("HACK" . hl-todo-HACK)
