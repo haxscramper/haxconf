@@ -1,5 +1,6 @@
 configuration {
 	matching: "fuzzy";
+	modi: "drun,run,filebrowser,window,combi";
 }
 
 

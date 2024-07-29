@@ -15,11 +15,11 @@
    ispell-personal-dictionary "~/.config/dict"
    ;; Setup for the multiple languages (in that case english and russian -
    ;; config taken from )https://www.linux.org.ru/forum/general/13940489
-   ispell-dictionary "ru_RU,en_US")
+   ispell-dictionary "en_US")
   (ispell-set-spellchecker-params)
   ;; Note the ordering in the multi-element dictionary must be the same as
   ;; `ispell-dictionary'
-  (ispell-hunspell-add-multi-dic "ru_RU,en_US")
+  (ispell-hunspell-add-multi-dic "en_US")
 
   ;; The personal dictionary file has to exist, otherwise hunspell will
   ;; silently not use it.

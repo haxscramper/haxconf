@@ -1,0 +1,19 @@
+{
+	"Python Context Manager Class": {
+			"prefix": "contextmanager",
+			"body": [
+					"class ${1:MyContextManager}:",
+					"    def __enter__(self):",
+					"        # Initialization or resource allocation",
+					"        return self  # or another object",
+					"",
+					"    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> Optional[bool]:",
+					"        # Clean up, close resources, etc.",
+					"        if exc_type is not None:",
+					"            # Handle exception",
+					"            return False  # Propagate exception",
+					"        return True  # Suppress exception",
+			],
+			"description": "Create a Python context manager class"
+	}
+}

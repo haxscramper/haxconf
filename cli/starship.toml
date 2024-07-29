@@ -16,6 +16,7 @@ $git_state\
 $git_metrics\
 $git_status\
 $docker_context\
+$c\
 $python\
 $zig\
 $buf\

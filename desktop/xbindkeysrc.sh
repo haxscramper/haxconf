@@ -10,8 +10,11 @@ release+Mod2+Mod4+Control + c
 "xkb-switch -s us && rofi -show drun -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + r
 
-"xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
+"xkb-switch -s us && rofi -show window -matching prefix"
 release+Mod2+Mod4 + q
+
+"xkb-switch -s us && rofi -show window -matching prefix"
+F1
 
 "xkb-switch -s us && rofi -show window -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + w
@@ -21,6 +24,9 @@ release+Mod2+Mod4 + e
 
 "$HOME/.config/haxconf/scripts/rofi-select-pdf.sh"
 release+Control+Mod2+Mod4 + p
+
+"$HOME/.config/haxconf/scripts/rofi_add_strawberry_item.sh"
+release+Control+Mod2+Mod4 + a
 
 "res=$(find $HOME/defaultdirs/input -maxdepth 2 -type f \( -name "*.html" -or -name "*.txt" \) | rofi -dmenu) && [[ ! -z res ]] && firefox-developer-edition "$res""
 release+Control+Mod2+Mod4 + h

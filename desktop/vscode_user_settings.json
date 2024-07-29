@@ -57,10 +57,13 @@
         }
     ],
     // Stop the buzz
-    "extensions.ignoreRecommendations": true,
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
+<<<<<<< HEAD
     "workbench.colorTheme": "Visual Studio 2017 Light - C++",
+=======
+    "workbench.colorTheme": "High Contrast Theme",
+>>>>>>> master
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
@@ -76,14 +79,15 @@
         "editor.formatOnSave": false,
         "editor.tabSize": 4,
         "formatting.provider": "yapf",
-        "editor.defaultFormatter": "eeyore.yapf"
+        "editor.defaultFormatter": "eeyore.yapf",
+        "editor.formatOnType": false
     },
-    "python.formatting.provider": "yapf",
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
-    // In most cases it is pretty useless
-    "editor.minimap.enabled": false,
+    "[cmake]": {
+        "editor.defaultFormatter": "cheshirekow.cmake-format"
+    },
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -142,11 +146,29 @@
     "workbench.editor.tabSizingFixedMaxWidth": 120,
     "workbench.editor.tabSizingFixedMinWidth": 120,
     "svelte.enable-ts-plugin": true,
-    "editor.minimap.enabled": false,
     "[typescript]": {
         "editor.defaultFormatter": "xaver.clang-format"
     },
     "git.confirmSync": false,
+    "workbench.startupEditor": "none",
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.cache": true,
+        "**/.mypy_cache": true,
+        "**/.pidf": true,
+        "**/.pids": true,
+        "**/.pytest_cache": true,
+        "**/.ruff_cache": true,
+        "**/.venv": true,
+        "**/.vscode": true,
+        "**/.xmake": true,
+        "**/CMakeLists.txt.user": true,
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
     "codemap.test": [
         {
             "pattern": "^(\\s*)Scenario (.*)",
@@ -166,12 +188,41 @@
     "workbench.editorAssociations": {
         "*.png": "imagePreview.previewEditor"
     },
+    "trunk.trunkGrayOutNonBlockingIssues": false,
+    "files.watcherExclude": {
+        "**/.trunk/*actions/": true,
+        "**/.trunk/*logs/": true,
+        "**/.trunk/*notifications/": true,
+        "**/.trunk/*out/": true,
+        "**/.trunk/*plugins/": true
+    },
+    "editor.minimap.enabled": false,
+    "trunk.showPreexistingIssues": false,
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
     "vale.valeCLI.path": "/home/maxim_artemov/software/vale",
     "cmake.showOptionsMovedNotification": false,
     "git.detectSubmodules": false,
     "git.autoRepositoryDetection": "openEditors",
+    "nim.provider": "none",
+    "outline-map.hiddenItem": [
+        "field",
+        "number",
+        "string",
+        "null",
+        "object"
+    ],
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "workbench.editor.enablePreviewFromCodeNavigation": true,
+    "python.testing.pytestArgs": [
+        "--color=yes"
+    ],
+    "explorer.excludeGitIgnore": true,
     "diffEditor.ignoreTrimWhitespace": false,
-    "window.menuBarVisibility": "hidden",
-    "hediet.vscode-drawio.resizeImages": null,
-    "editor.stickyScroll.enabled": false
+    "window.menuBarVisibility": "toggle",
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ]
 }

@@ -382,19 +382,19 @@ created today."
          (begin-1 (ts-adjust 'day -1 (ts-now)))
          (end+1 (ts-adjust 'day +1 (ts-now))))
      (org-ql-select (org-agenda-files)
-       `(or
-         (todo "POSTPONED" "WIP" "NEXT")
-         (and (todo "TODO")
-              (or
-               ;; Explicitly marked as an inbox entry
-               (tags "@inbox")
-               ;; track activity in daily notes for one week before and after
-               (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
-               ;; Track general planning in 14-day frame
-               (planning :from ,begin-7 :to ,end+7)
-               ;; Track any entries that were created/stamped today
-               (ts :on today))))
-       :action 'element-with-markers))))
+                    `(or
+                      (todo "POSTPONED" "WIP" "NEXT")
+                      (and (todo "TODO")
+                           (or
+                            ;; Explicitly marked as an inbox entry
+                            (tags "@inbox")
+                            ;; track activity in daily notes for one week before and after
+                            (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
+                            ;; Track general planning in 14-day frame
+                            (planning :from ,begin-7 :to ,end+7)
+                            ;; Track any entries that were created/stamped today
+                            (ts :on today))))
+                    :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
@@ -1006,11 +1006,27 @@ the empty area."
 
 ;; (global-set-key (kbd "M-i") nil)
 
+(defun hax/calibre-follow (path)
+  (call-process "xdg-open" nil 0 nil (concat "calibre:" path)))
+
+(defun hax/org-mode-flyspell ()
+  "Ignore text between begin_quote and end_quote."
+  (interactive)
+  (setq ispell-skip-region-alist
+        (cl-remove-if (lambda (region) (equal region '("begin_quote" . "end_quote")))
+                      ispell-skip-region-alist))
+  (add-to-list 'ispell-skip-region-alist '("begin_quote" . "end_quote")))
+
 (defun hax/org-edit-id ()
   (interactive)
   (let* ((used (org-entry-get nil "ID"))
          (original (if used used "")))
     (org-entry-put nil "ID" (read-from-minibuffer ":ID:> " original))))
+
+(defun hax/org-flyspell-hook ()
+  (interactive)
+  (hax/org-mode-flyspell)
+  (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify))
 
 (defun hax/org-mode-hook ()
   (interactive)
@@ -1026,10 +1042,13 @@ the empty area."
   (push '(?$ . ("\\(" . "\\)")) evil-surround-pairs-alist)
   (setq olivetti-body-width (+ 75 7))
 
+  (org-link-set-parameters "calibre" :follow 'hax/calibre-follow)
+
   (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
   (flyspell-mode 1)
   (org-indent-mode t)
+  (hax/org-mode-flyspell)
   ;; Indentation guides slow down org-mode when there are multiple folds
   ;; (at least I was able to identifiy the implementation ot that point)
   ;; (highlight-indent-guides-mode -1)
@@ -1334,7 +1353,7 @@ the empty area."
       '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
         "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 
-
+(setq warning-minimum-level :error)
 
 (map!
  :n ",nt" (cmd! (org-capture nil "t"))
@@ -1345,6 +1364,8 @@ the empty area."
  :n [M-f7] (cmd! (org-agenda nil "*"))
  :desc "New note"
  :n [M-f8] (cmd! (org-capture nil "d"))
+ :desc "Item under clocked"
+ :n [M-f9] (cmd! (org-capture nil "c"))
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
  :desc "New staging item"
@@ -1719,6 +1740,42 @@ the empty area."
   "Open org-mode link with coordinates"
   (browse-url (format "https://www.openstreetmap.org/#map=16/%s" path)))
 
+
+(defun hax/org-insert-subtree-comment ()
+  (interactive)
+  (insert (format "%s COMMENT" (s-repeat (+ 1 (org-current-level)) "*")))
+  (org-expiry-insert-created))
+
+(defun hax/clamp (value min max)
+  (cond
+   ((and min max (<= min value max)) value)
+   ((and min (< value min)) min)
+   ((and max (< max value)) max)
+   (t value)))
+
+(defun hax/org-insert-subtree-offset (title level-offset)
+  (interactive "sTitle: ")
+  (insert
+   (format
+    "%s %s"
+    (s-repeat (hax/clamp (+ level-offset (org-current-level)) 1 nil)
+              "*")
+    title))
+  (org-id-get-create)
+  (org-expiry-insert-created))
+
+(defun hax/org-insert-subtree-same (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title 0))
+
+(defun hax/org-insert-subtree-below (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title 1))
+
+(defun hax/org-insert-subtree-above (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title -1))
+
 (defun hax/org-end-of-the-day-stamp ()
   (format-time-string "<%Y-%m-%d %a 23:59:59>"))
 
@@ -1932,9 +1989,11 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
   ;; similar to a regular text.
-  (set-face-attribute
-   'org-latex-and-related nil
-   :foreground "dim gray")
+  ;; (set-face-attribute
+  ;;  'org-latex-and-related nil
+  ;;  :foreground "dim gray")
+
+  (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
 
   (defface org-bold `((t :inherit bold :foreground ,(doom-lighten 'red 0.7)))
     "Face for bold text in Org mode.")
@@ -2108,7 +2167,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
-                        (,hax/projects.org :maxlevel . 3)
+                        (,hax/projects.org :maxlevel . 7)
                         (,hax/notes.org :maxlevel . 3)
                         (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the
@@ -2672,9 +2731,9 @@ all known agenda entries."
 ;; (hax/closest-unicode-fraction 0.5)
 
 (defun hax/relative-hour-fraction (tdiff)
-(/ (if (< 0 tdiff)
-       (mod (/ tdiff 60) 60)
-     (- 60 (mod (/ tdiff 60) 60))) 60))
+  (/ (if (< 0 tdiff)
+         (mod (/ tdiff 60) 60)
+       (- 60 (mod (/ tdiff 60) 60))) 60))
 
 (defun hax/org-agenda-format-date (date)
   "Format a DATE string for display in the daily/weekly agenda.
@@ -2732,8 +2791,13 @@ displays relative (from the current time) hour and minute range."
 (defun hax/flyspell-org-mode-verify ()
   "Customized wrapper around `org-mode-flyspell-verify' that also
 skips capitalized and upperacsed words (names and abbreviations)"
-  (when (org-mode-flyspell-verify)
-    (not (hax/after-inline-uppercase))))
+  (if (eq (org-element-type
+           (org-element-parent
+            (org-element-at-point-no-context)))
+          'quote-block)
+      nil
+    (when (org-mode-flyspell-verify)
+      (not (hax/after-inline-uppercase)))))
 
 (defun org-count-subheadings ()
   "Count the number of direct and recursive subheadings below the current heading. Return cons with `(CHILDREN . DESCENDANTS)'"
@@ -2790,7 +2854,6 @@ skips capitalized and upperacsed words (names and abbreviations)"
       (org-cycle-internal-local)
       (org-cycle-internal-local))))
 
-(put 'org-mode 'flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
 
 (defun hax/org-todo-only-names ()
   (--map (substring it 0 (s-index-of "(" it)) (car org-todo-keywords)))
@@ -3052,6 +3115,61 @@ until \\[keyboard-quit] is pressed."
       (hax/dbg/looking-around)
       (when (hax/org-subtree-has-children) (org-sort-entries nil ?o))
       (outline-next-heading))))
+
+(defun hax/org-add-id-to-all-subtrees ()
+  "Ensure all subtrees have IDs"
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (org-at-heading-p)) (outline-next-heading))
+    (while (org-at-heading-p)
+      (org-id-get-create)
+      (outline-next-heading))))
+
+;; (custom-set-faces!
+;;   '(minimap-font-face :family "BlockFont" :height 30 :group 'minimap))
+
+(defun hax/rice-org ()
+  (interactive)
+  (custom-theme-set-faces
+   'user
+   '(variable-pitch ((t (:family "IBM Plex Serif" :height 170 :weight thin))))
+   '(fixed-pitch ((t ( :family "Fira Code Nerd Font" :height 130)))))
+
+  (let* ((variable-tuple
+          (cond ((x-list-fonts "IBM Plex Serif")  '(:font "IBM Plex Serif"))
+                ((x-list-fonts "Source Sans Pro") '(:font "Source Sans Pro"))
+                ((x-list-fonts "Lucida Grande")   '(:font "Lucida Grande"))
+                ((x-list-fonts "Verdana")         '(:font "Verdana"))
+                ((x-family-fonts "Sans Serif")    '(:family "Sans Serif"))
+                (nil (warn "Cannot find a Sans Serif Font.  Install Source Sans Pro."))))
+         (base-font-color     (face-foreground 'default nil 'default))
+         (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
+
+    (message "Using %s and %s" headline variable-tuple)
+    (custom-theme-set-faces
+     'user
+     `(org-level-8 ((t (,@headline ,@variable-tuple))))
+     `(org-level-7 ((t (,@headline ,@variable-tuple))))
+     `(org-level-6 ((t (,@headline ,@variable-tuple))))
+     `(org-level-5 ((t (,@headline ,@variable-tuple))))
+     `(org-level-4 ((t (,@headline ,@variable-tuple :height 1.1))))
+     `(org-level-3 ((t (,@headline ,@variable-tuple :height 1.25))))
+     `(org-level-2 ((t (,@headline ,@variable-tuple :height 1.5))))
+     `(org-level-1 ((t (,@headline ,@variable-tuple :height 1.75))))
+     `(org-document-title ((t (,@headline ,@variable-tuple :height 2.0 :underline nil))))))
+
+  (setq org-startup-indented t
+        org-bullets-bullet-list '(" ") ;; no bullets, needs org-bullets package
+        org-ellipsis "  " ;; folding symbol
+        org-pretty-entities t
+        org-hide-emphasis-markers t
+        ;; show actually italicized text instead of /italicized text/
+        org-agenda-block-separator ""
+        org-fontify-whole-heading-line t
+        org-fontify-done-headline t
+        org-fontify-quote-and-verse-blocks t)
+  )
 
 (defun org-export-gfm-to-clipboard ()
   "Export selected text or current subtree in org-mode buffer as GitHub-flavored markdown and copy it to clipboard."

@@ -34,7 +34,7 @@ set E:PYENV_ROOT = $E:HOME"/.pyenv"
 set E:PATH = (
     cat $E:HAX_CONFIG_FILES_DIR/path_dirs.txt |
     envsubst |
-    eawk {|path _| put $path } |
+    re:awk {|path _| put $path } |
     str:join ":"
 )
 
@@ -215,7 +215,7 @@ fn cj {
 
 fn to-showlist {
   cat -n |
-  eawk {|line num item|
+  re:awk {|line num item|
     put [&to-filter=$num &to-accept=$item &to-show=$item]
   }
 }
@@ -566,7 +566,7 @@ set edit:after-readline = [
 set edit:after-command = [
   $@edit:after-command
   {|thing|
-    terminal-name (hostname)"/"(basename (pwd))
+    terminal-name "/"(basename (pwd))
   }
   {|map|
     var result = [
@@ -577,7 +577,9 @@ set edit:after-command = [
       &src=$map[src]
       &error=$map[error]
     ]
-    put $result | to-json >> ~/.cache/elvish_exec_logs.json
+    if (< (count $map[src][code]) 10000) {
+      put $result | to-json >> ~/.cache/elvish_exec_logs.json
+    }
   }
 ]
 

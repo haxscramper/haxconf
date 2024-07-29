@@ -62,14 +62,14 @@
  ;;; window management operations
 
  ;; Keybindings for the `winum-mode'
- :nvi "<f1>" 'winum-select-window-1
- :nvi "<f2>" 'winum-select-window-2
- :nvi "<f3>" 'winum-select-window-3
- :nvi "<f4>" 'winum-select-window-4
- :nvi "<f5>" 'winum-select-window-5
- :nvi "<f6>" 'winum-select-window-6
- :nvi "<f7>" 'winum-select-window-7
- :nvi "<f8>" 'winum-select-window-8
+ :nvi "<f2>" 'winum-select-window-1
+ :nvi "<f3>" 'winum-select-window-2
+ :nvi "<f4>" 'winum-select-window-3
+ :nvi "<f5>" 'winum-select-window-4
+ :nvi "<f6>" 'winum-select-window-5
+ :nvi "<f7>" 'winum-select-window-6
+ :nvi "<f8>" 'winum-select-window-7
+ :nvi "<f9>" 'winum-select-window-8
  )
 
 (defun save-all-buffers() (interactive) (save-some-buffers t))
