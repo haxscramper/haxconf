@@ -4,8 +4,10 @@ import sys
 import os
 import re
 from urllib.parse import urlparse
-from newspaper import Article
+from newspaper import Article, Config
 from ebooklib import epub
+from pathlib import Path
+import bs4
 
 
 def slugify(value: str) -> str:
@@ -14,16 +16,25 @@ def slugify(value: str) -> str:
 
 
 def fetch_article(url: str) -> dict:
-    article = Article(url)
+    config = Config()
+    config.fetch_images = True
+    config.request_timeout = 30
+    config.keep_article_html = True
+
+    article = Article(url, config=config)
     article.download()
     article.parse()
+    article.nlp()
 
     title = article.title if article.title else None
     author = article.authors[0] if article.authors else "Unknown Author"
-    content = article.text
+    # Use BeautifulSoup to retain basic formatting like <p> tags
+    soup = bs4.BeautifulSoup(article.article_html, 'html.parser')
+    content = ""
+    for p in soup.find_all('p'):
+        content += str(p)  # Convert each <p> tag to string and keep it.
 
     return {"title": title, "author": author, "content": content}
-
 
 def create_epub(article: dict, output_path: str):
     book = epub.EpubBook()
@@ -33,13 +44,17 @@ def create_epub(article: dict, output_path: str):
     chapter = epub.EpubHtml(title=article["title"],
                             file_name="chap_01.xhtml",
                             lang="en")
-    chapter.content = f"<h1>{article['title']}</h1><p>{article['content']}</p>"
+
+    Path(output_path).with_suffix(".html").write_text(article['content'])
+
+    # Directly use HTML content with preserved paragraph tags
+    chapter.content = f'<h1>{article["title"]}</h1>{article["content"]}'
     book.add_item(chapter)
 
     book.toc = (epub.Link("chap_01.xhtml", article["title"], "intro"), )
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
-    book.spine = ["nav", chapter]
+    book.spine = ['nav', chapter]
 
     epub.write_epub(output_path, book, {})
 

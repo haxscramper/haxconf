@@ -1369,7 +1369,7 @@ the empty area."
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
  :desc "New staging item"
- :n [M-f11] (cmd! (org-capture nil "s"))
+ :n [M-f11] (cmd! (org-capture nil "S"))
  :desc "New capture"
  :n [M-insert] #'org-capture)
 

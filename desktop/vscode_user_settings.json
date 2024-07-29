@@ -59,11 +59,7 @@
     // Stop the buzz
     "update.mode": "none",
     "csharp.suppressDotnetInstallWarning": true,
-<<<<<<< HEAD
-    "workbench.colorTheme": "Visual Studio 2017 Light - C++",
-=======
-    "workbench.colorTheme": "High Contrast Theme",
->>>>>>> master
+    "workbench.colorTheme": "Dracula Theme",
     // What else?
     "cmake.configureOnOpen": false,
     "editor.fontFamily": "'Iosevka', 'monospace', monospace",
