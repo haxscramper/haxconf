@@ -132,6 +132,8 @@ mode"
 
 (load! "lang-org-tags.el")
 
+
+
 (defun hax/select-tag (action)
   (interactive)
   (let* ((org-last-tags-completion-table
@@ -153,8 +155,10 @@ mode"
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
              (file (if is-private hax/private-tags-file hax/tags-file)))
-        (f-append-text (concat "\n#" selected) 'utf-8 file)
         (setq org-tag-alist (push (cons selected ??) org-tag-alist))
+        (f-write-text (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
+                      'utf-8
+                      file)
         (message
          "New %s tag %s"
          (if is-private "private" "public")
