@@ -168,6 +168,17 @@ files = [
 ]
 
 [[package]]
+name = "dominate"
+version = "2.9.1"
+description = "Dominate is a Python library for creating and manipulating HTML documents using an elegant DOM API."
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "dominate-2.9.1-py2.py3-none-any.whl", hash = "sha256:cb7b6b79d33b15ae0a6e87856b984879927c7c2ebb29522df4c75b28ffd9b989"},
+    {file = "dominate-2.9.1.tar.gz", hash = "sha256:558284687d9b8aae1904e3d6051ad132dd4a8c0cf551b37ea4e7e42a31d19dc4"},
+]
+
+[[package]]
 name = "ebooklib"
 version = "0.18"
 description = "Ebook library which can handle EPUB2/EPUB3 and Kindle format"
@@ -884,4 +895,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "043363cbe79dd1253e8da33a5cede54c1649d826e6d07ed3b766b31dd0e8c863"
+content-hash = "8ee0d2133c9b1447e9c8f7e78909a861f706b8644315828639b738ecf49fa99e"

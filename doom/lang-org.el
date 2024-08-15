@@ -1234,13 +1234,16 @@ the empty area."
                        (hax/org-insert-clipboard-link description))
 
    :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link (hax/org-gen-footnote-name)))
+   :desc "Inline footnote"
+   :ni "M-i M-f M-i" (cmd! (insert "[fn::")
+                           (save-excursion (insert "]")))
    :desc "footnote & prompt"
-   :ni "M-i M-F" (cmd! (save-excursion
-                         (hax/org-insert-footnote (hax/org-gen-footnote-name))
-                         (insert (read-string "Footnote: "))
-                         (org-fill-paragraph)))
+   :ni "M-i M-f M-p" (cmd! (save-excursion
+                             (hax/org-insert-footnote (hax/org-gen-footnote-name))
+                             (insert (read-string "Footnote: "))
+                             (org-fill-paragraph)))
    :desc "footnote & goto"
-   :ni "M-i M-f" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name)))
+   :ni "M-i M-f M-f" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name)))
    :desc "insert {{{macro}}}"
    :ni "M-i M-{" (cmd! (insert "{{{") (save-excursion (insert "}}}")))
    :desc "insert #+begin_src"

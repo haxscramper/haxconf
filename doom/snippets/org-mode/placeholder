@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: #+begin_placeholder block
+# key: <p
+# uuid: <p
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+#+begin_placeholder
+`%`$0
+#+end_placeholder
