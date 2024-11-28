@@ -209,6 +209,7 @@ mode"
                         ('id (hax/org-select-subtree))
                         ('tag (hax/select-tag nil))
                         ('person (hax/select-from-list-or-add "person"))
+                        ('organization (hax/select-from-list-or-add "organization"))
                         (_ (error (format "Unexpected type %s" type)))))
 
          (target (pcase type
@@ -250,6 +251,7 @@ mode"
   _i_: ID           _I_: ID
   _t_: Tag          _T_: Tag
   _p_: Person       _P_: Person
+  _o_: Organization _O_: Organization
   "
   ("f" (hax/org-insert-link 'file nil))
   ("F" (hax/org-insert-link 'file t))
@@ -261,6 +263,8 @@ mode"
   ("T" (hax/org-insert-link 'tag t))
   ("p" (hax/org-insert-link 'person nil))
   ("P" (hax/org-insert-link 'person t))
+  ("o" (hax/org-insert-link 'organization nil))
+  ("O" (hax/org-insert-link 'organization t))
   ("q" nil "cancel"))
 
 (defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
@@ -2036,6 +2040,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
       ("teh" "the")
       ("im" "I'm")
       ("ambig" "ambiguous")
+      ("assesment" "assessment")
       ("i" "I")))
   (setq org-priority-highest ?A)
   (setq org-priority-lowest ?X)
