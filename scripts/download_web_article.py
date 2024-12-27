@@ -24,7 +24,6 @@ def fetch_article(url: str) -> dict:
     article = Article(url, config=config)
     article.download()
     article.parse()
-    # article.nlp()
 
     title = article.title if article.title else None
     author = article.authors[0] if article.authors else "Unknown Author"
@@ -55,7 +54,7 @@ def create_epub(article: dict, output_path: str):
     book.toc = (epub.Link("chap_01.xhtml", article["title"], "intro"), )
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
-    book.spine = ["nav", chapter]
+    book.spine = ['nav', chapter]
 
     epub.write_epub(output_path, book, {})
 

@@ -12,6 +12,7 @@ newspaper3k = "^0.2.8"
 ebooklib = "^0.18"
 lxml-html-clean = "^0.1.1"
 dominate = "^2.9.1"
+nltk = "^3.8.1"
 
 
 [build-system]

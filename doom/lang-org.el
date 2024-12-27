@@ -132,6 +132,8 @@ mode"
 
 (load! "lang-org-tags.el")
 
+
+
 (defun hax/select-tag (action)
   (interactive)
   (let* ((org-last-tags-completion-table
@@ -153,8 +155,10 @@ mode"
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
              (file (if is-private hax/private-tags-file hax/tags-file)))
-        (f-append-text (concat "\n#" selected) 'utf-8 file)
         (setq org-tag-alist (push (cons selected ??) org-tag-alist))
+        (f-write-text (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
+                      'utf-8
+                      file)
         (message
          "New %s tag %s"
          (if is-private "private" "public")
@@ -213,6 +217,7 @@ mode"
                         ('id (hax/org-select-subtree))
                         ('tag (hax/select-tag nil))
                         ('person (hax/select-from-list-or-add "person"))
+                        ('organization (hax/select-from-list-or-add "organization"))
                         (_ (error (format "Unexpected type %s" type)))))
 
          (target (pcase type
@@ -254,6 +259,7 @@ mode"
   _i_: ID           _I_: ID
   _t_: Tag          _T_: Tag
   _p_: Person       _P_: Person
+  _o_: Organization _O_: Organization
   "
   ("f" (hax/org-insert-link 'file nil))
   ("F" (hax/org-insert-link 'file t))
@@ -265,6 +271,8 @@ mode"
   ("T" (hax/org-insert-link 'tag t))
   ("p" (hax/org-insert-link 'person nil))
   ("P" (hax/org-insert-link 'person t))
+  ("o" (hax/org-insert-link 'organization nil))
+  ("O" (hax/org-insert-link 'organization t))
   ("q" nil "cancel"))
 
 (defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
@@ -1070,8 +1078,8 @@ the empty area."
   (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
   (flyspell-mode 1)
-  (hax/org-mode-flyspell)
   (org-indent-mode t)
+  (hax/org-mode-flyspell)
   ;; Indentation guides slow down org-mode when there are multiple folds
   ;; (at least I was able to identifiy the implementation ot that point)
   ;; (highlight-indent-guides-mode -1)
@@ -1395,7 +1403,7 @@ the empty area."
  :desc "New immediate todo"
  :n [M-f10] (cmd! (org-capture nil "i"))
  :desc "New staging item"
- :n [M-f11] (cmd! (org-capture nil "s"))
+ :n [M-f11] (cmd! (org-capture nil "S"))
  :desc "New capture"
  :n [M-insert] #'org-capture)
 
@@ -1481,6 +1489,42 @@ the empty area."
     (error "")))
 
 
+(defun hax/org-agenda-last-clocked-in-time ()
+  "Get formatting string showing how much time has passed since subtree was clocked in last time."
+  (condition-case nil
+      (save-excursion
+        (let* ((last-time (if (org-clock-get-last-clock-out-time)
+                              (org-clock-get-last-clock-out-time)
+                            (org-time-string-to-time (org-entry-get (point) "CREATED"))))
+               (now (current-time))
+               (diff-time (time-subtract now last-time))
+               (minutes (/ (float-time diff-time) 60)))
+          (message "LT: %s" last-time)
+          (let* ((raw-time (seconds-to-time (* minutes 60)))
+                 (years (/ minutes (* 60 24 365)))
+                 (months (/ minutes (* 60 24 30)))
+                 (weeks (/ minutes (* 60 24 7)))
+                 (days (/ minutes (* 60 24)))
+                 (hours (/ minutes 60))
+                 (mins (mod minutes 60)))
+            (format "[%6s]" (cond
+                             ((>= years 1)
+                              (format "%2dy%2dm" years (mod months 12)))
+                             ((>= months 1)
+                              (format "%2dm%2dw" months (/ (mod days 30) 7)))
+                             ((>= weeks 1)
+                              (format "%2dw%2dd" weeks (mod days 7)))
+                             ((>= days 1)
+                              (format "%2dd%2dh" days (mod hours 24)))
+                             ((>= hours 1)
+                              (format "%2dh%2dm" hours mins))
+                             (t
+                              (format "%2dm" minutes))))))
+        )
+    (error
+     (format "[%6s]" "ERR"))))
+
+
 (setq
  org-agenda-prefix-format
  '(;; For regular agenda items, show (?whatever?)
@@ -1491,7 +1535,7 @@ the empty area."
    ;; 'e' is for time estimates.
    (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
    ;; Indentation to align effort time
-   (todo . "%-5(hax/org-agenda-clocked-time) ")
+   (todo . "%-5(hax/org-agenda-last-clocked-in-time) %-5(hax/org-agenda-clocked-time) ")
    (tags . "%-5(hax/org-agenda-clocked-time) ")
    (search . "%-5(hax/org-agenda-clocked-time) "))
  org-agenda-start-on-weekday nil
@@ -2059,6 +2103,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
       ("teh" "the")
       ("im" "I'm")
       ("ambig" "ambiguous")
+      ("assesment" "assessment")
       ("i" "I")))
   (setq org-priority-highest ?A)
   (setq org-priority-lowest ?X)

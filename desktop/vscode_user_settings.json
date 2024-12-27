@@ -215,10 +215,12 @@
         "--color=yes"
     ],
     "explorer.excludeGitIgnore": true,
+    "diffEditor.ignoreTrimWhitespace": false,
     "window.menuBarVisibility": "toggle",
     "cmake.pinnedCommands": [
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
     "svg.preview.mode": "svg"
+    "editor.stickyScroll.enabled": false
 }

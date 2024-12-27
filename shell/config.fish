@@ -828,3 +828,5 @@ if test -f /opt/miniconda3/bin/conda
 end
 # <<< conda initialize <<<
 
+
+set -g -x PYTHON_KEYRING_BACKEND keyring.backends.null.Keyring
