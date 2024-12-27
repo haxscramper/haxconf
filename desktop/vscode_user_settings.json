@@ -220,6 +220,5 @@
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
-    "diffEditor.ignoreTrimWhitespace": false,
     "svg.preview.mode": "svg"
 }

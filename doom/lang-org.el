@@ -198,6 +198,14 @@ mode"
                             (write-file filename)
                             (message "%s added to the list and selected" x)))))))
 
+(defun hax/org-insert-uuid-anchor ()
+  (interactive)
+  (insert "<<")
+  (kill-ring-save
+   (point)
+   (progn (uuidgen t) (point)))
+  (insert ">>"))
+
 (defun hax/org-insert-link (type with-description)
   (let* ((target-base (pcase type
                         ('file (counsel-find-file))
@@ -382,19 +390,19 @@ created today."
          (begin-1 (ts-adjust 'day -1 (ts-now)))
          (end+1 (ts-adjust 'day +1 (ts-now))))
      (org-ql-select (org-agenda-files)
-                    `(or
-                      (todo "POSTPONED" "WIP" "NEXT")
-                      (and (todo "TODO")
-                           (or
-                            ;; Explicitly marked as an inbox entry
-                            (tags "@inbox")
-                            ;; track activity in daily notes for one week before and after
-                            (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
-                            ;; Track general planning in 14-day frame
-                            (planning :from ,begin-7 :to ,end+7)
-                            ;; Track any entries that were created/stamped today
-                            (ts :on today))))
-                    :action 'element-with-markers))))
+       `(or
+         (todo "POSTPONED" "WIP" "NEXT")
+         (and (todo "TODO")
+              (or
+               ;; Explicitly marked as an inbox entry
+               (tags "@inbox")
+               ;; track activity in daily notes for one week before and after
+               (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
+               ;; Track general planning in 14-day frame
+               (planning :from ,begin-7 :to ,end+7)
+               ;; Track any entries that were created/stamped today
+               (ts :on today))))
+       :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
@@ -511,6 +519,21 @@ selection result. Provide PROMPT for selection input"
 (defun hax/org-unformat-title (title)
   (s-replace-all '(("=" . "") ("*" . "") ("~" . "")) title))
 
+
+(defun hax/set-archive-to-full-path ()
+  "Set the :ARCHIVE: property of the current subtree to its full path."
+  (interactive)
+  (let ((full-path (hax/org-get-outline-path-full)))
+    (org-set-property "ARCHIVE" (format "%%s_archive::* %s" full-path))))
+
+(defun hax/org-get-outline-path-full ()
+  "Return the full path of the current subtree."
+  (save-window-excursion
+    (save-excursion
+      (let ((path (org-get-heading t t t t)))
+        (if (org-up-heading-safe)
+            (concat (hax/org-get-outline-path-full) "/" path)
+          path)) ) ))
 
 (defun hax/org-outline-path-at-marker (marker &optional last-n with-tags cleanup-name-formatting)
   "Get formatted outline entry at position specified by MARKER"
@@ -2032,6 +2055,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
       ("forthe" "for the")
       ("athe" "at the")
       ("inthe" "in the")
+      ("ast" "AST")
       ("teh" "the")
       ("im" "I'm")
       ("ambig" "ambiguous")

@@ -98,6 +98,7 @@
 (package! org-ref)
 
 (package! mini-frame)
+(package! org-ql)
 
 (package! ts)
 ;; https://github.com/alphapapa/org-sidebar
