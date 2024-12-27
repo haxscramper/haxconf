@@ -372,6 +372,7 @@
 #project##haxorg##lang
 #project##haxorg##mmap
 #project##haxorg##test
+#project##haxsim
 #project##hcparse
 #project##hmisc
 #project##htsparse
@@ -487,7 +488,9 @@
 #software##navi
 #software##neovim
 #software##nim##genny
+#software##nomachine
 #software##novelai
+#software##novelcrafter
 #software##obsidian
 #software##okular
 #software##perf

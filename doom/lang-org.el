@@ -1463,6 +1463,42 @@ the empty area."
     (error "")))
 
 
+(defun hax/org-agenda-last-clocked-in-time ()
+  "Get formatting string showing how much time has passed since subtree was clocked in last time."
+  (condition-case nil
+      (save-excursion
+        (let* ((last-time (if (org-clock-get-last-clock-out-time)
+                              (org-clock-get-last-clock-out-time)
+                            (org-time-string-to-time (org-entry-get (point) "CREATED"))))
+               (now (current-time))
+               (diff-time (time-subtract now last-time))
+               (minutes (/ (float-time diff-time) 60)))
+          (message "LT: %s" last-time)
+          (let* ((raw-time (seconds-to-time (* minutes 60)))
+                 (years (/ minutes (* 60 24 365)))
+                 (months (/ minutes (* 60 24 30)))
+                 (weeks (/ minutes (* 60 24 7)))
+                 (days (/ minutes (* 60 24)))
+                 (hours (/ minutes 60))
+                 (mins (mod minutes 60)))
+            (format "[%6s]" (cond
+                             ((>= years 1)
+                              (format "%2dy%2dm" years (mod months 12)))
+                             ((>= months 1)
+                              (format "%2dm%2dw" months (/ (mod days 30) 7)))
+                             ((>= weeks 1)
+                              (format "%2dw%2dd" weeks (mod days 7)))
+                             ((>= days 1)
+                              (format "%2dd%2dh" days (mod hours 24)))
+                             ((>= hours 1)
+                              (format "%2dh%2dm" hours mins))
+                             (t
+                              (format "%2dm" minutes))))))
+        )
+    (error
+     (format "[%6s]" "ERR"))))
+
+
 (setq
  org-agenda-prefix-format
  '(;; For regular agenda items, show (?whatever?)
@@ -1473,7 +1509,7 @@ the empty area."
    ;; 'e' is for time estimates.
    (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
    ;; Indentation to align effort time
-   (todo . "%-5(hax/org-agenda-clocked-time) ")
+   (todo . "%-5(hax/org-agenda-last-clocked-in-time) %-5(hax/org-agenda-clocked-time) ")
    (tags . "%-5(hax/org-agenda-clocked-time) ")
    (search . "%-5(hax/org-agenda-clocked-time) "))
  org-agenda-start-on-weekday nil
