@@ -34,7 +34,7 @@ set E:PYENV_ROOT = $E:HOME"/.pyenv"
 set E:PATH = (
     cat $E:HAX_CONFIG_FILES_DIR/path_dirs.txt |
     envsubst |
-    eawk {|path _| put $path } |
+    each {|path| put $path } |
     str:join ":"
 )
 
@@ -215,7 +215,7 @@ fn cj {
 
 fn to-showlist {
   cat -n |
-  eawk {|line num item|
+  each {|line num item|
     put [&to-filter=$num &to-accept=$item &to-show=$item]
   }
 }
