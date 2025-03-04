@@ -23,6 +23,7 @@ $HOME/.choosenim/toolchains/nim-1.2.6
 $HOME/.local/bin
 $HOME/.npm-packages/bin
 $HOME/.nimble/bin
+$HOME/.pixi/bin
 $HOME/workspace/git-sandbox/gitnim/bin
 $HOME/perl5/bin
 $HOME/workspace/hax-nim/bin

@@ -1001,11 +1001,13 @@ selection result. Provide PROMPT for selection input"
           (insert " "))
         (funcall expr))
     (progn
-      (when (not (= (char-after) ?\s)) (insert " "))
+      (when (or (not (char-after))
+                (not (= (char-after) ?\s)) ) (insert " "))
       (when (not (= (char-before) ?\s)) (insert " "))
       (funcall expr)
       (when (not (= (char-before ?\s))) (insert " "))
-      (when (not (= (char-after) ?\s)) (insert " ")))))
+      (when (or (not (char-after))
+                (not (= (char-after) ?\s))) (insert " ")))))
 
 (defun hax/org-insert-text-tag ()
   "Insert org-mode hashtag under corrent cursor position, adding
@@ -2933,7 +2935,8 @@ skips capitalized and upperacsed words (names and abbreviations)"
 
 (defun hax/fill-paragraph ()
   (interactive)
-  (funcall-interactively 'fill-paragraph 'full))
+  (let ((fill-column 999999))
+    (funcall-interactively 'fill-paragraph 'full)))
 
 (defun org-refile-targets-all-files ()
   "Use all currently opened Org buffer files as org-refile targets."

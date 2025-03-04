@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: #+begin_beat ... block
+# key: <b
+# uuid: <b
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+#+begin_beat
+`%`$0
+#+end_beat
