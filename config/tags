@@ -486,6 +486,7 @@
 #software##emacs##org
 #software##firefox
 #software##gallery_dl
+#software##gcc
 #software##gdb
 #software##git
 #software##github
@@ -503,6 +504,7 @@
 #software##llm##llama
 #software##llvm
 #software##memex
+#software##minecraft
 #software##mingw
 #software##mpd
 #software##mpv

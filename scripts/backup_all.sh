@@ -26,12 +26,10 @@ left_right_sync \
     "${HOME}/defaultdirs/documents/calibre" \
     "${D_MAIN}/defaultdirs/archive/calibre_backup"
 
+mirror "defaultdirs/images"
+mirror "defaultdirs/documents"
+mirror "defaultdirs/archive"
+
 # cd "${D_MAIN}/defaultdirs/images/gallery_dl"
 # ./update_gallery.sh
 # cd "$SCRIPT_DIR"
-
-# mirror "defaultdirs/images"
-# mirror "defaultdirs/documents"
-# mirror "defaultdirs/archive"
-
-# unison documents_backup -batch -debug verbose -auto
