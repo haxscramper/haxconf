@@ -4,20 +4,18 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("7a424478cb77a96af2c0f50cfb4e2a88647b3ccca225f8c650ed45b7f50d9525" default))
+   '("7a424478cb77a96af2c0f50cfb4e2a88647b3ccca225f8c650ed45b7f50d9525"
+     default))
  '(mini-frame-show-parameters '((top . 200) (width . 0.8) (height . 0.7) (left . 0.5)))
  '(org-safe-remote-resources
    '("\\`file:///mnt/workspace/repos/site/nimskull-notes\\.org\\'"))
- '(package-selected-packages '(helm-dash))
+ '(package-selected-packages '(helm-dash transient))
  '(safe-local-variable-values '((eval load! "notes-conf.el") (eval load "notes-conf.el")))
  '(warning-suppress-log-types '((org-babel-after-execute-hook)))
  '(warning-suppress-types
-   '((org-mode-hook)
-     (revert-buffer-internal-hook)
-     (revert-buffer-internal-hook)
-     (org-roam)
-     (org-element-cache)
-     (org-babel-after-execute-hook)) t))
+   '((org-mode-hook) (revert-buffer-internal-hook)
+     (revert-buffer-internal-hook) (org-roam) (org-element-cache)
+     (org-babel-after-execute-hook))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

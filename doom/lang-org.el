@@ -1501,7 +1501,7 @@ the empty area."
                (now (current-time))
                (diff-time (time-subtract now last-time))
                (minutes (/ (float-time diff-time) 60)))
-          (message "LT: %s" last-time)
+          ;; (message "LT: %s" last-time)
           (let* ((raw-time (seconds-to-time (* minutes 60)))
                  (years (/ minutes (* 60 24 365)))
                  (months (/ minutes (* 60 24 30)))
@@ -2057,6 +2057,12 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
   (or (hax/org-has-tag "no_agenda")
       (hax/org-agenda-skip-recurring)))
 
+(defun hax/org-agenda-skip-low-priority ()
+  (save-excursion
+    (org-back-to-heading t)
+    (unless (re-search-forward "#[XAS]" (line-end-position) t)
+      (or (outline-next-heading) (point-max)))))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -2310,6 +2316,12 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
          (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
        (todo "WIP")
+       (todo
+        "TODO"
+        ((org-agenda-overriding-header "High priority project todos")
+         (org-agenda-skip-function #'hax/org-agenda-skip-low-priority)
+         (org-agenda-files '(,hax/projects.org))))
+       (todo "NEXT")
        (todo "PAUSED")
        (todo "BLOCKED")
        ;; Show unfinished tasks for the last week, without filling all the
@@ -2357,6 +2369,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
            "WIP(w!)"            ;; Working on it
+           "NEXT(n!)"            ;; Working on it
            "TRIAGED(T!)"        ;; Investigated the issue in some detail,
            ;; might work on it later
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
@@ -2933,9 +2946,11 @@ skips capitalized and upperacsed words (names and abbreviations)"
   (--map (substring it 0 (s-index-of "(" it)) (car org-todo-keywords)))
 
 
-(defun hax/fill-paragraph ()
-  (interactive)
-  (let ((fill-column 999999))
+(defun hax/fill-paragraph (&optional arg)
+  (interactive "P")
+  (let ((fill-column (if (and arg (numberp (prefix-numeric-value arg)))
+                         (prefix-numeric-value arg)
+                       999999)))
     (funcall-interactively 'fill-paragraph 'full)))
 
 (defun org-refile-targets-all-files ()

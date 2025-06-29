@@ -389,46 +389,46 @@ more nitpickery about stuff I write in my configuration files."
   (list 'defface name (list '\` (list (append (list 't) content))) doc))
 
 (defface-t hl-todo-STYLE "STYLE"
-  :foreground ,(doom-color 'yellow)
-  :underline t)
+           :foreground ,(doom-color 'yellow)
+           :underline t)
 
 
 (defface-derive hl-todo-IMPORTANT warning "IMPORTANT"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-TODO warning "TODO"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-FIXME error "FIXME"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-HACK font-lock-constant-face "HACK"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-REVIEW font-lock-keyword-face "REVIEW"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-IDEA success "IDEA"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-NOTE success "NOTE"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-DONE success "DONE"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-DEPRECATED font-lock-doc-face "DEPRECATED"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-REFACTOR font-lock-comment-face "REFACTOR"
-  :underline t)
+                :underline t)
 (defface-derive hl-todo-BUG error "BUG"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-MAYBE warning "MAYBE"
-  :weight bold :underline t)
+                :weight bold :underline t)
 (defface-derive hl-todo-XXX font-lock-constant-face "XXX"
-  :weight bold :underline t)
+                :weight bold :underline t)
 
 (defface-derive hl-todo-IMPLEMENT warning "IMPLEMENT"
-  :underline t :slant italic)
+                :underline t :slant italic)
 
 (defface-derive hl-todo-DOC hl-todo-TODO "DOC")
 (defface-derive hl-todo-ERROR error "ERROR")
 (defface-derive hl-todo-WARNING warning "WARNING" :underline t :slant italic :overline t)
 (defface-derive hl-todo-QUESTION warning "WARNING" :underline t :slant italic)
 (defface-derive hl-todo-TEMP hl-todo-IDEA "TEMP")
-(defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
+(defface-derive hl-todo-NEXT hl-todo-TODO "NEXT" :foreground "red")
 (defface-derive hl-todo-TEST hl-todo-TODO "TEST")
 
 
@@ -505,3 +505,33 @@ then kill the buffer too."
  :leader
  :nv "w d"  #'hax/ace-delete-window
  )
+
+(use-package! eaf
+  :load-path "~/.emacs.d/site-lisp/emacs-application-framework/"
+  :init
+  :custom
+  (eaf-browser-continue-where-left-off t)
+  (eaf-browser-enable-adblocker t)
+  ;; (browse-url-browser-function 'eaf-open-browser) ;; Make EAF Browser my default browser
+  :config
+  (defalias 'browse-web #'eaf-open-browser)
+
+  (require 'eaf-file-manager)
+  (require 'eaf-markdown-previewer)
+  (require 'eaf-pdf-viewer)
+  (require 'eaf-browser)
+  ;; (when (display-graphic-p)
+  ;;   (require 'eaf-all-the-icons))
+
+  (require 'eaf-evil)
+  (define-key key-translation-map (kbd "SPC")
+              (lambda (prompt)
+                (if (derived-mode-p 'eaf-mode)
+                    (pcase eaf--buffer-app-name
+                      ("browser" (if  (string= (eaf-call-sync "call_function" eaf--buffer-id "is_focus") "True")
+                                     (kbd "SPC")
+                                   (kbd eaf-evil-leader-key)))
+                      ("pdf-viewer" (kbd eaf-evil-leader-key))
+                      ("image-viewer" (kbd eaf-evil-leader-key))
+                      (_  (kbd "SPC")))
+                  (kbd "SPC")))))

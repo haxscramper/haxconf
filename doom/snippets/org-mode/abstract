@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: #+begin_src ... block
+# key: <a
+# uuid: <a
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+#+begin_abstract
+`%`$0
+#+end_abstract

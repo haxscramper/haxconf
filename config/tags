@@ -183,6 +183,7 @@
 #emacs##text
 #emacs##text-editing
 #emacs##text_editing
+#error##solved
 #error##suddenly
 #error##suddenly-gone
 #event
@@ -198,6 +199,7 @@
 #fanfiction##question
 #fanfiction##todo
 #fic##index
+#fic##plan##discarded
 #fix
 #fixed
 #format##ascii_art
@@ -280,6 +282,7 @@
 #maybe_pr
 #meacs##text
 #meacs##text-editing
+#meme
 #mind_dump
 #monthly
 #nim##argparse
@@ -350,6 +353,7 @@
 #programming##refactoring##organization
 #programming##rfc
 #programming##script
+#programming##solved
 #programming##spec_wording
 #programming##testing
 #programming##think
@@ -357,6 +361,7 @@
 #programming##ticket##triage
 #programming##track
 #programming##visualization
+#programming##wrappers
 #project##anieditor
 #project##asciidraw
 #project##blockfmt
@@ -375,6 +380,7 @@
 #project##fic##plan
 #project##fic##process
 #project##fic##used
+#project##fic_organization
 #project##fsm
 #project##fsm-build
 #project##haxconf
@@ -383,9 +389,11 @@
 #project##haxorg##ci
 #project##haxorg##cov
 #project##haxorg##editor
+#project##haxorg##gui
 #project##haxorg##lang
 #project##haxorg##mmap
 #project##haxorg##test
+#project##haxorg##visual
 #project##haxsim
 #project##hcparse
 #project##hmisc
@@ -512,6 +520,7 @@
 #software##neovim
 #software##nim##genny
 #software##nomachine
+#software##notion
 #software##novelai
 #software##novelcrafter
 #software##obsidian
@@ -630,6 +639,7 @@
 #work##interview
 #work##question
 #work##reuters
+#work##tenstorrent
 #work##vizio
 #work##vizio##dtv
 #work##vizio##home

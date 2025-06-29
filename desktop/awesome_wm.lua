@@ -865,6 +865,12 @@ client.connect_signal(
     end
 )
 
+client.connect_signal("property::minimized", function(c)
+    if string.find(c.class:lower(), "minecraft") ~= nil then 
+        c.minimized = false
+    end
+end)
+
 -- Signal function to execute when a new client appears.
 client.connect_signal(
     "manage",
