@@ -2060,7 +2060,8 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
 (defun hax/org-agenda-skip-low-priority ()
   (save-excursion
     (org-back-to-heading t)
-    (unless (re-search-forward "#[XAS]" (line-end-position) t)
+    (unless (or (re-search-forward ":bug:" (line-end-position) t)
+                (re-search-forward "#[XAS]" (line-end-position) t))
       (or (outline-next-heading) (point-max)))))
 
 (defun hax/org-mode-configure ()
