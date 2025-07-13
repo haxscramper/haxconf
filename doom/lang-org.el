@@ -2322,6 +2322,10 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
         ((org-agenda-overriding-header "High priority project todos")
          (org-agenda-skip-function #'hax/org-agenda-skip-low-priority)
          (org-agenda-files '(,hax/projects.org))))
+       (todo
+        "TODO"
+        ((org-agenda-overriding-header "Repeated todos")
+         (org-agenda-files '(,hax/repeated.org))))
        (todo "NEXT")
        (todo "PAUSED")
        (todo "BLOCKED")
