@@ -13,6 +13,18 @@
         :key openrouter-key
         :models '(anthropic/claude-sonnet-4)))
 
+(defun hax/org-select-paragraph ()
+  "Select current paragraph in org-mode, respecting org structure."
+  (interactive)
+  (if (derived-mode-p 'org-mode)
+      (let ((element (org-element-at-point)))
+        (when (eq (org-element-type element) 'paragraph)
+          (let ((begin (org-element-property :begin element))
+                (end (org-element-property :end element)))
+            (goto-char begin)
+            (set-mark end))))
+    (mark-paragraph)))
+
 (defvar hax/gptel-proof-prompt
   (concat "
 You are a text proofreader. You accept messages that contain pieces of
