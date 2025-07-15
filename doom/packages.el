@@ -115,3 +115,4 @@
 
 (package! org-appear)
 (package! mermaid-mode)
+(package! gptel :recipe (:nonrecursive t))

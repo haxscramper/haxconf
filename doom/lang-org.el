@@ -2313,9 +2313,14 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
      ("*" "All"
       ((todo
         "TODO"
-        ((org-agenda-overriding-header "Staging and notes todo")
+        ((org-agenda-overriding-header "Staging todo")
          (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-files '(,hax/notes.org ,hax/staging.org))))
+         (org-agenda-files '(,hax/staging.org))))
+       (todo
+        "TODO"
+        ((org-agenda-overriding-header "Notes todo")
+         (org-agenda-skip-function #'hax/org-agenda-skip)
+         (org-agenda-files '(,hax/notes.org))))
        (todo "WIP")
        (todo
         "TODO"

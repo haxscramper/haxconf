@@ -134,6 +134,7 @@ You can insert or kill the name of the selected font."
 (load! "lang-base.el")
 (load! "lang-c.el")
 (load! "lang-org.el")
+(load! "lang-llm.el")
 (load! "lang-plantuml.el")
 (load! "lang-latex.el")
 
