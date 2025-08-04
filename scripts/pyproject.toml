@@ -13,6 +13,14 @@ ebooklib = "^0.18"
 lxml-html-clean = "^0.1.1"
 dominate = "^2.9.1"
 nltk = "^3.8.1"
+pillow = "^11.0.0"
+streamdeck = "^0.9.7"
+pip = "^25.2"
+pyyaml = "^6.0.2"
+pydantic = "^2.11.7"
+pyautogui = "^0.9.54"
+plumbum = "^1.9.0"
+beartype = "^0.21.0"
 
 
 [build-system]

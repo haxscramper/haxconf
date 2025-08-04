@@ -1,0 +1,104 @@
+decks:
+  - device_type: "Stream Deck Neo"
+    pages:
+      - name: "Page 1"
+        buttons:
+          0:
+           action:
+              type: "emulate_shortcut"
+              shortcut: "f11"
+          1:
+            action:
+              type: "emulate_shortcut"
+              shortcut: "f12"
+          9:
+             action:
+              type: "change_page"
+              direction: "forward"
+          8:
+             action:
+              type: "change_page"
+              direction: "backward"
+
+      - name: "Page 2"
+        buttons:
+          0:
+            action:
+              type: "type_text"
+              text: "Hello World"
+          1:
+            action:
+              type: "type_text"
+              text: "Test Text"
+          9:
+            action:
+              type: "change_page"
+              direction: "forward"
+          8:
+            action:
+              type: "change_page"
+              direction: "backward"
+
+  - device_type: "Stream Deck Original"
+    pages:
+      - name: "Main"
+        buttons:
+          0:
+            action:
+              type: "focus_window"
+              text: "Qt Creator"
+            image_path: "~/defaultdirs/images/streamdeck/Qt_logo_neon_2022.svg.png"
+          1:
+            action:
+              type: "focus_window"
+              text: "emacs"
+            image_path: "~/defaultdirs/images/streamdeck/emacs_logo.jpg"
+          2:
+            action:
+              type: "focus_window"
+              text: "Chromium"
+            image_path: "~/defaultdirs/images/streamdeck/Google_Chrome_icon_(February_2022).svg.png"
+          3:
+            action:
+              type: "focus_window"
+              text: "Firefox"
+            image_path: "~/defaultdirs/images/streamdeck/firefox_logo.jpg"
+          4:
+            action:
+              type: "focus_window"
+              text: "Telegram"
+            image_path: "~/defaultdirs/images/streamdeck/telegram_logo.jpg"
+          5:
+            action:
+              type: "focus_window"
+              text: "Visual Studio Code"
+            image_path: "~/defaultdirs/images/streamdeck/code-stable.png"
+          6:
+            action:
+              type: "focus_window"
+              text: "kitty.kitty"
+            image_path: "~/defaultdirs/images/streamdeck/kitty_termina.png"
+          10: 
+            action:
+              type: "quit"
+            image_path: "~/defaultdirs/images/streamdeck/Red_X.svg.png"
+          11:
+            action:
+              type: "focus_window"
+              text: "calibre"
+            image_path: "~/defaultdirs/images/streamdeck/Calibre_logo_2.png"
+          12:
+            action:
+              type: "focus_window"
+              text: "msty"
+            image_path: "~/defaultdirs/images/streamdeck/msty_logo.jpg"
+          13:
+            action:
+              type: "focus_window"
+              text: "doublecmd"
+            image_path: "~/defaultdirs/images/streamdeck/doublecmd_logo.jpg"
+          14:
+            action:
+              type: "focus_window"
+              text: "okular"
+            image_path: "~/defaultdirs/images/streamdeck/okular_log.png"
