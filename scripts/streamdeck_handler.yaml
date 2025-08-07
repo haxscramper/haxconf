@@ -4,13 +4,101 @@ decks:
       - name: "Page 1"
         buttons:
           0:
-           action:
+            title_text:
+              text: "AI\nC++"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                - Respond only with code for the question. Do not add comments. 
+                - Do not add description. Do not add example setup logic. 
+                - Do not write type definitions unless explicitly required to for the answer. 
+                - Provide code only for the requested functionality. Use type annotations. 
+                - Apply this requirement to all subsequent messages unless instructed otherwise. 
+                - If there is no acceptable answer to the request, indicate this. 
+                - When formatting values to string, use std::format. 
+                - If necessary solution might use boost libraries and range-v3 library. 
+                - NEVER use prefix/postfix notation for variable and member names (like `m_field` or `field_` over regular `field`).
+                - ALWAYS Use `{}` syntax for object construction and class initializer lists.
+                - ALWAYS Use `int` instead of `size_t` for size-related operations, method and loop iteration.
+                - ALWAYS Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
+                - ALWAYS Use `struct` instead of class.
+                - NEVER use emojis in the answer.
+                - ALWAYS Use `.at()` and `.insert_or_assign()` when working with sequential and associative containers
+          1:
+            title_text:
+              text: "AI\nPython"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                Use double quotes for strings, use type annotations. When writing a full python script add shebang for `#!/usr/bin/env python`. Use pathlib library for working with files. The project uses poetry for package management and the `pyproject.toml` for the configuration. 
+
+                - Respond only with code requested in the question or needed to fix the issue. 
+                - Do not add comments. 
+                - Do not add description. 
+                - Do not add example setup logic. 
+                - Do not use emojis in the answer.
+                - Do not write type definitions unless explicitly required to for the answer. 
+                - Provide code only for the requested functionality. 
+                - Use type annotations. 
+                = Apply this requirement to all subsequent messages unless instructed otherwise. 
+                - If there is no acceptable answer to the request, indicate this. 
+                - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
+                - When printing logs from the script, use logging module instead of `print()`
+                - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
+                - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
+          2:
+            title_text:
+              text: "AI\nDiff"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                Respond only with the code necessary to implement the requested logic. Do not rewrite the whole code from scratch. Indicate where to insert new changes. 
+
+          3:
+            title_text:
+              text: "AI\nRegular"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                You can respond to this question with both text and code. 
+
+          9:
+            action:
+              type: "change_page"
+              direction: "forward"
+          8:
+            action:
+              type: "change_page"
+              direction: "backward"
+
+      - name: "Page 2"
+        buttons:
+          0:
+            title_text:
+              text: "Next\nLine"
+              font_size: 28
+            action:
+              type: "emulate_shortcut"
+              shortcut: "f10"
+          1:
+            title_text:
+              text: "Step\nLine"
+              font_size: 28
+            action:
               type: "emulate_shortcut"
               shortcut: "f11"
-          1:
+          2:
+            title_text:
+              text: "Step\nOut"
+              font_size: 28
             action:
               type: "emulate_shortcut"
               shortcut: "f12"
+
           9:
              action:
               type: "change_page"
@@ -20,24 +108,7 @@ decks:
               type: "change_page"
               direction: "backward"
 
-      - name: "Page 2"
-        buttons:
-          0:
-            action:
-              type: "type_text"
-              text: "Hello World"
-          1:
-            action:
-              type: "type_text"
-              text: "Test Text"
-          9:
-            action:
-              type: "change_page"
-              direction: "forward"
-          8:
-            action:
-              type: "change_page"
-              direction: "backward"
+
 
   - device_type: "Stream Deck Original"
     pages:
@@ -78,10 +149,10 @@ decks:
               type: "focus_window"
               text: "kitty.kitty"
             image_path: "~/defaultdirs/images/streamdeck/kitty_termina.png"
-          10: 
-            action:
-              type: "quit"
-            image_path: "~/defaultdirs/images/streamdeck/Red_X.svg.png"
+          # 10: 
+          #   action:
+          #     type: "quit"
+          #   image_path: "~/defaultdirs/images/streamdeck/Red_X.svg.png"
           11:
             action:
               type: "focus_window"

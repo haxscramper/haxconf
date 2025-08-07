@@ -2,6 +2,7 @@
 
 from beartype.typing import List, Optional, Union, Literal, Dict
 from beartype import beartype
+import time
 import functools
 from pathlib import Path
 import random
@@ -153,9 +154,11 @@ class StreamDeckController:
         with open(config_path, "r") as f:
             config_data = yaml.safe_load(f)
         self.config = Config(**config_data)
-        self.devices: List[StreamDeck] = {}
+        self.devices: Dict[str, StreamDeck] = {}
         self.current_pages = {}
         self.image_cache: Dict[str, Dict[int, bytes]] = {}
+        self.quit_script = False
+        self.last_activity_time = {}
         self.quit_script = False
 
     def initialize_devices(self) -> None:
@@ -175,6 +178,7 @@ class StreamDeckController:
                     self.current_pages[deck_name] = 0
                     deck.set_key_callback(lambda deck, key, state: self.
                                           key_callback(deck, key, state))
+                    self.last_activity_time[deck_name] = time.time()
                     self.pregenerate_images(deck_name)
                     self.update_display(deck)
                     break
@@ -209,6 +213,8 @@ class StreamDeckController:
         deck.set_key_color(key, r, g, b)
 
     def key_callback(self, deck: StreamDeck, key: int, state: bool) -> None:
+        self.update_display(deck)
+        self.last_activity_time[deck.deck_type] = time.time()
         if not state:
             return
 
@@ -316,6 +322,7 @@ class StreamDeckController:
         self.update_display(deck)
 
     def update_display(self, deck: StreamDeck) -> None:
+        deck.set_brightness(100)
         current_page = self.current_pages[deck.deck_type()]
 
         for key in range(deck.key_count()):
@@ -387,6 +394,13 @@ class StreamDeckController:
 
         return image
 
+    def clear_all_keys(self, device_name: str) -> None:
+        device = self.devices[device_name]
+        empty_image = self.create_empty_image(device)
+
+        for key in range(device.key_count()):
+            device.set_key_image(key, empty_image)
+
     def create_text_image(self, device: StreamDeck,
                           title_text: Union[str, TextConfig]) -> Image.Image:
         size = (device.key_image_format()["size"][0],
@@ -409,7 +423,7 @@ class StreamDeckController:
         try:
             font = ImageFont.truetype("arial.ttf", font_size)
         except OSError:
-            font = ImageFont.load_default()
+            font = ImageFont.load_default(font_size)
 
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
@@ -429,10 +443,19 @@ class StreamDeckController:
         return PILHelper.to_native_format(device, image)
 
     def run(self) -> None:
+        import time
+
         self.initialize_devices()
         try:
             while not self.quit_script:
-                pass
+                current_time = time.time()
+                for device_name in self.devices:
+                    if 60 < (current_time -
+                             self.last_activity_time[device_name]):
+                        self.devices[device_name].set_brightness(0)
+                        self.last_activity_time[device_name] = current_time
+
+                time.sleep(1)
 
         finally:
             self.cleanup()
