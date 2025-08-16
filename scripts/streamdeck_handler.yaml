@@ -79,14 +79,14 @@ decks:
         buttons:
           0:
             title_text:
-              text: "Next\nLine"
+              text: "Step\nOver"
               font_size: 28
             action:
               type: "emulate_shortcut"
               shortcut: "f10"
           1:
             title_text:
-              text: "Step\nLine"
+              text: "Step\nInto"
               font_size: 28
             action:
               type: "emulate_shortcut"
@@ -149,10 +149,11 @@ decks:
               type: "focus_window"
               text: "kitty.kitty"
             image_path: "~/defaultdirs/images/streamdeck/kitty_termina.png"
-          # 10: 
-          #   action:
-          #     type: "quit"
-          #   image_path: "~/defaultdirs/images/streamdeck/Red_X.svg.png"
+          7:
+            action:
+              type: "execute_script"
+              script: "gammaray"
+            image_path: "~/defaultdirs/images/streamdeck/gammaray.png"
           11:
             action:
               type: "focus_window"

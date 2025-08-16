@@ -1698,7 +1698,8 @@ the empty area."
       (cons (rx "2020" (group digit digit)) "20\\1")
       (cons (rx "20" (group digit digit digit digit)) "\\1")
       (cons (rx "-" (group digit) (group (| rx-space "]"))) "-0\\1\\2")
-      (cons (rx " :]") "]")))
+      (cons (rx " :]") "]")
+      (cons (rx "20" (group digit digit) "-" (group digit) "-" (group digit digit)) "20\\1-0\\2-\\3")))
 
     (dolist (pair replacement-pairs)
       (setq str (s-replace-regexp (car pair) (cdr pair) str)))
