@@ -46,6 +46,7 @@ decks:
                 - If there is no acceptable answer to the request, indicate this. 
                 - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
                 - When printing logs from the script, use logging module instead of `print()`
+                - Use basic config `logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s")` for logging.
                 - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
                 - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
           2:
@@ -107,7 +108,47 @@ decks:
              action:
               type: "change_page"
               direction: "backward"
+      - name: "Page 3"
+        buttons:
+          0:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py left-upper left"
+            image_path: "~/defaultdirs/images/streamdeck/split_left_upper_left.png"
+          1:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py left-upper right"
+            image_path: "~/defaultdirs/images/streamdeck/split_left_upper_right.png"
+          4:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py left-lower left"
+            image_path: "~/defaultdirs/images/streamdeck/split_left_lower_left.png"
+          5:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py left-lower right"
+            image_path: "~/defaultdirs/images/streamdeck/split_left_lower_right.png"
+          6:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py right left"
+            image_path: "~/defaultdirs/images/streamdeck/split_right_left.png"
+          7:
+            action:
+              type: "execute_script"
+              script: "positional_emacs_focus.py right right"
+            image_path: "~/defaultdirs/images/streamdeck/split_right_right.png"
 
+          9:
+             action:
+              type: "change_page"
+              direction: "forward"
+          8:
+             action:
+              type: "change_page"
+              direction: "backward"
 
 
   - device_type: "Stream Deck Original"
