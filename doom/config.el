@@ -220,6 +220,55 @@ You can insert or kill the name of the selected font."
    "process" "*Zathura buffer*" "zathura"
    (f-swap-ext (buffer-file-name) "pdf")))
 
+(defun hax/list-window-splits ()
+  (interactive)
+  (let ((result ""))
+    (dolist (frame (frame-list))
+      (select-frame frame)
+      (let ((frame-id (frame-parameter frame 'outer-window-id)))
+        (walk-windows
+         (lambda (win)
+           (let ((edges (window-edges win)))
+             (setq result
+                   (concat
+                    result
+                    (format "%s,%d,%d,%d,%d\n"
+                            frame-id
+                            (nth 0 edges)
+                            (nth 1 edges)
+                            (nth 2 edges)
+                            (nth 3 edges))))))
+         nil frame)))
+    result))
+
+(defun hax/select-window-split-by-position (frame-id left top right bottom)
+  (interactive)
+  (let ((target-frame nil)
+        (target-window nil))
+    (dolist (frame (frame-list))
+      (when (string= (frame-parameter frame 'outer-window-id) frame-id)
+        (setq target-frame frame)))
+    (if (not target-frame)
+        (error "Frame with ID %s not found" frame-id)
+      (walk-windows
+       (lambda (win)
+         (let ((edges (window-edges win)))
+           (when (and (= (nth 0 edges) left)
+                      (= (nth 1 edges) top)
+                      (= (nth 2 edges) right)
+                      (= (nth 3 edges) bottom))
+             (setq target-window win))))
+       nil target-frame)
+      (if (not target-window)
+          (error "Window with edges (%d,%d,%d,%d) not found in frame %s"
+                 left top right bottom frame-id)
+        (progn
+          (message "select OK %s" target-window)
+          (select-frame-set-input-focus target-frame)
+          (set-frame-selected-window target-frame target-window)
+          ;; (select-window target-window)
+          )))))
+
 (after! magit
   (setq git-commit-major-mode 'org-mode)
   (add-to-list 'magit-no-confirm 'stage-all-changes)

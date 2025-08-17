@@ -19,7 +19,7 @@ logging.getLogger("plumbum.local").setLevel(logging.WARNING)
 
 @dataclass
 class WindowInfo:
-    window_id: str
+    window_id: int
     screen: int
     x: int
     y: int
@@ -30,6 +30,16 @@ class WindowInfo:
     is_visible: bool
 
 
+def trim_awesome_output(raw_output: str) -> str:
+    output = raw_output.strip()
+    
+    if output.startswith('string "'):
+        output = output[8:]
+    if output.endswith('"'):
+        output = output[:-1]
+    
+    return output
+
 def get_awesome_clients() -> List[WindowInfo]:
     import csv
     from io import StringIO
@@ -39,24 +49,18 @@ def get_awesome_clients() -> List[WindowInfo]:
 
     result = awesome_client < str(script_path)
     cmd_result = result.run()
-    logger.debug(f"Raw awesome-client output: {result}")
+    # logger.debug(f"Raw awesome-client output: {result}")
 
-    output = cmd_result[1].strip()
-
-    if output.startswith('   string "'):
-        output = output[11:]
-    if output.endswith('"'):
-        output = output[:-1]
-
+    output = trim_awesome_output(cmd_result[1])
     windows = []
     csv_reader = csv.reader(StringIO(output))
 
     for row in csv_reader:
         if len(row) >= 9:
-            logger.debug(f"Parsed window: {row}")
+            # logger.debug(f"Parsed window: {row}")
             tags = row[7].split(";") if row[7] else []
             windows.append(
-                WindowInfo(window_id=row[0],
+                WindowInfo(window_id=int(row[0]),
                            screen=int(row[1]),
                            x=int(row[2]),
                            y=int(row[3]),
@@ -82,7 +86,7 @@ def focus_emacs_split(screen: int, position: str) -> bool:
     ]
 
     logger.debug(f"Looking for visible Emacs windows on screen {screen}")
-    logger.debug(f"Found emacs windows: {emacs_windows}")
+    # logger.debug(f"Found emacs windows: {emacs_windows}")
 
     if not emacs_windows:
         logger.error(f"No visible emacs window found on screen {screen}")
@@ -106,16 +110,16 @@ def focus_emacs_split(screen: int, position: str) -> bool:
     awesome_client(focus_cmd)
     logger.debug(f"Focused window {emacs_window.window_id}")
 
-    splits = get_emacs_splits()
+    splits = get_emacs_splits(emacs_window)
 
     if len(splits) < 2:
         logger.info(f"Emacs window on screen {screen} has no splits")
         return True
 
     if position == "left":
-        target_split = min(splits, key=lambda s: s["left"])
+        target_split = min(splits, key=lambda s: s.left)
     elif position == "right":
-        target_split = max(splits, key=lambda s: s["left"])
+        target_split = max(splits, key=lambda s: s.left)
     else:
         logger.error(f"Invalid position: {position}")
         return False
@@ -123,42 +127,26 @@ def focus_emacs_split(screen: int, position: str) -> bool:
     logger.debug(f"Target split: {target_split}")
 
     emacsclient = local["emacsclient"]
-    elisp_code = f"""
-    (let ((target-window nil))
-      (walk-windows
-       (lambda (win)
-         (let ((edges (window-edges win)))
-           (when (and (= (nth 0 edges) {target_split["left"]})
-                      (= (nth 1 edges) {target_split["top"]})
-                      (= (nth 2 edges) {target_split["right"]})
-                      (= (nth 3 edges) {target_split["bottom"]}))
-             (setq target-window win))))
-       nil t)
-      (when target-window
-        (select-window target-window)))
-    """
-
+    elisp_code = f"(hax/select-window-split-by-position \"{target_split.frame_id}\" {target_split.left} {target_split.top} {target_split.right} {target_split.bottom})"  
     emacsclient("-e", elisp_code)
     logger.debug("Selected emacs window split")
     return True
 
+@dataclass
+class EmacsSplitInformation():
+    left: int
+    top: int
+    right: int 
+    bottom: int
+    frame_id: int
 
-def get_emacs_splits() -> List[Dict[str, int]]:
+def get_emacs_splits(emacs_window: WindowInfo) -> List[EmacsSplitInformation]:
     import csv
     from io import StringIO
     
     emacsclient = local["emacsclient"]
 
-    elisp_code = """
-    (let ((splits '())
-          (result ""))
-      (walk-windows
-       (lambda (win)
-         (let ((edges (window-edges win)))
-           (setq result (concat result (format "%d,%d,%d,%d\\n" (nth 0 edges) (nth 1 edges) (nth 2 edges) (nth 3 edges))))))
-       nil (selected-frame))
-      result)
-    """
+    elisp_code = "(hax/list-window-splits)"
 
     result = emacsclient("-e", elisp_code)
     logger.debug(f"Emacs splits output: {result}")
@@ -170,12 +158,16 @@ def get_emacs_splits() -> List[Dict[str, int]]:
     
     for row in csv_reader:
         if len(row) >= 4:
-            splits.append({
-                "left": int(row[0]),
-                "top": int(row[1]),
-                "right": int(row[2]),
-                "bottom": int(row[3])
-            })
+            info = EmacsSplitInformation(
+                frame_id=int(row[0]),
+                left=int(row[1]),
+                top=int(row[2]),
+                right=int(row[3]),
+                bottom=int(row[4])
+            )
+
+            if info.frame_id == emacs_window.window_id:
+                splits.append(info)
 
     logger.debug(f"Found {len(splits)} emacs splits")
     for s in splits:
@@ -196,22 +188,15 @@ def get_screen_layout() -> Dict[str, int]:
     return table.concat(screens, '\\n')
     """
 
-    result = awesome_client(layout_cmd)
-    logger.debug(f"Screen layout output: {result}")
+    output = trim_awesome_output(awesome_client(layout_cmd))
+    logger.debug(f"Screen layout output: {output}")
 
-    output = result.strip()
-    if output.startswith('string "'):
-        output = output[8:]
-    if output.endswith('"'):
-        output = output[:-1]
-
-    logger.info(list(output))
     screens = []
     import csv
     from io import StringIO
     csv_reader = csv.reader(StringIO(output))
     for row in csv_reader:
-        logger.info(row)
+        # logger.info(row)
         screens.append({
             'index': int(row[0]),
             'x': int(row[1]),
