@@ -114,5 +114,6 @@
 (package! mpv)
 
 (package! org-appear)
+(package! dogears)
 (package! mermaid-mode)
 (package! gptel :recipe (:nonrecursive t))

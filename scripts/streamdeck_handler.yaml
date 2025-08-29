@@ -19,12 +19,14 @@ decks:
                 - When formatting values to string, use std::format. 
                 - If necessary solution might use boost libraries and range-v3 library. 
                 - NEVER use prefix/postfix notation for variable and member names (like `m_field` or `field_` over regular `field`).
-                - ALWAYS Use `{}` syntax for object construction and class initializer lists.
+                - ALWAYS Use `{}` syntax for object construction and class initializer lists, use designated field initializers when field names are known.
                 - ALWAYS Use `int` instead of `size_t` for size-related operations, method and loop iteration.
                 - ALWAYS Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
-                - ALWAYS Use `struct` instead of class.
+                - ALWAYS Use `struct` instead of class
                 - NEVER use emojis in the answer.
                 - ALWAYS Use `.at()` and `.insert_or_assign()` when working with sequential and associative containers
+                - NEVER split method declaration and implementation
+                - ALWAYS use `{}` when writing if/else/while etc. NEVER use syntax without curly braces.
           1:
             title_text:
               text: "AI\nPython"

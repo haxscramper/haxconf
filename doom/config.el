@@ -585,3 +585,14 @@ then kill the buffer too."
                       ("image-viewer" (kbd eaf-evil-leader-key))
                       (_  (kbd "SPC")))
                   (kbd "SPC")))))
+
+(use-package! dogears
+  :config
+  (dogears-mode 1)
+  :bind
+  ("M-g d" . dogears-go)
+  ("M-g r" . dogears-remember)
+  ("M-g M-b" . dogears-back)
+  ("M-g M-f" . dogears-forward)
+  ("M-g M-d" . dogears-list)
+  ("M-g M-D" . dogears-sidebar))
