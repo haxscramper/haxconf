@@ -596,3 +596,85 @@ then kill the buffer too."
   ("M-g M-f" . dogears-forward)
   ("M-g M-d" . dogears-list)
   ("M-g M-D" . dogears-sidebar))
+
+(defvar hax/org-goto-repository-cache (make-hash-table :test 'equal)
+  "Cache for org file headings with file modification times.")
+
+(defun hax/get-file-cache-key (file)
+  "Get cache key for FILE based on modification time."
+  (let ((mtime (file-attribute-modification-time (file-attributes file))))
+    (cons file (float-time mtime))))
+
+(defun hax/get-org-headings-cached (file project-root)
+  "Get org headings for FILE with caching based on modification time."
+  (let* ((cache-key (hax/get-file-cache-key file))
+         (cached-entry (gethash (car cache-key) hax/org-goto-repository-cache)))
+
+    ;; Check if cache is valid (file hasn't been modified)
+    (if (and cached-entry
+             (equal (car cached-entry) (cdr cache-key)))
+        ;; Return cached candidates (make a copy to avoid circular references)
+        (mapcar (lambda (candidate)
+                  (cons (car candidate) (cdr candidate)))
+                (cdr cached-entry))
+      ;; File changed or not cached, parse and cache
+      (let ((candidates '()))
+        (with-temp-buffer
+          (insert-file-contents file)
+          (org-mode)
+          (let ((outline-candidates (counsel-outline-candidates
+                                     (cdr (assq 'org-mode counsel-outline-settings))
+                                     (counsel-org-goto-all--outline-path-prefix))))
+            ;; Process candidates with relative filename
+            (dolist (candidate outline-candidates)
+              (let* ((marker (cdr candidate))
+                     (relative-filename (file-relative-name file project-root))
+                     (display-text (concat relative-filename " " (car candidate)))
+                     ;; Create completely new marker to avoid references
+                     (new-marker (make-marker)))
+                (set-marker new-marker (marker-position marker)
+                            (find-file-noselect file))
+                (push (cons display-text new-marker) candidates)))))
+
+        ;; Cache the results with modification time
+        (let ((final-candidates (nreverse candidates)))
+          (puthash (car cache-key)
+                   (cons (cdr cache-key) final-candidates)
+                   hax/org-goto-repository-cache)
+          ;; Return a fresh copy
+          final-candidates)))))
+
+(defun hax/counsel-org-goto-repository ()
+  "Go to a different location in any org file in the current repository.
+Uses caching to avoid re-parsing unchanged files."
+  (interactive)
+  (if-let ((project-root (projectile-project-root)))
+      (let ((entries '())
+            (org-files (directory-files-recursively project-root "\\.org$")))
+
+        ;; Clean up cache for files that no longer exist
+        (maphash (lambda (file _)
+                   (unless (file-exists-p file)
+                     (remhash file hax/org-goto-repository-cache)))
+                 hax/org-goto-repository-cache)
+
+        ;; Collect entries from all org files using append instead of nconc
+        (dolist (file org-files)
+          (when (file-readable-p file)
+            (setq entries (append entries (hax/get-org-headings-cached file project-root)))))
+
+        (ivy-read "Goto: " entries
+                  :history 'counsel-org-goto-history
+                  :action #'counsel-org-goto-action
+                  :caller 'hax/counsel-org-goto-repository))
+    (message "Not in a projectile project")))
+
+(defun hax/clear-org-goto-repository-cache ()
+  "Clear the org goto repository cache."
+  (interactive)
+  (clrhash hax/org-goto-repository-cache)
+  (message "Org goto repository cache cleared"))
+
+(map! :leader
+      :desc "Goto org heading (repository)" "s o" #'hax/counsel-org-goto-repository
+      :desc "Clear org goto cache" "s O" #'hax/clear-org-goto-repository-cache)
