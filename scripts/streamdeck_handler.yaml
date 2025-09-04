@@ -69,6 +69,14 @@ decks:
               text: |
                 You can respond to this question with both text and code. 
 
+          4:
+            title_text:
+              text: "Recommended"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                Give recommended option only.
           9:
             action:
               type: "change_page"

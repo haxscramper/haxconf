@@ -28,6 +28,7 @@ set E:LC_CTYPE = UTF-8
 set E:HAX_CONFIG_DIR = ~/.config/haxconf
 set E:HAX_CONFIG_FILES_DIR = $E:HAX_CONFIG_DIR/config
 set E:NPM_PACKAGES = $E:HOME"/.npm-packages"
+set E:VCPKG_ROOT = $E:HOME"/software/vcpkg"
 set E:EDITOR = nvim
 set E:PYENV_ROOT = $E:HOME"/.pyenv"
 
