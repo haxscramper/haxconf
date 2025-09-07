@@ -2431,6 +2431,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
            :test #'equal))))
 
 (after! org
+  (require 'org-capture)
   (hax/org-mode-configure))
 
 (setq
@@ -3024,7 +3025,7 @@ holding contextual information."
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))
-
+;; (require 'org-capture)
 (defun remove-string-properties (text)
   (with-temp-buffer
     (insert text)

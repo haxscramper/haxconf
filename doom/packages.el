@@ -117,3 +117,5 @@
 (package! dogears)
 (package! mermaid-mode)
 (package! gptel :recipe (:nonrecursive t))
+(package! ivy)
+(package! counsel)

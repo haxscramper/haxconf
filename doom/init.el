@@ -9,7 +9,9 @@
 (defconst hax/+roam nil)
 
 (doom! :input
-       :completion company (ivy +prescient -childframe +fuzzy +icons)
+       :completion company
+       (vertico +icons)
+       ;; (ivy +prescient -childframe +fuzzy +icons)
        :ui
        ;; Main editor/window UI look
        doom doom-dashboard modeline
