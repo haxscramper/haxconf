@@ -221,6 +221,7 @@
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
-    "svg.preview.mode": "svg"
-    "editor.stickyScroll.enabled": false
+    "svg.preview.mode": "svg",
+    "editor.stickyScroll.enabled": false,
+    "window.zoomLevel": 1
 }
