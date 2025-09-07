@@ -131,10 +131,10 @@ the right."
   (require 'align)
   (align-region start end nil
                 '((nil (regexp . "\\([\t ]*\\)\\$?\\([\t ]+[0-9]+\\)\\.?")
-                       (repeat . t)
-                       (group 1 2)
-                       (spacing 1 1)
-                       (justify nil t)))
+                   (repeat . t)
+                   (group 1 2)
+                   (spacing 1 1)
+                   (justify nil t)))
                 nil))
 
 (defmacro create-align-repeat-x (name regexp &optional justify-right default-after)
@@ -198,3 +198,154 @@ the right."
         (cadr abbrev)
         (caddr abbrev)))
     (setq-local local-abbrev-table (eval tblsym))))
+
+
+
+;; Claude, please write a code that un-fucks default emacs behavior that
+;; makes absolutely no sense in any context whatsoever, but that somehow
+;; made its way into other configurations. I don't understand, is it too
+;; much to ask for the editor to not shit into the clipboard each time I'm
+;; doing backspace or something?
+
+(defun hax/delete-backward-char-no-kill (&optional n)
+  "Delete N characters backward without adding to kill ring.
+Works in all contexts including minibuffer and prompts."
+  (interactive "p")
+  (let ((n (or n 1)))
+    (delete-char (- n))))
+
+(defun hax/delete-forward-char-no-kill (&optional n)
+  "Delete N characters forward without adding to kill ring."
+  (interactive "p")
+  (let ((n (or n 1)))
+    (delete-char n)))
+
+(defun hax/backward-delete-word-no-kill (&optional n)
+  "Delete word backward without adding to kill ring."
+  (interactive "p")
+  (let ((n (or n 1)))
+    (dotimes (_ n)
+      (let ((start (point)))
+        (backward-word 1)
+        (delete-region (point) start)))))
+
+(defun hax/delete-word-no-kill (&optional n)
+  "Delete word forward without adding to kill ring."
+  (interactive "p")
+  (let ((n (or n 1)))
+    (dotimes (_ n)
+      (let ((start (point)))
+        (forward-word 1)
+        (delete-region start (point))))))
+
+(defun hax/delete-line-backward-no-kill ()
+  "Delete from point to beginning of line without adding to kill ring."
+  (interactive)
+  (delete-region (line-beginning-position) (point)))
+
+(defun hax/delete-line-forward-no-kill ()
+  "Delete from point to end of line without adding to kill ring."
+  (interactive)
+  (delete-region (point) (line-end-position)))
+
+;; Override backspace in all keymaps
+(defun hax/setup-no-kill-delete-keys ()
+  (interactive)
+  "Set up delete keys that don't add to kill ring in all contexts."
+
+  ;; Global bindings
+  (global-set-key (kbd "DEL") #'hax/delete-backward-char-no-kill)
+  (global-set-key (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+  (global-set-key (kbd "C-<backspace>") #'hax/backward-delete-word-no-kill)
+  (global-set-key (kbd "M-<backspace>") #'hax/backward-delete-word-no-kill)
+  (global-set-key (kbd "M-DEL") #'hax/backward-delete-word-no-kill)
+
+  ;; Optional: Also override forward delete keys
+  (global-set-key (kbd "<delete>") #'hax/delete-forward-char-no-kill)
+  (global-set-key (kbd "M-d") #'hax/delete-word-no-kill)
+  (global-set-key (kbd "C-k") #'hax/delete-line-forward-no-kill)
+  (global-set-key (kbd "C-u") #'hax/delete-line-backward-no-kill)
+
+  ;; Minibuffer specific
+  (define-key minibuffer-local-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+  (define-key minibuffer-local-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+  (define-key minibuffer-local-map (kbd "C-<backspace>") #'hax/backward-delete-word-no-kill)
+  (define-key minibuffer-local-map (kbd "M-<backspace>") #'hax/backward-delete-word-no-kill)
+  (define-key minibuffer-local-map (kbd "M-DEL") #'hax/backward-delete-word-no-kill)
+
+  ;; Completion maps
+  (with-eval-after-load 'minibuffer
+    (define-key minibuffer-local-completion-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key minibuffer-local-completion-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+    (define-key minibuffer-local-must-match-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key minibuffer-local-must-match-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill))
+
+  ;; Read-string and similar prompts
+  (define-key read-expression-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+  (define-key read-expression-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+
+  ;; Ivy (if you use it)
+  (with-eval-after-load 'ivy
+    (define-key ivy-minibuffer-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key ivy-minibuffer-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+    (define-key ivy-minibuffer-map (kbd "M-DEL") #'hax/backward-delete-word-no-kill))
+
+  ;; Helm (if you use it)
+  (with-eval-after-load 'helm
+    (define-key helm-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key helm-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+    (define-key helm-map (kbd "M-DEL") #'hax/backward-delete-word-no-kill))
+
+  ;; Company completion (if you use it)
+  (with-eval-after-load 'company
+    (define-key company-active-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key company-active-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill))
+
+  ;; Vertico (if you use it)
+  (with-eval-after-load 'vertico
+    (define-key vertico-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key vertico-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+    (define-key vertico-map (kbd "M-DEL") #'hax/backward-delete-word-no-kill)))
+
+;; Hook to ensure these bindings work in all new buffers
+(defun hax/setup-buffer-delete-keys ()
+  "Set up delete keys for current buffer."
+  (local-set-key (kbd "DEL") #'hax/delete-backward-char-no-kill)
+  (local-set-key (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+  (local-set-key (kbd "C-<backspace>") #'hax/backward-delete-word-no-kill)
+  (local-set-key (kbd "M-<backspace>") #'hax/backward-delete-word-no-kill)
+  (local-set-key (kbd "M-DEL") #'hax/backward-delete-word-no-kill))
+
+;; Apply to all new buffers
+(add-hook 'after-change-major-mode-hook #'hax/setup-buffer-delete-keys)
+(add-hook 'minibuffer-setup-hook #'hax/setup-buffer-delete-keys)
+
+;; Special handling for eval-expression and other read functions
+(defun hax/advice-read-functions (orig-fun &rest args)
+  "Advice to ensure our delete keys work in read functions."
+  (let ((minibuffer-local-map (copy-keymap minibuffer-local-map)))
+    (define-key minibuffer-local-map (kbd "DEL") #'hax/delete-backward-char-no-kill)
+    (define-key minibuffer-local-map (kbd "<backspace>") #'hax/delete-backward-char-no-kill)
+    (define-key minibuffer-local-map (kbd "M-DEL") #'hax/backward-delete-word-no-kill)
+    (apply orig-fun args)))
+
+;; Apply advice to common read functions
+(advice-add 'read-string :around #'hax/advice-read-functions)
+(advice-add 'read-from-minibuffer :around #'hax/advice-read-functions)
+
+;; Initialize the setup
+(hax/setup-no-kill-delete-keys)
+
+;; Optional: If you want to completely disable kill-ring for delete operations
+;; you can also override the functions that add to kill-ring
+(defun hax/disable-kill-ring-advice (orig-fun &rest args)
+  "Advice to prevent functions from adding to kill-ring during delete operations."
+  (let ((kill-ring kill-ring)
+        (kill-ring-yank-pointer kill-ring-yank-pointer))
+    (cl-letf (((symbol-function 'kill-new) (lambda (&rest _) nil))
+              ((symbol-function 'kill-append) (lambda (&rest _) nil)))
+      (apply orig-fun args))))
+
+;; Uncomment these if you want even more aggressive kill-ring prevention
+;; (advice-add 'backward-delete-char-untabify :around #'hax/disable-kill-ring-advice)
+;; (advice-add 'delete-backward-char :around #'hax/disable-kill-ring-advice)

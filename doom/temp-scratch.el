@@ -46,3 +46,4 @@
 
 
 (set-face-attribute 'winum-face nil :weight 'bold :foreground "green")
+
