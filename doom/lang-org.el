@@ -1027,7 +1027,7 @@ the empty area."
   (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
   (abbrev-mode 1)
   (flyspell-mode 1)
-  (org-indent-mode -1)
+  (org-indent-mode t)
   ;; Indentation guides slow down org-mode when there are multiple folds
   ;; (at least I was able to identifiy the implementation ot that point)
   ;; (highlight-indent-guides-mode -1)
@@ -2807,7 +2807,8 @@ skips capitalized and upperacsed words (names and abbreviations)"
 
 (defun hax/fill-paragraph ()
   (interactive)
-  (funcall-interactively 'fill-paragraph 'full))
+  (let ((fill-column 99999))
+    (funcall-interactively 'fill-paragraph 'full)))
 
 (defun org-refile-targets-all-files ()
   "Use all currently opened Org buffer files as org-refile targets."

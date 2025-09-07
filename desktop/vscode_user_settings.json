@@ -220,5 +220,6 @@
     "cmake.pinnedCommands": [
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
-    ]
+    ],
+    "window.zoomLevel": 1
 }
