@@ -53,6 +53,8 @@
 #code##cpp##lib##immer
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
+#code##cpp##lib##tbb
+#code##cpp##lib##tracy
 #code##cpp##memory
 #code##cpp##templates
 #code##cpp##threading
@@ -106,8 +108,10 @@
 #code##python##C_API
 #code##python##documentation
 #code##python##lib##hypothesis
+#code##python##lib##invoke
 #code##python##lib##matplotlib
 #code##python##lib##nltk
+#code##python##lib##pytorch
 #code##python##lib##sqlalchemy
 #code##python##lib##zeromq
 #code##qt
@@ -352,6 +356,7 @@
 #programming##refactoring##legacy
 #programming##refactoring##naming
 #programming##refactoring##organization
+#programming##refactoring##simplify
 #programming##rfc
 #programming##script
 #programming##solved
@@ -495,6 +500,7 @@
 #software##drawio
 #software##elvish
 #software##emacs
+#software##emacs##gptel
 #software##emacs##org
 #software##firefox
 #software##gallery_dl
@@ -545,6 +551,7 @@
 #software##shell
 #software##sourcetrail
 #software##spoofax
+#software##sqlserver
 #software##stablediffusion
 #software##systemd
 #software##tabby
@@ -568,6 +575,7 @@
 #software##xfce4
 #software##xmake
 #software##xtext
+#software##zmq
 #software##zotero
 #sofware##qgis
 #speech

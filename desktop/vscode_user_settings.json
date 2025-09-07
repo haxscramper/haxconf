@@ -40,20 +40,28 @@
     "nim.lintOnSave": false,
     "githubPullRequests.queries": [
         {
+            "label": "Local Pull Request Branches",
+            "query": "default"
+        },
+        {
             "label": "Waiting For My Review",
-            "query": "is:open review-requested:${user}"
+            "query": "repo:${owner}/${repository} is:open review-requested:${user}"
         },
         {
             "label": "Assigned To Me",
-            "query": "is:open assignee:${user}"
+            "query": "repo:${owner}/${repository} is:open assignee:${user}"
         },
         {
             "label": "All PRs",
-            "query": "sort:updated-desc"
+            "query": "repo:${owner}/${repository} sort:updated-desc"
         },
         {
             "label": "Created By Me",
-            "query": "is:open author:${user}"
+            "query": "repo:${owner}/${repository} is:open author:${user}"
+        },
+        {
+            "label": "All Open",
+            "query": "default"
         }
     ],
     // Stop the buzz
@@ -76,7 +84,8 @@
         "editor.tabSize": 4,
         "formatting.provider": "yapf",
         "editor.defaultFormatter": "eeyore.yapf",
-        "editor.formatOnType": false
+        "editor.formatOnType": false,
+        "diffEditor.ignoreTrimWhitespace": false
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
