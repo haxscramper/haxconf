@@ -192,5 +192,70 @@
     {
         "key": "ctrl+k ctrl+o",
         "command": "workbench.action.closeEditorsInOtherGroups"
+    },
+    {
+        "key": "alt+left",
+        "command": "-org.decrementContext",
+        "when": "editorLangId == 'org'"
+    },
+    {
+        "key": "alt+left",
+        "command": "-gitlens.key.alt+left",
+        "when": "gitlens:key:alt+left"
+    },
+    {
+        "key": "alt+left",
+        "command": "workbench.action.navigateBack",
+        "when": "canNavigateBack"
+    },
+    {
+        "key": "ctrl+alt+-",
+        "command": "-workbench.action.navigateBack",
+        "when": "canNavigateBack"
+    },
+    {
+        "key": "alt+right",
+        "command": "workbench.action.navigateForward",
+        "when": "canNavigateForward"
+    },
+    {
+        "key": "ctrl+shift+-",
+        "command": "-workbench.action.navigateForward",
+        "when": "canNavigateForward"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-repl.execute",
+        "when": "config.interactiveWindow.executeWithShiftEnter && isCompositeNotebook && !notebookCellListFocused && activeEditor == 'workbench.editor.repl'"
+    },
+    {
+        "key": "ctrl+enter",
+        "command": "-repl.execute",
+        "when": "isCompositeNotebook && !notebookCellListFocused && activeEditor == 'workbench.editor.repl'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-interactive.execute",
+        "when": "config.interactiveWindow.executeWithShiftEnter && isCompositeNotebook && activeEditor == 'workbench.editor.interactive'"
+    },
+    {
+        "key": "ctrl+enter",
+        "command": "-interactive.execute",
+        "when": "isCompositeNotebook && activeEditor == 'workbench.editor.interactive'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-workbench.action.terminal.sendSequence",
+        "when": "terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-python.execSelectionInTerminal",
+        "when": "editorTextFocus && !findInputFocussed && !isCompositeNotebook && !jupyter.ownsSelection && !notebookEditorFocused && !replaceInputFocussed && editorLangId == 'python'"
+    },
+    {
+        "key": "shift+enter",
+        "command": "-python.execInREPL",
+        "when": "config.python.REPL.sendToNativeREPL && editorTextFocus && !isCompositeNotebook && !jupyter.ownsSelection && !notebookEditorFocused && editorLangId == 'python'"
     }
 ]

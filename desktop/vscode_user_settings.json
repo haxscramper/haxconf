@@ -40,20 +40,28 @@
     "nim.lintOnSave": false,
     "githubPullRequests.queries": [
         {
+            "label": "Local Pull Request Branches",
+            "query": "default"
+        },
+        {
             "label": "Waiting For My Review",
-            "query": "is:open review-requested:${user}"
+            "query": "repo:${owner}/${repository} is:open review-requested:${user}"
         },
         {
             "label": "Assigned To Me",
-            "query": "is:open assignee:${user}"
+            "query": "repo:${owner}/${repository} is:open assignee:${user}"
         },
         {
             "label": "All PRs",
-            "query": "sort:updated-desc"
+            "query": "repo:${owner}/${repository} sort:updated-desc"
         },
         {
             "label": "Created By Me",
-            "query": "is:open author:${user}"
+            "query": "repo:${owner}/${repository} is:open author:${user}"
+        },
+        {
+            "label": "All Open",
+            "query": "default"
         }
     ],
     // Stop the buzz
@@ -76,7 +84,8 @@
         "editor.tabSize": 4,
         "formatting.provider": "yapf",
         "editor.defaultFormatter": "eeyore.yapf",
-        "editor.formatOnType": false
+        "editor.formatOnType": false,
+        "diffEditor.ignoreTrimWhitespace": false
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
@@ -221,5 +230,67 @@
         "workbench.action.tasks.configureTaskRunner",
         "workbench.action.tasks.runTask"
     ],
-    "editor.stickyScroll.enabled": false
+    "editor.stickyScroll.enabled": false,
+    "highlight.regexes": {
+        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *TODO(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+            "decorations": [
+                {
+                    "overviewRulerColor": "#ffcc00",
+                    "backgroundColor": "#ffcc00",
+                    "color": "#1f1f1f",
+                    "fontWeight": "bold"
+                },
+                {
+                    "backgroundColor": "#ffcc00",
+                    "color": "#1f1f1f"
+                }
+            ]
+        },
+        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:FIXME|FIX|BUG|UGLY|DEBUG|HACK)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+            "decorations": [
+                {
+                    "overviewRulerColor": "#cc0000",
+                    "backgroundColor": "#cc0000",
+                    "color": "#1f1f1f",
+                    "fontWeight": "bold"
+                },
+                {
+                    "backgroundColor": "#cc0000",
+                    "color": "#1f1f1f"
+                }
+            ]
+        },
+        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:REVIEW|OPTIMIZE|TSC)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+            "decorations": [
+                {
+                    "overviewRulerColor": "#00ccff",
+                    "backgroundColor": "#00ccff",
+                    "color": "#1f1f1f",
+                    "fontWeight": "bold"
+                },
+                {
+                    "backgroundColor": "#00ccff",
+                    "color": "#1f1f1f"
+                }
+            ]
+        },
+        "((?:<!-- *)?(?:#|// @|//|./\\*+|<!--|--|\\* @|{!|{{!--|{{!) *(?:IDEA)(?:\\s*\\([^)]+\\))?:?)((?!\\w)(?: *-->| *\\*/| *!}| *--}}| *}}|(?= *(?:[^:]//|/\\*+|<!--|@|--|{!|{{!--|{{!))|(?: +[^\\n@]*?)(?= *(?:[^:]//|/\\*+|<!--|@|--(?!>)|{!|{{!--|{{!))|(?: +[^@\\n]+)?))": {
+            "filterFileRegex": ".*(?<!CHANGELOG.md)$",
+            "decorations": [
+                {
+                    "overviewRulerColor": "#cc00cc",
+                    "backgroundColor": "#cc00cc",
+                    "color": "#1f1f1f",
+                    "fontWeight": "bold"
+                },
+                {
+                    "backgroundColor": "#cc00cc",
+                    "color": "#1f1f1f"
+                }
+            ]
+        }
+    }
 }

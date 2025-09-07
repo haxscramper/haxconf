@@ -2906,7 +2906,8 @@ skips capitalized and upperacsed words (names and abbreviations)"
 
 (defun hax/fill-paragraph ()
   (interactive)
-  (funcall-interactively 'fill-paragraph 'full))
+  (let ((fill-column 99999))
+    (funcall-interactively 'fill-paragraph 'full)))
 
 (defun org-refile-targets-all-files ()
   "Use all currently opened Org buffer files as org-refile targets."

@@ -48,6 +48,8 @@
 #code##cpp##lib##gteste
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
+#code##cpp##lib##tbb
+#code##cpp##lib##tracy
 #code##cpp##memory
 #code##cpp##templates
 #code##cpp##tool##clang
@@ -99,8 +101,10 @@
 #code##python##C_API
 #code##python##documentation
 #code##python##lib##hypothesis
+#code##python##lib##invoke
 #code##python##lib##matplotlib
 #code##python##lib##nltk
+#code##python##lib##pytorch
 #code##python##lib##sqlalchemy
 #code##qt
 #code##qt##mvc
@@ -222,6 +226,7 @@
 #haxorg##python
 #haxorg##sem
 #haxorh
+#headsp
 #headstate
 #history
 #howto
@@ -334,6 +339,7 @@
 #programming##refactoring##legacy
 #programming##refactoring##naming
 #programming##refactoring##organization
+#programming##refactoring##simplify
 #programming##rfc
 #programming##script
 #programming##spec_wording
@@ -460,12 +466,14 @@
 #software##clang
 #software##cmake
 #software##conan
+#software##cpack
 #software##ctags
 #software##dbus
 #software##doxygen
 #software##drawio
 #software##elvish
 #software##emacs
+#software##emacs##gptel
 #software##emacs##org
 #software##firefox
 #software##gallery_dl
@@ -483,6 +491,7 @@
 #software##libvirt
 #software##llvm
 #software##memex
+#software##minecraft
 #software##mingw
 #software##mpd
 #software##navi
@@ -507,6 +516,7 @@
 #software##shell
 #software##sourcetrail
 #software##spoofax
+#software##sqlserver
 #software##stablediffusion
 #software##systemd
 #software##tabby
@@ -529,6 +539,7 @@
 #software##xfce4
 #software##xmake
 #software##xtext
+#software##zmq
 #software##zotero
 #speech
 #sprint##review
@@ -602,6 +613,7 @@
 #work##interview
 #work##question
 #work##reuters
+#work##tenstorrent
 #work##vizio
 #work##vizio##dtv
 #work##vizio##home

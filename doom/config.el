@@ -393,36 +393,20 @@ more nitpickery about stuff I write in my configuration files."
   :underline t)
 
 
-(defface-derive hl-todo-IMPORTANT warning "IMPORTANT"
-  :weight bold :underline t)
-(defface-derive hl-todo-TODO warning "TODO"
-  :weight bold :underline t)
-(defface-derive hl-todo-FIXME error "FIXME"
-  :weight bold :underline t)
-(defface-derive hl-todo-HACK font-lock-constant-face "HACK"
-  :weight bold :underline t)
-(defface-derive hl-todo-REVIEW font-lock-keyword-face "REVIEW"
-  :weight bold :underline t)
-(defface-derive hl-todo-IDEA success "IDEA"
-  :weight bold :underline t)
-(defface-derive hl-todo-NOTE success "NOTE"
-  :weight bold :underline t)
-(defface-derive hl-todo-DONE success "DONE"
-  :weight bold :underline t)
-(defface-derive hl-todo-DEPRECATED font-lock-doc-face "DEPRECATED"
-  :weight bold :underline t)
-(defface-derive hl-todo-REFACTOR font-lock-comment-face "REFACTOR"
-  :underline t)
-(defface-derive hl-todo-BUG error "BUG"
-  :weight bold :underline t)
-(defface-derive hl-todo-MAYBE warning "MAYBE"
-  :weight bold :underline t)
-(defface-derive hl-todo-XXX font-lock-constant-face "XXX"
-  :weight bold :underline t)
-
-(defface-derive hl-todo-IMPLEMENT warning "IMPLEMENT"
-  :underline t :slant italic)
-
+(defface-derive hl-todo-IMPORTANT warning "IMPORTANT" :weight bold :underline t)
+(defface-derive hl-todo-TODO warning "TODO" :weight bold :underline t)
+(defface-derive hl-todo-FIXME error "FIXME" :weight bold :underline t)
+(defface-derive hl-todo-HACK font-lock-constant-face "HACK" :weight bold :underline t)
+(defface-derive hl-todo-REVIEW font-lock-keyword-face "REVIEW" :weight bold :underline t)
+(defface-derive hl-todo-IDEA success "IDEA" :weight bold :underline t)
+(defface-derive hl-todo-NOTE success "NOTE" :weight bold :underline t)
+(defface-derive hl-todo-DONE success "DONE" :weight bold :underline t)
+(defface-derive hl-todo-DEPRECATED font-lock-doc-face "DEPRECATED" :weight bold :underline t)
+(defface-derive hl-todo-REFACTOR font-lock-comment-face "REFACTOR" :underline t)
+(defface-derive hl-todo-BUG error "BUG" :weight bold :underline t)
+(defface-derive hl-todo-MAYBE warning "MAYBE" :weight bold :underline t)
+(defface-derive hl-todo-XXX font-lock-constant-face "XXX" :weight bold :underline t)
+(defface-derive hl-todo-IMPLEMENT warning "IMPLEMENT" :underline t :slant italic)
 (defface-derive hl-todo-DOC hl-todo-TODO "DOC")
 (defface-derive hl-todo-ERROR error "ERROR")
 (defface-derive hl-todo-WARNING warning "WARNING" :underline t :slant italic :overline t)
@@ -431,6 +415,8 @@ more nitpickery about stuff I write in my configuration files."
 (defface-derive hl-todo-NEXT hl-todo-TODO "NEXT")
 (defface-derive hl-todo-TEST hl-todo-TODO "TEST")
 
+
+(defface-derive hl-todo-ASSUME warning "ASSUME" :underline t :slant italic)
 
 (after! hl-todo
   (setq hl-todo-keyword-faces
@@ -450,6 +436,7 @@ more nitpickery about stuff I write in my configuration files."
           ("xxx" . hl-todo-XXX)
           ("IMPLEMENT" . hl-todo-IMPLEMENT)
           ("IMPORTANT" . hl-todo-IMPORTANT)
+          ("ASSUME" . hl-todo-ASSUME)
           ("QUESTION" . hl-todo-QUESTION)
           ("TEST" . hl-todo-TEST)
           ("WARNING" . hl-todo-WARNING)
