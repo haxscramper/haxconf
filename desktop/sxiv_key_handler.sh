@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
-s~/.config/haxconf/desktop/sxiv_key_handler.shet -o nounset
+set -o nounset
 set -o errexit
 
 notify() {
