@@ -119,3 +119,5 @@
 (package! gptel :recipe (:nonrecursive t))
 (package! ivy)
 (package! counsel)
+(package! eaf)
+(package! swiper)
