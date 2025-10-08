@@ -350,6 +350,7 @@ more nitpickery about stuff I write in my configuration files."
 (set-popup-rule! "*Telega Root*" :ignore t)
 (set-popup-rule! "eshell" :ignore t :modeline t)
 (set-popup-rule! "COMMIT_EDITMSG" :height 0.6)
+(set-popup-rule! "*GPTel Proofreading Diff*" :height 0.75)
 
 (defun hax/telega-mode-hook ()
   (interactive)
@@ -542,36 +543,6 @@ then kill the buffer too."
  :leader
  :nv "w d"  #'hax/ace-delete-window
  )
-
-(use-package! eaf
-  :load-path "~/.emacs.d/site-lisp/emacs-application-framework/"
-  :init
-  :custom
-  (eaf-browser-continue-where-left-off t)
-  (eaf-browser-enable-adblocker t)
-  ;; (browse-url-browser-function 'eaf-open-browser) ;; Make EAF Browser my default browser
-  :config
-  (defalias 'browse-web #'eaf-open-browser)
-
-  (require 'eaf-file-manager)
-  (require 'eaf-markdown-previewer)
-  (require 'eaf-pdf-viewer)
-  (require 'eaf-browser)
-  ;; (when (display-graphic-p)
-  ;;   (require 'eaf-all-the-icons))
-
-  (require 'eaf-evil)
-  (define-key key-translation-map (kbd "SPC")
-              (lambda (prompt)
-                (if (derived-mode-p 'eaf-mode)
-                    (pcase eaf--buffer-app-name
-                      ("browser" (if  (string= (eaf-call-sync "call_function" eaf--buffer-id "is_focus") "True")
-                                     (kbd "SPC")
-                                   (kbd eaf-evil-leader-key)))
-                      ("pdf-viewer" (kbd eaf-evil-leader-key))
-                      ("image-viewer" (kbd eaf-evil-leader-key))
-                      (_  (kbd "SPC")))
-                  (kbd "SPC")))))
 
 (use-package! dogears
   :config

@@ -140,7 +140,7 @@ time. Adjust the text structure to account for that.
 
     ;; Display the buffer in a popup window
     (pop-to-buffer diff-buffer '((display-buffer-below-selected)
-                                 (window-height . 0.4)))))
+                                 (window-height . 0.7)))))
 
 (defun hax/gptel-proof-word-diff (original-words corrected-words)
   "Create a word-level diff between two lists of words.
