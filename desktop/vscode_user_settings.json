@@ -93,6 +93,7 @@
     "[cmake]": {
         "editor.defaultFormatter": "cheshirekow.cmake-format"
     },
+
     "redhat.telemetry.enabled": false,
     // Automatically pick up schema files from the workspace roots if possible
     "xml.fileAssociations": [
@@ -231,6 +232,48 @@
         "workbench.action.tasks.runTask"
     ],
     "svg.preview.mode": "svg",
-    "editor.stickyScroll.enabled": false,
-    "window.zoomLevel": 1
+    "openInExternalApp.openMapper": [
+        {
+            "extensionName": "png",
+            "apps": [
+                {
+                    "title": "sxiv",
+                    "openCommand": "sxiv"
+                }
+            ]
+        }
+    ],
+    "[dockercompose]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "advanced",
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "C_Cpp.files.exclude": {
+        "**/thirdparty/**": true,
+        "thirdparty": true,
+        "**/toolchain/**": true,
+        "**/build*": true,
+        "**/.vscode": true,
+        "**/.vs": true,
+        "src/wrappers/js/node_modules/**": true,
+    },
+    "[typst]": {
+        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?",
+        "editor.formatOnSave": true,
+    },
+    "[typst-code]": {
+        "editor.wordSeparators": "`~!@#$%^&*()=+[{]}\\|;:'\",.<>/?"
+    },
+    "emeraldwalk.runonsave": {
+      "commands": [
+        {
+          "match": "\\.typ$",
+          "cmd": "typstyle --inplace ${file}"
+        }
+      ]
+    }
 }

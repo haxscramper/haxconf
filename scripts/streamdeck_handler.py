@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class ExecuteScriptAction(BaseModel):
     type: Literal["execute_script"]
     script: str
+    insert_output: bool = False
 
 
 class EmulateShortcutAction(BaseModel):
@@ -235,10 +236,17 @@ class StreamDeckController:
                 self.execute_action(deck, key.action)
 
     def execute_action(self, deck: StreamDeck, action: Action) -> None:
+        logger.info(f"Running action {action} on desk {deck}")
         match action:
             case ExecuteScriptAction():
-                threading.Thread(target=lambda: subprocess.run(
-                    action.script, shell=True)).start()
+                def execute_subprocess(action: Action):
+                    result = subprocess.run(action.script, shell=True, capture_output=True)
+                    if action.insert_output:
+                        logger.info(f"Got stdout {result.stdout.decode()}")
+                        self.fast_type_text(result.stdout.decode())
+
+
+                threading.Thread(target=lambda: execute_subprocess(action)).start()
             case EmulateShortcutAction():
                 threading.Thread(target=lambda: pyautogui.hotkey(
                     *action.shortcut.split("+"))).start()

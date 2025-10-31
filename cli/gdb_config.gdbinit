@@ -4,3 +4,4 @@ set print address off
 set print frame-arguments all
 set print frame-info source-and-location
 set print pretty on
+set auto-load safe-path /

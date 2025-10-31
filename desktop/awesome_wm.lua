@@ -749,6 +749,30 @@ awful.rules.rules = {
             type = {"normal", "dialog"}
         },
         properties = {titlebars_enabled = true}
+    },
+    {
+        rule = { class = "firefox" },
+        properties = {
+            titlebars_enabled = function(c)
+                return not c.fullscreen
+            end
+        },
+        callback = function(c)
+            c:connect_signal("property::fullscreen", function()
+                if c.fullscreen then
+                    awful.titlebar.hide(c)
+                    c:geometry({
+                        x = c.screen.geometry.x,
+                        y = c.screen.geometry.y,
+                        width = c.screen.geometry.width,
+                        height = c.screen.geometry.height
+                    })
+                else
+                    awful.titlebar.show(c)
+                    awful.layout.arrange(c.screen)
+                end
+            end)
+        end
     }
 }
 -- }}}

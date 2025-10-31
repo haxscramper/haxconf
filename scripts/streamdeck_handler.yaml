@@ -27,6 +27,7 @@ decks:
                 - ALWAYS Use `.at()` and `.insert_or_assign()` when working with sequential and associative containers
                 - NEVER split method declaration and implementation
                 - ALWAYS use `{}` when writing if/else/while etc. NEVER use syntax without curly braces.
+                - Let the exceptions in the code propagate. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors or log the warnings.
           1:
             title_text:
               text: "AI\nPython"
@@ -34,7 +35,7 @@ decks:
             action:
               type: "type_text"
               text: |
-                Use double quotes for strings, use type annotations. When writing a full python script add shebang for `#!/usr/bin/env python`. Use pathlib library for working with files. The project uses poetry for package management and the `pyproject.toml` for the configuration. 
+                Use double quotes for strings, use type annotations. Use pathlib library for working with files.
 
                 - Respond only with code requested in the question or needed to fix the issue. 
                 - Do not add comments. 
@@ -43,14 +44,15 @@ decks:
                 - Do not use emojis in the answer.
                 - Do not write type definitions unless explicitly required to for the answer. 
                 - Provide code only for the requested functionality. 
-                - Use type annotations. 
+                - Use type annotations. Use `beartype` for the function and class annotations and typing.
                 = Apply this requirement to all subsequent messages unless instructed otherwise. 
                 - If there is no acceptable answer to the request, indicate this. 
                 - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
                 - When printing logs from the script, use logging module instead of `print()`
-                - Use basic config `logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(filename)s:%(lineno)d - %(levelname)s - %(message)s")` for logging.
+                - Do not configure the logging for the script, assume it is already imported.
                 - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
                 - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
+                - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.
           2:
             title_text:
               text: "AI\nDiff"
@@ -71,12 +73,21 @@ decks:
 
           4:
             title_text:
-              text: "Recommended"
+              text: "DATE"
               font_size: 28
             action:
-              type: "type_text"
-              text: |
-                Give recommended option only.
+              type: "execute_script"
+              insert_output: true
+              script: "date -Is"
+
+          7:
+            title_text:
+              text: "XCC"
+              font_size: 28
+            action:
+              type: "execute_script"
+              script: "killall clang++"
+
           9:
             action:
               type: "change_page"
