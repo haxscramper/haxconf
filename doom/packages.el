@@ -119,3 +119,7 @@
 (package! gptel :recipe (:nonrecursive t))
 (package! ivy)
 (package! counsel)
+(package! ivy-prescient)
+(package! ivy-rich)
+(package! ivy-hydra)
+(package! ivy-posframe)

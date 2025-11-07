@@ -1,5 +1,5 @@
 # -*- mode: snippet -*-
-# key: <d
+# key: <def
 # --
 #+attr_latex: :options [$1]
 #+begin_definition

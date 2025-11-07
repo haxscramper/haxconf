@@ -114,6 +114,7 @@
 #code##python##lib##nltk
 #code##python##lib##pytorch
 #code##python##lib##sqlalchemy
+#code##python##lib##streamlit
 #code##python##lib##zeromq
 #code##qt
 #code##qt##mvc
@@ -511,6 +512,7 @@
 #software##llm##llama
 #software##llvm
 #software##memex
+#software##meson
 #software##minecraft
 #software##mingw
 #software##mpd

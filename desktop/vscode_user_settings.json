@@ -232,5 +232,6 @@
     ],
     "svg.preview.mode": "svg",
     "editor.stickyScroll.enabled": false,
-    "window.zoomLevel": 1
+    "window.zoomLevel": 1,
+    "diffEditor.maxComputationTime": 0
 }
