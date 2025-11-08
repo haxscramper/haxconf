@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# key: <des
+# --
+#+begin_description
+$0
+#+end_description

@@ -121,3 +121,7 @@
 (package! counsel)
 (package! eaf)
 (package! swiper)
+(package! ivy-prescient)
+(package! ivy-rich)
+(package! ivy-hydra)
+(package! ivy-posframe)

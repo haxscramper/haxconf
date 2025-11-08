@@ -1180,6 +1180,8 @@ the empty area."
    :desc "insert ~code~"
    :ni "M-i M-`" (cmd! (insert (format "~%s~" (read-string "Code: "))))
    :desc "insert src_code{}"
+   :ni "M-i M-c M-c" (cmd! (hax/insert-created-timestamp))
+   :desc "insert src_code{}"
    :ni "M-i M-c M-s" (cmd!
                       (insert
                        (format
