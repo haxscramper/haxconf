@@ -110,6 +110,7 @@
 #code##python##C_API
 #code##python##documentation
 #code##python##lib##hypothesis
+#code##python##lib##igraph
 #code##python##lib##invoke
 #code##python##lib##matplotlib
 #code##python##lib##nltk

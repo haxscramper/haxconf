@@ -298,11 +298,11 @@
 (setq hax/read-from-popup-buffer-mode-map
       (let ((map (make-sparse-keymap)))
         (define-key map (kbd "C-c C-c")
-          (cmd!
-           (let* ((text (with-current-buffer "*footnote*"
-                          (buffer-substring (point-min) (point-max)))))
-             (kill-buffer "*footnote*")
-             (funcall hax/close-popup-buffer-callback text))))
+                    (cmd!
+                     (let* ((text (with-current-buffer "*footnote*"
+                                    (buffer-substring (point-min) (point-max)))))
+                       (kill-buffer "*footnote*")
+                       (funcall hax/close-popup-buffer-callback text))))
         map))
 
 (define-minor-mode hax/read-from-popup-buffer-mode
@@ -501,3 +501,5 @@ Prompt for a choice."
                        location lang content)))
     (when info
       (kill-new info))))
+
+(require 'org-archive)
