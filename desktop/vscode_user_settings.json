@@ -275,5 +275,7 @@
           "cmd": "typstyle --inplace ${file}"
         }
       ]
-    }
+    },
+    "window.zoomLevel": 1,
+    "editor.stickyScroll.enabled": false
 }
