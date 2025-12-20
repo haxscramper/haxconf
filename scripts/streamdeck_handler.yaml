@@ -232,6 +232,16 @@ decks:
               type: "execute_script"
               script: "gammaray"
             image_path: "~/defaultdirs/images/streamdeck/gammaray.png"
+          8:
+            action:
+              type: "focus_window"
+              text: "cursor"
+            image_path: "~/defaultdirs/images/streamdeck/cursor_logo.jpg"
+          9:
+            action:
+              type: "focus_window"
+              text: "dolphin"
+            image_path: "~/defaultdirs/images/streamdeck/dolphin_logo.jpg"
           11:
             action:
               type: "focus_window"

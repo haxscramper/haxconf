@@ -277,5 +277,7 @@
       ]
     },
     "window.zoomLevel": 1,
-    "editor.stickyScroll.enabled": false
+    "editor.stickyScroll.enabled": false,
+    "xml.server.preferBinary": true,
+    "workbench.tree.enableStickyScroll": false
 }
