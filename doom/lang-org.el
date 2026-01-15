@@ -357,6 +357,21 @@ interactive function call"
             (setq entries (nconc entries (list b))))))
       entries)))
 
+(defun org-collect-known-entries (&optional sources)
+  (let* ((buffers
+          (if sources
+              (--map (if (bufferp it) it (get-file-buffer it)) sources)
+            (org-get-known-file-buffers)))
+         (entries nil))
+    (dolist (b (delq nil buffers))
+      (with-current-buffer b
+        (setq entries
+              (nconc entries
+                     (counsel-outline-candidates
+                      (cdr (assq 'org-mode counsel-outline-settings))
+                      (counsel-org-goto-all--outline-path-prefix))))))
+    entries))
+
 (defun org-collect-known-entries (&optional file-list)
   (let (entries)
     (dolist (b (if file-list
@@ -582,6 +597,29 @@ selection result. Provide PROMPT for selection input"
          ;; final output
          (id (hax/get-subtree-id-for-marker (cdr tree-car))))
     (insert (format "[[id:%s][%s]]" id (if description description name)))))
+
+(cl-defun hax/org-insert-subtree-old-archive (&optional only-archives)
+  (interactive)
+  (hax/org-select-subtree-callback
+   "Target subtree: "
+   (lambda (x) (org-entry-put
+                (point)
+                "ARCHIVE_OLPATH_PARENT_ID"
+                (hax/get-subtree-id-for-marker (cdr x))))
+   'hax/org-insert-link-to-heading
+   (org-collect-known-entries (org-get-known-file-buffers-archival only-archives))))
+
+(defun hax/org-show-all-drawers ()
+  "Show all property drawers in current buffer."
+  (interactive)
+  (let ((data (org-element-parse-buffer)))
+    (org-element-map
+        data
+        'property-drawer
+      (lambda (drawer)
+        (let ((b (org-element-property :begin drawer))
+              (e (org-element-property :end drawer)))
+          (org-flag-region b e nil 'org-hide-drawer))))))
 
 (cl-defun hax/org-insert-link-to-subtree
     (&key description
