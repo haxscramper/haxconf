@@ -996,6 +996,61 @@ selection result. Provide PROMPT for selection input"
 (advice-add
  'org-refile :before #'hax/org-save-source-id-and-header)
 
+(defun hax/org-add-log-entry (text &optional drawer)
+  "Insert TEXT as a log entry for the current Org heading, respecting indentation.
+
+Uses `org-log-beginning' to find/create the drawer insertion point.
+If DRAWER is non-nil, log into that drawer name (default: \"LOGBOOK\").
+
+TEXT is inserted without text properties and indented like other drawer
+contents (drawer indentation + 2 spaces)."
+  (let* ((org-log-into-drawer (or drawer "LOGBOOK"))
+         (text (substring-no-properties (or text "")))
+         ;; Normalize to no trailing newline; we'll add newlines ourselves.
+         (text (replace-regexp-in-string "\n\\'" "" text)))
+    (org-with-wide-buffer
+     (org-back-to-heading t)
+     (save-excursion
+       (let* ((pos (org-log-beginning t))      ; creates drawer if needed
+              (drawer-indent
+               (save-excursion
+                 (goto-char pos)
+                 ;; `org-log-beginning' commonly returns BOL of the :END: line,
+                 ;; whose indentation matches the drawer's indentation.
+                 (current-indentation)))
+              (prefix (make-string drawer-indent ?\s)))
+         (goto-char pos)
+         (message "DRAWER-INDENT: %s" drawer-indent)
+         (unless (bolp) (insert "\n"))
+         (dolist (line (split-string text "\n"))
+           (insert prefix line "\n")))))))
+
+(defun hax/org-rename-subtree (new-title)
+  "Rename current Org subtree heading to NEW-TITLE and log the rename.
+
+Adds a LOGBOOK entry:
+  - Renamed on <rename date> from \"<original title>\""
+  (interactive
+   (progn
+     (unless (derived-mode-p 'org-mode)
+       (user-error "Not in org-mode"))
+     (org-back-to-heading t)
+     (let ((old (substring-no-properties (org-get-heading t t t t))))
+       (list (read-string (format "Rename \"%s\" to: " old) old)))))
+
+  (org-with-wide-buffer
+   (org-back-to-heading t)
+   (let* ((old-title (substring-no-properties (org-get-heading t t t t)))
+          ;; `org-time-stamp-format' already includes <...> (or [...] if inactive),
+          ;; so do NOT wrap it in extra <>.
+          (ts (format-time-string (org-time-stamp-format t t) (current-time))))
+     (org-edit-headline new-title)
+     (hax/org-add-log-entry
+      (format "- Renamed on %s from %S" ts old-title) ; %S gives "...", escaped
+      "LOGBOOK")
+     new-title)))
+
+
 (defun hax/disable-adapt-indentation (&rest args) (setq org-adapt-indentation nil))
 (defun hax/enable-adapt-indentation (&rest args) (setq org-adapt-indentation t))
 
@@ -2834,7 +2889,7 @@ subtree can be found."
 
 (defun hax/dbg/looking-at ()
   (interactive)
-  (format
+  (message
    "looking at: %s:%s..%s = [%s] in %s"
    (line-number-at-pos)
    (point)
