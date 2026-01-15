@@ -80,6 +80,14 @@ decks:
               type: "execute_script"
               insert_output: true
               script: "date -Is"
+          5:
+            title_text:
+              text: "Minimal\nexample"
+              font_size: 28
+            action:
+              type: "type_text"
+              text: |
+                Respond with a single minimal code example, only recommended solution, do not list all alternatives. Use double quotes for strings.
 
           7:
             title_text:
@@ -179,6 +187,65 @@ decks:
             action:
               type: "execute_script"
               script: "fixwacom.py"
+          9:
+             action:
+              type: "change_page"
+              direction: "forward"
+          8:
+             action:
+              type: "change_page"
+              direction: "backward"
+      - name: "Page 5"
+        buttons:
+          0:
+            title_text:
+              text: "-120"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py rel-position -120"
+          1:
+            title_text:
+              text: "+120"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py rel-position +120"
+          2:
+            title_text:
+              text: "-300"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py rel-position -300"
+          3:
+            title_text:
+              text: "+300"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py rel-position +300"
+          4:
+            title_text:
+              text: "=/>>"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl play-pause"
+          5:
+            title_text:
+              text: "<"
+              font_size: 48
+            action:
+              type: "execute_script"
+              script: "playerctl previous"
+          6:
+            title_text:
+              text: ">"
+              font_size: 48
+            action:
+              type: "execute_script"
+              script: "playerctl next"
           9:
              action:
               type: "change_page"
