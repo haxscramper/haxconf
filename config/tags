@@ -53,6 +53,7 @@
 #code##cpp##lib##gteste
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
+#code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
 #code##cpp##lib##tbb
@@ -117,10 +118,12 @@
 #code##python##lib##invoke
 #code##python##lib##matplotlib
 #code##python##lib##nltk
+#code##python##lib##plotly
 #code##python##lib##pytorch
 #code##python##lib##sqlalchemy
 #code##python##lib##streamlit
 #code##python##lib##zeromq
+#code##python##tool##pyenv
 #code##python##tool##uv
 #code##qt
 #code##qt##mvc
@@ -261,6 +264,7 @@
 #haoxrg
 #hardware
 #hardware##elgato
+#hardware##gtr9
 #hardware##keyboard
 #hardware##mini_tab_c
 #hardware##monitor
@@ -426,6 +430,7 @@
 #project##haxdoc
 #project##haxorg
 #project##haxorg##ci
+#project##haxorg##codegen
 #project##haxorg##cov
 #project##haxorg##editor
 #project##haxorg##gui
@@ -526,6 +531,7 @@
 #software##conan
 #software##cpack
 #software##ctags
+#software##cursor
 #software##dbus
 #software##doxygen
 #software##drawio
