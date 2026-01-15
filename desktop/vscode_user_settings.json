@@ -85,7 +85,7 @@
         "formatting.provider": "yapf",
         "editor.defaultFormatter": "eeyore.yapf",
         "editor.formatOnType": false,
-        "diffEditor.ignoreTrimWhitespace": false
+        "diffEditor.ignoreTrimWhitespace": true
     },
     "[js]": {
         "editor.defaultFormatter": "xaver.clang-format"
@@ -279,5 +279,18 @@
     "window.zoomLevel": 1,
     "editor.stickyScroll.enabled": false,
     "xml.server.preferBinary": true,
-    "workbench.tree.enableStickyScroll": false
+    "workbench.tree.enableStickyScroll": false,
+    "errorLens.enabledDiagnosticLevels": [
+        "error",
+        "info",
+        "warning"
+    ],
+    "protobuf.externalLinter.bufPath": "none",
+    "protobuf.externalLinter.protolintPath": "none",
+    "[json]": {
+        "editor.defaultFormatter": "j-brooke.fracturedjsonvsc"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "j-brooke.fracturedjsonvsc"
+    }
 }

@@ -28,3 +28,15 @@ $ file: fd -uu -e bz2
 
 # Convert clipboard HTML copy to org-mode text
 xclip -selection clipboard -o -t text/html | pandoc --wrap=none -f html -t org
+
+# Remove yay cache
+yay -Sc
+
+# Docker remove all dangling images
+docker rmi (docker images --filter "dangling=true" -q --no-trunc)
+
+# Docker remove all exited containers
+docker rm (docker ps --filter status=exited -q)
+
+# Docker remove all unused images (not associated with container) that are more than one week old
+docker image prune --all --filter "until=168h"

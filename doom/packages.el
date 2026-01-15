@@ -125,3 +125,4 @@
 (package! ivy-rich)
 (package! ivy-hydra)
 (package! ivy-posframe)
+(package! org-ml)
