@@ -292,5 +292,8 @@
     },
     "[jsonc]": {
         "editor.defaultFormatter": "j-brooke.fracturedjsonvsc"
+    },
+    "[c]": {
+        "editor.defaultFormatter": "xaver.clang-format"
     }
 }

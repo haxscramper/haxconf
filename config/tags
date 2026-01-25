@@ -433,6 +433,7 @@
 #project##haxconf
 #project##haxdoc
 #project##haxorg
+#project##haxorg##babel
 #project##haxorg##ci
 #project##haxorg##cli
 #project##haxorg##codegen

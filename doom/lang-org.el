@@ -933,7 +933,7 @@ selection result. Provide PROMPT for selection input"
   (interactive)
   (save-excursion
     (setq hax/org-refile-refiled-from-mark (point-marker))
-    (setq hax/org-refile-refiled-from-file (buffer-file-name))
+    (setq hax/org-refile-refiled-from-file (buffer-file-name (buffer-base-buffer)))
     (if (org-up-heading-safe)
         ;; If we are in some outline, assign
         (progn

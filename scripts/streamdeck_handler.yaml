@@ -95,7 +95,7 @@ decks:
               font_size: 28
             action:
               type: "execute_script"
-              script: "killall clang++"
+              script: "killall clang++ && killall clangd && killall clang"
 
           9:
             action:
