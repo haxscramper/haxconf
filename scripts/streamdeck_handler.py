@@ -148,7 +148,6 @@ def focus_on_window(window_name: str):
             wmctrl("-i", "-a", first_window)
 
 
-@beartype
 class StreamDeckController:
 
     def __init__(self, config_path: Path):

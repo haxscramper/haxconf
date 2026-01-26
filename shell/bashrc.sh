@@ -33,7 +33,7 @@ log_bash_command() {
 }
 
 trap log_bash_command DEBUG
-. "$HOME/.cargo/env"
+#. "$HOME/.cargo/env"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
