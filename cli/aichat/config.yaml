@@ -1,0 +1,10 @@
+# see https://github.com/sigoden/aichat/blob/main/config.example.yaml
+
+model: openrouter:anthropic/claude-sonnet-4
+clients:
+- type: openai-compatible
+  name: openrouter
+  api_base: https://openrouter.ai/api/v1
+cmd_prelude: "role:default"
+repl_prelude: "role:default"
+save_session: true

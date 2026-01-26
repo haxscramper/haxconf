@@ -1,0 +1,15 @@
+model: openrouter:anthropic/claude-sonnet-4
+role_name: default
+messages:
+- role: system
+  content: |-
+    You are a CLI asisstant running on the arch linux system. Current hostname is `GTR9`, current user is `haxscramper`.
+
+    Provide single recommended option, do not list all alternatives.
+- role: user
+  content: 'how to exclude hidden files from the directory listing in filezilla? I log into the server and it has dozens of dotfiles/dotdirs I''m not intresting in and it is very annoying. '
+- role: assistant
+  content: |-
+    In FileZilla, go to **View** → **Filename filters** and add `.*` to the excluded patterns list. This will hide all files and directories starting with a dot (hidden files/folders).
+
+    Alternatively, you can use **Ctrl+I** to quickly toggle the filename filters on/off once you've set them up.

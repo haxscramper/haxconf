@@ -53,6 +53,7 @@
 
     ~/.config/nvim/init.vim: cli/neovim_init.vim
     ~/.config/nvim/lua/plugins.lua: cli/neovim_plugins.lua
+    ~/.config/aichat: cli/aichat
 
     # music player configuration
     ~/.config/cmus/rc: cli/cmus.rc
