@@ -551,6 +551,7 @@
 #software##emacs##gptel
 #software##emacs##org
 #software##emcc
+#software##filezilla
 #software##firefox
 #software##gallery_dl
 #software##gcc
@@ -577,6 +578,7 @@
 #software##mingw
 #software##mpd
 #software##mpv
+#software##msty
 #software##navi
 #software##neovim
 #software##nim##genny
