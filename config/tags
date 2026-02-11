@@ -12,6 +12,7 @@
 #activity##meeting##followup
 #activity##online_chat
 #activity##organization
+#activity##organization##reading_list
 #activity##planning
 #activity##random
 #activity##read
@@ -67,6 +68,7 @@
 #code##cpp##tool##gcc
 #code##cpp##tool##gdbgui
 #code##cpp##tool##instrumentation
+#code##cpp##tool##ninja
 #code##cpp##tool##rr
 #code##cpp##tool##spack
 #code##cpp##tool##vcpkg
@@ -524,6 +526,7 @@
 #shell##fish
 #shell##utility
 #software##ace_editor
+#software##aichat
 #software##aider
 #software##airdroid
 #software##alxreader
@@ -543,6 +546,7 @@
 #software##ctags
 #software##cursor
 #software##dbus
+#software##deepwiki
 #software##docker
 #software##doxygen
 #software##drawio
@@ -571,6 +575,7 @@
 #software##llm
 #software##llm##llama
 #software##llm##mcp
+#software##llm##rag
 #software##llvm
 #software##memex
 #software##meson
@@ -588,6 +593,7 @@
 #software##novelcrafter
 #software##obsidian
 #software##okular
+#software##opencode
 #software##openrouter
 #software##pacman
 #software##perf
@@ -600,6 +606,7 @@
 #software##recoll
 #software##rofi
 #software##rr
+#software##rsync
 #software##selenium
 #software##shell
 #software##sourcetrail
@@ -617,6 +624,7 @@
 #software##tulip
 #software##typst
 #software##ubuntu
+#software##unison
 #software##valgrind
 #software##vscode
 #software##wasm
