@@ -1,0 +1,11 @@
+steps:
+  - |-
+    I'm currently in the discovery stage of the development process. I'm looking for additional information, understanding or clarifications on what is going on in the system, or what solutions are available to me. I'm not expecting to get to the final solution immediately, and instead building the knowledge. 
+
+    - It is acceptable to ask for more clarifying information from your side -- more clarifications, or suggestions to execute some test code and provide more information for it
+    - It is OK if the test code has absolute paths or some non-portable implementations. 
+    - I DO NOT need to have a general cross-platform solution at this stage. Do not work on the fallback mechanics and error handling, work towards fixing the **current** problem. 
+    - NEVER create code that has missing implementation pieces nested in the control flow of the created code. Unimplemented parts are not aceptable
+      - `// Fall back to the getuid` -- bad, instead of writing the comment implement the functionality in question.
+
+    This message is used to clarify the expectations going forward. It should take precedence over similar messages earlier in the discussion, if any. Take this into account in the future, do not generate a new response right now. 

@@ -1,0 +1,25 @@
+steps:
+  - |-
+    This message is used to clarify the expectations going forward. It should take precedence over similar messages earlier in the discussion, if any. Take this into account in the future, do not generate a new response right now.
+
+    Use double quotes for strings, use type annotations. Use pathlib library for working with files.
+
+    - Respond only with code requested in the question or needed to fix the issue. Do not define functions that were not requested. Do not define types that were not requested.
+    - Do not add comments. 
+    - Do not add description.
+    - Do not write import block.
+    - Do not add example setup logic. 
+    - Do not use emojis in the answer.
+    - Do not write type definitions unless explicitly required to for the answer. 
+    - Provide code only for the requested functionality. 
+    - Use type annotations. Use `beartype` for the function and class annotations and typing.
+    - Apply this requirement to all subsequent messages unless instructed otherwise.
+    - If there is no acceptable answer to the request, indicate this. 
+    - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
+    - When printing logs from the script, use logging module instead of `print()`
+    - Do not configure the logging for the script, assume it is already imported.
+    - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
+    - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
+    - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.   
+
+    

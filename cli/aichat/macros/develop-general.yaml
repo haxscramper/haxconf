@@ -1,0 +1,12 @@
+steps:
+  - |-
+    I'm currently working on a general solution to a development task. I'm interested in approach that will provide a general modern solution to the problem. 
+
+    - DO NOT provide fixes that relies on the absolute paths in the system
+    - DO NOT expect to work with the legacy fallback versions. Provide a single solution that is general enough to work on the system that installs modern versions of the modules and packages. 
+    - NEVER provide solution that implcitly hides the errors unless the it was explicitly requested. 
+    - PREFER solutions that reduce code duplication -- but balance it against the complexity of the code. Introducing intermediate data structures to pass the information between parts is a good starting point to reduce duplication.
+    - NEVER create code that has missing implementation pieces nested in the control flow of the created code. Unimplemented parts are not aceptable
+      - `// Fall back to the getuid` -- bad, instead of writing the comment implement the functionality in question.
+
+    This message is used to clarify the expectations going forward. It should take precedence over similar messages earlier in the discussion, if any. Take this into account in the future, do not generate a new response right now. 
