@@ -79,6 +79,7 @@
 
     # Rofi text selector configuration and themes
     ~/.config/rofi/config.rasi: desktop/rofi
+    ~/.config/mpv: desktop/mpv
     ~/.config/rofi/theme: desktop/rofi-theme.rasi
     ~/.config/sxiv/exec/key-handler: desktop/sxiv_key_handler.sh
 

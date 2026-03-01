@@ -21,5 +21,6 @@ steps:
     - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
     - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
     - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.   
+    - NEVER write functions returning free-form `dict`, NEVER write functions returning typed tuples with four different elements or more. In both cases, define a dataclass with local name based on off the function `_SetupResultType` and the specific fields. Add documentation to the object fields. 
 
     
