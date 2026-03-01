@@ -1,111 +1,6 @@
 decks:
   - device_type: "Stream Deck Neo"
     pages:
-      - name: "Page 1"
-        buttons:
-          0:
-            title_text:
-              text: "AI\nC++"
-              font_size: 28
-            action:
-              type: "type_text"
-              text: |
-                - Respond only with code for the question. Do not add comments. 
-                - Do not add description. Do not add example setup logic. 
-                - Do not write type definitions unless explicitly required to for the answer. 
-                - Provide code only for the requested functionality. Use type annotations. 
-                - Apply this requirement to all subsequent messages unless instructed otherwise. 
-                - If there is no acceptable answer to the request, indicate this. 
-                - When formatting values to string, use std::format. 
-                - If necessary solution might use boost libraries and range-v3 library. 
-                - NEVER use prefix/postfix notation for variable and member names (like `m_field` or `field_` over regular `field`).
-                - ALWAYS Use `{}` syntax for object construction and class initializer lists, use designated field initializers when field names are known.
-                - ALWAYS Use `int` instead of `size_t` for size-related operations, method and loop iteration.
-                - ALWAYS Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
-                - ALWAYS Use `struct` instead of class
-                - NEVER use emojis in the answer.
-                - ALWAYS Use `.at()` and `.insert_or_assign()` when working with sequential and associative containers
-                - NEVER split method declaration and implementation
-                - ALWAYS use `{}` when writing if/else/while etc. NEVER use syntax without curly braces.
-                - Let the exceptions in the code propagate. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors or log the warnings.
-          1:
-            title_text:
-              text: "AI\nPython"
-              font_size: 28
-            action:
-              type: "type_text"
-              text: |
-                Use double quotes for strings, use type annotations. Use pathlib library for working with files.
-
-                - Respond only with code requested in the question or needed to fix the issue. Do not define functions that were not requested. Do not define types that were not requested.
-                - Do not add comments. 
-                - Do not add description.
-                - Do not write import block.
-                - Do not add example setup logic. 
-                - Do not use emojis in the answer.
-                - Do not write type definitions unless explicitly required to for the answer. 
-                - Provide code only for the requested functionality. 
-                - Use type annotations. Use `beartype` for the function and class annotations and typing.
-                - Apply this requirement to all subsequent messages unless instructed otherwise.
-                - If there is no acceptable answer to the request, indicate this. 
-                - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
-                - When printing logs from the script, use logging module instead of `print()`
-                - Do not configure the logging for the script, assume it is already imported.
-                - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
-                - Always use comparison operators going in the same direction, `<` and `<=`, never use `>` and `>=` compare operators
-                - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.
-          2:
-            title_text:
-              text: "AI\nDiff"
-              font_size: 28
-            action:
-              type: "type_text"
-              text: |
-                Respond only with the code necessary to implement the requested logic. Do not rewrite the whole code from scratch. Indicate where to insert new changes. 
-
-          3:
-            title_text:
-              text: "AI\nRegular"
-              font_size: 28
-            action:
-              type: "type_text"
-              text: |
-                You can respond to this question with both text and code. 
-
-          4:
-            title_text:
-              text: "DATE"
-              font_size: 28
-            action:
-              type: "execute_script"
-              insert_output: true
-              script: "date -Is"
-          5:
-            title_text:
-              text: "Minimal\nexample"
-              font_size: 28
-            action:
-              type: "type_text"
-              text: |
-                Respond with a single minimal code example, only recommended solution, do not list all alternatives. Use double quotes for strings.
-
-          7:
-            title_text:
-              text: "XCC"
-              font_size: 28
-            action:
-              type: "execute_script"
-              script: "killall clang++ && killall clangd && killall clang"
-
-          9:
-            action:
-              type: "change_page"
-              direction: "forward"
-          8:
-            action:
-              type: "change_page"
-              direction: "backward"
-
       - name: "Page 2"
         buttons:
           0:
@@ -317,8 +212,8 @@ decks:
           12:
             action:
               type: "focus_window"
-              text: "msty"
-            image_path: "~/defaultdirs/images/streamdeck/msty_logo.jpg"
+              text: "pycharm"
+            image_path: "~/defaultdirs/images/streamdeck/pycharm.png"
           13:
             action:
               type: "focus_window"
