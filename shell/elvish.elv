@@ -488,7 +488,7 @@ fn none-of {|list pred|
 }
 
 eval (starship init elvish)
-eval (carapace _carapace|slurp)
+# eval (carapace _carapace|slurp)
 try {
   # On Ubuntu zoxide installation is so ancient it
   # does not have support for elvish shell
@@ -578,7 +578,7 @@ set edit:after-command = [
       &src=$map[src]
       &error=$map[error]
     ]
-    if (< (count $map[src][code]) 10000) {
+    if (< (count $map[src][code]) 1000000) {
       put $result | to-json >> ~/.cache/elvish_exec_logs.json
     }
   }
