@@ -1,4 +1,4 @@
-version: 7
+version: 8
 profiles:
   - type: local
     name: default elvish
@@ -215,6 +215,28 @@ terminal:
   paneResizeStep: 0.2
   background: colorScheme
   warnOnMultilinePaste: false
+  lightColorScheme:
+    name: Tabby Default Light
+    foreground: '#4d4d4c'
+    background: '#ffffff'
+    cursor: '#4d4d4c'
+    colors:
+      - '#000000'
+      - '#c82829'
+      - '#718c00'
+      - '#eab700'
+      - '#4271ae'
+      - '#8959a8'
+      - '#3e999f'
+      - '#ffffff'
+      - '#000000'
+      - '#c82829'
+      - '#718c00'
+      - '#eab700'
+      - '#4271ae'
+      - '#8959a8'
+      - '#3e999f'
+      - '#ffffff'
 ssh:
   knownHosts:
     - host: 64.247.206.99
@@ -228,6 +250,7 @@ accessibility:
   animations: false
 appearance:
   flexTabs: true
+  tabsLocation: left
 hacks: {}
 enableAnalytics: false
 enableWelcomeTab: false
