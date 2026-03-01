@@ -137,7 +137,9 @@
     "git.openRepositoryInParentFolders": "never",
     "vue.codeActions.savingTimeLimit": 10000,
     "files.associations": {
-        "*.test": "Gherkin"
+        "*.test": "Gherkin",
+        "*.jinja": "jinja",
+        "*.json": "jsonc"
     },
     "cSpell.enabled": false,
     "editor.unicodeHighlight.invisibleCharacters": false,
@@ -295,5 +297,23 @@
     },
     "[c]": {
         "editor.defaultFormatter": "xaver.clang-format"
-    }
+    },
+    "workbench.secondarySideBar.defaultVisibility": "hidden",
+    "python.analysis.typeCheckingMode": "standard",
+    "diffEditor.renderSideBySideInlineBreakpoint": 9000,
+    "mesonbuild.downloadLanguageServer": true,
+    "kilo-code.debug": false,
+    "kilo-code.allowedCommands": [
+        "git log",
+        "git diff",
+        "git show"
+    ],
+    "kilo-code.deniedCommands": [],
+    "chat.disableAIFeatures": true,
+    "python.analysis.supportDocstringTemplate": false,
+    "python.analysis.supportRestructuredText": false,
+    "python.analysis.aiCodeActions": {
+    "generateDocstring": false
+    },
+    "workbench.editor.pinnedTabsOnSeparateRow": true
 }
