@@ -1380,6 +1380,7 @@ ARCHIVE_OLPATH_PARENT_ID."
   ;; me to override the default checkbox highlighting for checkboxes.
 
   (require 'evil-surround)
+  (require 'counsel)
   (message "Org-mode hook executed")
   (hl-todo-mode 1)
 
@@ -2249,6 +2250,7 @@ ARCHIVE_OLPATH_PARENT_ID."
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
  hax/projects.org (f-join hax/indexed.d "projects.org")
+ hax/projects_cold.org (f-join hax/indexed.d "projects_cold.org")
  org-structure-template-alist '(;; ("f" . "formula\n")
                                 ;; ("a" . "export ascii\n")
                                 ;; ("d" . "definition\n")
@@ -2559,11 +2561,13 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
                           hax/staging.org
                           hax/notes.org
                           hax/repeated.org
-                          hax/projects.org)
+                          hax/projects.org
+                          hax/projects_cold.org)
    org-refile-targets `((nil :maxlevel . 4)
                         (,hax/fic.org :maxlevel . 9)
                         (,hax/main.org :maxlevel . 3)
                         (,hax/projects.org :maxlevel . 7)
+                        (,hax/projects_cold.org :maxlevel . 7)
                         (,hax/notes.org :maxlevel . 3)
                         (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the
