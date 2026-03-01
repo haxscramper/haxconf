@@ -64,6 +64,7 @@
 #code##cpp##templates
 #code##cpp##threading
 #code##cpp##tool##clang
+#code##cpp##tool##codechecker
 #code##cpp##tool##conan
 #code##cpp##tool##gcc
 #code##cpp##tool##gdbgui
@@ -127,6 +128,7 @@
 #code##python##lib##streamlit
 #code##python##lib##zeromq
 #code##python##tool##pyenv
+#code##python##tool##sphinx
 #code##python##tool##uv
 #code##qt
 #code##qt##mvc
@@ -403,6 +405,7 @@
 #programming##serialization
 #programming##solved
 #programming##spec_wording
+#programming##static_analysis
 #programming##testing
 #programming##think
 #programming##threading
@@ -568,6 +571,7 @@
 #software##imgui
 #software##inkscape
 #software##josm
+#software##kilocode
 #software##kitty
 #software##langtool
 #software##ld
