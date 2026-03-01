@@ -69,6 +69,16 @@ left_right_sync(
 )
 
 left_right_sync(
+    home_path / "defaultdirs/documents/aichat_sessions",
+    D_MAIN / "defaultdirs/archive/aichat_sessions",
+)
+
+left_right_sync(
+    home_path / "defaultdirs/music",
+    D_MAIN / "defaultdirs/music",
+)
+
+left_right_sync(
     home_path / "defaultdirs/input/grabber",
     D_MAIN / "defaultdirs/archive/input_grabber",
 )
