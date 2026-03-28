@@ -306,7 +306,10 @@
     "kilo-code.allowedCommands": [
         "git log",
         "git diff",
-        "git show"
+        "git show",
+        "true",
+        "head",
+        "grep"
     ],
     "kilo-code.deniedCommands": [],
     "chat.disableAIFeatures": true,
@@ -315,5 +318,7 @@
     "python.analysis.aiCodeActions": {
     "generateDocstring": false
     },
-    "workbench.editor.pinnedTabsOnSeparateRow": true
+    "workbench.editor.pinnedTabsOnSeparateRow": true,
+    "python.analysis.enableParallelIndexing": true,
+    "python.defaultInterpreterPath": ""
 }

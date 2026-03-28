@@ -406,6 +406,7 @@
 #programming##solved
 #programming##spec_wording
 #programming##static_analysis
+#programming##style
 #programming##testing
 #programming##think
 #programming##threading
@@ -529,6 +530,8 @@
 #shell##fish
 #shell##utility
 #software##ace_editor
+#software##ai
+#software##ai##gemini
 #software##aichat
 #software##aider
 #software##airdroid
@@ -536,9 +539,11 @@
 #software##antlr4
 #software##archivebox
 #software##asciidoctor
+#software##ast_grep
 #software##autoconf
 #software##autokey
 #software##autotools
+#software##blender
 #software##calibre
 #software##carapace
 #software##chatgpt

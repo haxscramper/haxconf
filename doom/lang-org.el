@@ -2309,12 +2309,40 @@ otherwise continue prompting for tags."
          (with-selected-window (active-minibuffer-window)
            (delete-minibuffer-contents)))))
 
+(defface hax/org-agenda-header
+  '((t :inherit org-agenda-structure
+     :extend t))
+  "Face for custom agenda section headers.")
+
+(set-face-attribute 'hax/org-agenda-header nil
+                    :background (doom-darken (doom-color 'red) 0.5))
+
+(defun hax/org-agenda-style-headers ()
+  "Add empty line after headers and style them with red background."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (when (get-text-property (point) 'org-agenda-structural-header)
+          (let ((end (line-end-position)))
+            (add-text-properties (line-beginning-position) end
+                                 '(face hax/org-agenda-header))
+            ;; Extend face to full width
+            (goto-char end)
+            (unless (and (not (eobp))
+                         (save-excursion (forward-line 1)
+                                         (looking-at "^\\s-*$")))
+              (insert "\n"))))
+        (forward-line 1)))))
+
 
 
 (setq org-duration-format '((special . h:mm)))
 
 (defun hax/org-agenda-hook ()
   (display-line-numbers-mode 1)
+  (hax/org-agenda-style-headers)
+  (hax/org-agenda-delete-empty-blocks)
   )
 
 (add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
@@ -2380,6 +2408,47 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
     (unless (or (re-search-forward ":bug:" (line-end-position) t)
                 (re-search-forward "#[XAS]" (line-end-position) t))
       (or (outline-next-heading) (point-max)))))
+
+(defun hax/org-agenda-delete-empty-blocks ()
+  "Remove empty agenda blocks.
+An empty block is a header line followed immediately by another header
+line or end of buffer, with only blank lines in between."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (let (block-start block-header-end has-content)
+        (while (not (eobp))
+          (cond
+           ;; Separator line marks the end of a block
+           ((looking-at "^-\\{10,\\}")
+            (when (and block-start (not has-content))
+              ;; Delete from block start to end of separator line
+              (delete-region block-start (line-beginning-position))
+              ;; Also remove the now-orphaned separator if it's at point
+              (when (looking-at "^-\\{10,\\}")
+                (delete-region (line-beginning-position)
+                               (min (1+ (line-end-position)) (point-max)))))
+            (setq block-start nil
+                  block-header-end nil
+                  has-content nil)
+            (unless (eobp) (forward-line 1)))
+           ;; Overriding header line (starts at column 0, non-blank, non-separator)
+           ((and (not block-start)
+                 (looking-at "^[^ \t\n-]"))
+            (setq block-start (line-beginning-position)
+                  has-content nil)
+            (forward-line 1)
+            (setq block-header-end (point)))
+           ;; Blank line — doesn't count as content
+           ((looking-at "^\\s-*$")
+            (forward-line 1))
+           ;; Anything else is content
+           (t
+            (setq has-content t)
+            (forward-line 1))))
+        ;; Handle last block if empty (no trailing separator)
+        (when (and block-start (not has-content))
+          (delete-region block-start (point-max)))))))
 
 (defun hax/org-mode-configure ()
   (interactive)
@@ -2619,15 +2688,13 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
 
-
-
   (setq
    org-agenda-custom-commands
    `(("l" "Long"
       ((agenda
         ""
         ((org-agenda-span 30)
-         (org-agenda-start-day "-7d")
+         (org-agenda-start-day "-0d")
          (org-deadline-warning-days 35)))))
      ("*" "All"
       ((todo
@@ -2640,39 +2707,25 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
         ((org-agenda-overriding-header "Notes todo")
          (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-files '(,hax/notes.org))))
-       (todo "WIP")
+       (todo
+        "NEXT|WIP|PAUSED|BLOCKED"
+        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
        (todo
         "TODO"
         ((org-agenda-overriding-header "High priority project todos")
          (org-agenda-skip-function #'hax/org-agenda-skip-low-priority)
          (org-agenda-files '(,hax/projects.org))))
+       (agenda
+        ""
+        ((org-agenda-overriding-header "2-week preview")
+         (org-agenda-span 14)
+         (org-agenda-start-day "-0d")
+         (org-agenda-skip-function #'hax/org-agenda-skip)
+         (org-deadline-warning-days 0)))
        (todo
         "TODO"
         ((org-agenda-overriding-header "Repeated todos")
-         (org-agenda-files '(,hax/repeated.org))))
-       (todo "NEXT")
-       (todo "PAUSED")
-       (todo "BLOCKED")
-       ;; Show unfinished tasks for the last week, without filling all the
-       ;; days - only show todo items.
-       (agenda
-        ""
-        ((org-agenda-span 7)
-         (org-agenda-start-day "-7d")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-show-all-dates nil)
-         (org-deadline-warning-days 0)))
-       ;; Show all todo items for the next two weeks with filled days.
-       (agenda
-        ""
-        ((org-agenda-span 14)
-         ;; Start showing events from today onwards, when quickly assessing
-         ;; target tasks I don't really need to focus on the past events.
-         (org-agenda-start-day "-0d")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         ;; I show planned and deadlined events for the next two weeks - no
-         ;; need to repeat the same information again for today.
-         (org-deadline-warning-days 0)))))))
+         (org-agenda-files '(,hax/repeated.org))))))))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
