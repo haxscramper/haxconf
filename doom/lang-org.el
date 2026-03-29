@@ -2704,17 +2704,19 @@ line or end of buffer, with only blank lines in between."
          (org-agenda-files '(,hax/staging.org))))
        (todo
         "TODO"
-        ((org-agenda-overriding-header "Notes todo")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-files '(,hax/notes.org))))
+        ((org-agenda-overriding-header "Notes & High priority project todos")
+         (org-agenda-skip-function
+          (lambda ()
+            (cond
+             ((string= (buffer-file-name) (expand-file-name hax/notes.org))
+              (hax/org-agenda-skip))
+             ((string= (buffer-file-name) (expand-file-name hax/projects.org))
+              (hax/org-agenda-skip-low-priority))
+             (t (point-max)))))
+         (org-agenda-files (list hax/notes.org hax/projects.org))))
        (todo
         "NEXT|WIP|PAUSED|BLOCKED"
         ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
-       (todo
-        "TODO"
-        ((org-agenda-overriding-header "High priority project todos")
-         (org-agenda-skip-function #'hax/org-agenda-skip-low-priority)
-         (org-agenda-files '(,hax/projects.org))))
        (agenda
         ""
         ((org-agenda-overriding-header "2-week preview")
