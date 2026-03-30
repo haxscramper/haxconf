@@ -488,7 +488,6 @@ fn none-of {|list pred|
 }
 
 eval (starship init elvish)
-eval (carapace _carapace|slurp)
 try {
   # On Ubuntu zoxide installation is so ancient it
   # does not have support for elvish shell

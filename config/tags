@@ -39,6 +39,7 @@
 #code##asm
 #code##bash
 #code##c
+#code##c##lib##ebpf
 #code##c##lib##libgit
 #code##cpp
 #code##cpp##coroutines
@@ -58,6 +59,7 @@
 #code##cpp##lib##perfetto
 #code##cpp##lib##tbb
 #code##cpp##lib##tracy
+#code##cpp##lib##treesitter
 #code##cpp##lib##yoga
 #code##cpp##memory
 #code##cpp##templates
@@ -119,6 +121,7 @@
 #code##python##lib##invoke
 #code##python##lib##matplotlib
 #code##python##lib##nltk
+#code##python##lib##pex
 #code##python##lib##plotly
 #code##python##lib##pytorch
 #code##python##lib##sqlalchemy
@@ -454,6 +457,7 @@
 #project##htsparse
 #project##keyboard
 #project##language
+#project##llm_repl
 #project##nim
 #project##nim##messages
 #project##nim2cpp
@@ -543,6 +547,7 @@
 #software##ctags
 #software##cursor
 #software##dbus
+#software##deepwiki
 #software##docker
 #software##doxygen
 #software##drawio
