@@ -52,3 +52,4 @@ $HOME/.emacs.doom.d/bin
 /usr/local/go/bin
 $HOME/.asdf/bin
 $HOME/software/vcpkg
+$HOME/.opencode/bin
