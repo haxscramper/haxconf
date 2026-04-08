@@ -300,13 +300,16 @@
     },
     "workbench.secondarySideBar.defaultVisibility": "hidden",
     "python.analysis.typeCheckingMode": "standard",
-    "diffEditor.renderSideBySideInlineBreakpoint": 9000,
+    "diffEditor.renderSideBySideInlineBreakpoint": 1400,
     "mesonbuild.downloadLanguageServer": true,
     "kilo-code.debug": false,
     "kilo-code.allowedCommands": [
         "git log",
         "git diff",
-        "git show"
+        "git show",
+        "true",
+        "head",
+        "grep"
     ],
     "kilo-code.deniedCommands": [],
     "chat.disableAIFeatures": true,
@@ -316,10 +319,15 @@
     "generateDocstring": false
     },
     "workbench.editor.pinnedTabsOnSeparateRow": true,
+    "python.analysis.enableParallelIndexing": true,
+    "python.defaultInterpreterPath": "",
+    "python.terminal.activateEnvironment": false,
     "terminal.integrated.commandsToSkipShell": [
         "kilo-code.new.agentManagerOpen",
         "kilo-code.new.agentManager.showTerminal"
     ],
-    "python.terminal.activateEnvironment": false,
     "http.systemCertificatesNode": true,
+    "fracturedjsonvsc.MaxInlineComplexity": 4,
+    "fracturedjsonvsc.MaxCompactArrayComplexity": 3,
+    "fracturedjsonvsc.MaxTableRowComplexity": 3
 }

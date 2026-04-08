@@ -8,3 +8,4 @@ clients:
 cmd_prelude: "role:default"
 repl_prelude: "role:default"
 save_session: true
+compress_threshold: 1000000

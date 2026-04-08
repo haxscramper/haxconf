@@ -11,7 +11,7 @@ set smartcase
 set number relativenumber
 set nohlsearch
 set clipboard+=unnamedplus
-call matchadd('ColorColumn', '\%81v', 100)
+set colorcolumn=50,70,100
 set undofile " Maintain undo history between sessions
 set undodir=~/.config/hax-local/vim-undo
 set inccommand=nosplit

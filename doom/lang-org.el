@@ -144,21 +144,25 @@ mode"
                   (unless (boundp 'org-current-tag-alist)
                     org-tag-persistent-alist)
                   org-tag-alist))
-         (selected (ivy-read (counsel-org-tag-prompt)
-                             (lambda (str _pred _action)
-                               (delete-dups
-                                (all-completions
-                                 str #'org-tags-completion-function)))
-                             :history 'org-tags-history
-                             :action action
-                             :caller 'hax/org-assign-tag)))
+         (selected
+          (completing-read
+           (counsel-org-tag-prompt)
+           (delete-dups
+            (all-completions "" #'org-tags-completion-function))
+           nil
+           nil
+           nil
+           'org-tags-history)))
+    (when action
+      (funcall action selected))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
              (file (if is-private hax/private-tags-file hax/tags-file)))
         (setq org-tag-alist (push (cons selected ??) org-tag-alist))
-        (f-write-text (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
-                      'utf-8
-                      file)
+        (f-write-text
+         (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
+         'utf-8
+         file)
         (message
          "New %s tag %s"
          (if is-private "private" "public")
@@ -173,34 +177,37 @@ mode"
             (vc-root-dir))))
     (vc-root-dir)))
 
+(defvar hax/select-from-list-or-add-history nil)
+
 (defun hax/select-from-list-or-add (list-name)
-  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt
-   If the user inputs a new value (not already in the list), update the file and print that the new value has been selected."
+  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt.
+If the user inputs a new value, update the file and return it."
   (let* ((git-root (hax/org-capture-vc-root-dir))
          (filename (expand-file-name (f-join git-root (concat list-name ".txt"))))
-         (existing-items (if (file-exists-p filename)
-                             (with-temp-buffer
-                               (insert-file-contents filename)
-                               (split-string (buffer-string) "\n" t))
-                           nil)))
-    (ivy-read (concat "Select " list-name ": ")
-              (lambda (str pred action)
-                (if (eq action 'metadata)
-                    nil
-                  (complete-with-action action existing-items str pred)))
-              :require-match nil
-              :sort t
-              :caller 'hax/select-from-list-or-add
-              :action (lambda (x)
-                        (if (member x existing-items)
-                            (message "%s selected from existing items" x)
-                          (with-temp-buffer
-                            (when existing-items
-                              (insert (string-join existing-items "\n"))
-                              (insert "\n"))
-                            (insert x)
-                            (write-file filename)
-                            (message "%s added to the list and selected" x)))))))
+         (existing-items
+          (if (file-exists-p filename)
+              (with-temp-buffer
+                (insert-file-contents filename)
+                (split-string (buffer-string) "\n" t))
+            nil))
+         (choice
+          (completing-read
+           (concat "Select " list-name ": ")
+           existing-items
+           nil
+           nil
+           nil
+           'hax/select-from-list-or-add-history)))
+    (if (member choice existing-items)
+        (message "%s selected from existing items" choice)
+      (with-temp-buffer
+        (when existing-items
+          (insert (string-join existing-items "\n"))
+          (insert "\n"))
+        (insert choice)
+        (write-file filename)
+        (message "%s added to the list and selected" choice)))
+    choice))
 
 (defun hax/org-insert-uuid-anchor ()
   (interactive)
@@ -429,15 +436,18 @@ created today."
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
-  "Select subtree from ENTRIES and execute CALLBACK on the
-selection result. Provide PROMPT for selection input"
+  "Select subtree from ENTRIES and execute CALLBACK on the selected result."
   (interactive)
-  (let (result)
-    (ivy-read
-     prompt
-     entries
-     :history 'counsel-org-goto-history
-     :action callback)))
+  (let* ((choice
+          (completing-read
+           prompt
+           entries
+           nil
+           t
+           nil
+           'counsel-org-goto-history))
+         (result (assoc choice entries)))
+    (funcall callback result)))
 
 (cl-defun hax/org-select-subtree (&optional (entries (org-collect-known-entries)))
   "Interactively select subtree and return cons with `(description . marker)'"
@@ -2309,12 +2319,40 @@ otherwise continue prompting for tags."
          (with-selected-window (active-minibuffer-window)
            (delete-minibuffer-contents)))))
 
+(defface hax/org-agenda-header
+  '((t :inherit org-agenda-structure
+     :extend t))
+  "Face for custom agenda section headers.")
+
+(set-face-attribute 'hax/org-agenda-header nil
+                    :background (doom-darken (doom-color 'red) 0.5))
+
+(defun hax/org-agenda-style-headers ()
+  "Add empty line after headers and style them with red background."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (when (get-text-property (point) 'org-agenda-structural-header)
+          (let ((end (line-end-position)))
+            (add-text-properties (line-beginning-position) end
+                                 '(face hax/org-agenda-header))
+            ;; Extend face to full width
+            (goto-char end)
+            (unless (and (not (eobp))
+                         (save-excursion (forward-line 1)
+                                         (looking-at "^\\s-*$")))
+              (insert "\n"))))
+        (forward-line 1)))))
+
 
 
 (setq org-duration-format '((special . h:mm)))
 
 (defun hax/org-agenda-hook ()
   (display-line-numbers-mode 1)
+  (hax/org-agenda-style-headers)
+  (hax/org-agenda-delete-empty-blocks)
   )
 
 (add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
@@ -2380,6 +2418,47 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
     (unless (or (re-search-forward ":bug:" (line-end-position) t)
                 (re-search-forward "#[XAS]" (line-end-position) t))
       (or (outline-next-heading) (point-max)))))
+
+(defun hax/org-agenda-delete-empty-blocks ()
+  "Remove empty agenda blocks.
+An empty block is a header line followed immediately by another header
+line or end of buffer, with only blank lines in between."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (let (block-start block-header-end has-content)
+        (while (not (eobp))
+          (cond
+           ;; Separator line marks the end of a block
+           ((looking-at "^-\\{10,\\}")
+            (when (and block-start (not has-content))
+              ;; Delete from block start to end of separator line
+              (delete-region block-start (line-beginning-position))
+              ;; Also remove the now-orphaned separator if it's at point
+              (when (looking-at "^-\\{10,\\}")
+                (delete-region (line-beginning-position)
+                               (min (1+ (line-end-position)) (point-max)))))
+            (setq block-start nil
+                  block-header-end nil
+                  has-content nil)
+            (unless (eobp) (forward-line 1)))
+           ;; Overriding header line (starts at column 0, non-blank, non-separator)
+           ((and (not block-start)
+                 (looking-at "^[^ \t\n-]"))
+            (setq block-start (line-beginning-position)
+                  has-content nil)
+            (forward-line 1)
+            (setq block-header-end (point)))
+           ;; Blank line — doesn't count as content
+           ((looking-at "^\\s-*$")
+            (forward-line 1))
+           ;; Anything else is content
+           (t
+            (setq has-content t)
+            (forward-line 1))))
+        ;; Handle last block if empty (no trailing separator)
+        (when (and block-start (not has-content))
+          (delete-region block-start (point-max)))))))
 
 (defun hax/org-mode-configure ()
   (interactive)
@@ -2619,60 +2698,46 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
 
-
-
   (setq
    org-agenda-custom-commands
    `(("l" "Long"
       ((agenda
         ""
         ((org-agenda-span 30)
-         (org-agenda-start-day "-7d")
+         (org-agenda-start-day "-0d")
          (org-deadline-warning-days 35)))))
      ("*" "All"
       ((todo
+        "NEXT|WIP|PAUSED|BLOCKED"
+        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
+       (todo
         "TODO"
         ((org-agenda-overriding-header "Staging todo")
          (org-agenda-skip-function #'hax/org-agenda-skip)
          (org-agenda-files '(,hax/staging.org))))
        (todo
         "TODO"
-        ((org-agenda-overriding-header "Notes todo")
+        ((org-agenda-overriding-header "Notes & High priority project todos")
+         (org-agenda-skip-function
+          (lambda ()
+            (cond
+             ((string= (buffer-file-name) (expand-file-name hax/notes.org))
+              (hax/org-agenda-skip))
+             ((string= (buffer-file-name) (expand-file-name hax/projects.org))
+              (hax/org-agenda-skip-low-priority))
+             (t (point-max)))))
+         (org-agenda-files (list hax/notes.org hax/projects.org))))
+       (agenda
+        ""
+        ((org-agenda-overriding-header "2-week preview")
+         (org-agenda-span 14)
+         (org-agenda-start-day "-0d")
          (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-files '(,hax/notes.org))))
-       (todo "WIP")
-       (todo
-        "TODO"
-        ((org-agenda-overriding-header "High priority project todos")
-         (org-agenda-skip-function #'hax/org-agenda-skip-low-priority)
-         (org-agenda-files '(,hax/projects.org))))
+         (org-deadline-warning-days 0)))
        (todo
         "TODO"
         ((org-agenda-overriding-header "Repeated todos")
-         (org-agenda-files '(,hax/repeated.org))))
-       (todo "NEXT")
-       (todo "PAUSED")
-       (todo "BLOCKED")
-       ;; Show unfinished tasks for the last week, without filling all the
-       ;; days - only show todo items.
-       (agenda
-        ""
-        ((org-agenda-span 7)
-         (org-agenda-start-day "-7d")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-show-all-dates nil)
-         (org-deadline-warning-days 0)))
-       ;; Show all todo items for the next two weeks with filled days.
-       (agenda
-        ""
-        ((org-agenda-span 14)
-         ;; Start showing events from today onwards, when quickly assessing
-         ;; target tasks I don't really need to focus on the past events.
-         (org-agenda-start-day "-0d")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         ;; I show planned and deadlined events for the next two weeks - no
-         ;; need to repeat the same information again for today.
-         (org-deadline-warning-days 0)))))))
+         (org-agenda-files '(,hax/repeated.org))))))))
 
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -3343,6 +3408,7 @@ holding contextual information."
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))
+
 ;; (require 'org-capture)
 (defun remove-string-properties (text)
   (with-temp-buffer
