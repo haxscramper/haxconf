@@ -278,7 +278,7 @@
         }
       ]
     },
-    "window.zoomLevel": 1,
+    "window.zoomLevel": 2,
     "editor.stickyScroll.enabled": false,
     "xml.server.preferBinary": true,
     "workbench.tree.enableStickyScroll": false,
@@ -315,5 +315,11 @@
     "python.analysis.aiCodeActions": {
     "generateDocstring": false
     },
-    "workbench.editor.pinnedTabsOnSeparateRow": true
+    "workbench.editor.pinnedTabsOnSeparateRow": true,
+    "terminal.integrated.commandsToSkipShell": [
+        "kilo-code.new.agentManagerOpen",
+        "kilo-code.new.agentManager.showTerminal"
+    ],
+    "python.terminal.activateEnvironment": false,
+    "http.systemCertificatesNode": true,
 }
