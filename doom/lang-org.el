@@ -429,15 +429,18 @@ created today."
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
-  "Select subtree from ENTRIES and execute CALLBACK on the
-selection result. Provide PROMPT for selection input"
+  "Select subtree from ENTRIES and execute CALLBACK on the selected result."
   (interactive)
-  (let (result)
-    (ivy-read
-     prompt
-     entries
-     :history 'counsel-org-goto-history
-     :action callback)))
+  (let* ((choice
+          (completing-read
+           prompt
+           entries
+           nil
+           t
+           nil
+           'counsel-org-goto-history))
+         (result (assoc choice entries)))
+    (funcall callback result)))
 
 (cl-defun hax/org-select-subtree (&optional (entries (org-collect-known-entries)))
   "Interactively select subtree and return cons with `(description . marker)'"
@@ -2698,6 +2701,9 @@ line or end of buffer, with only blank lines in between."
          (org-deadline-warning-days 35)))))
      ("*" "All"
       ((todo
+        "NEXT|WIP|PAUSED|BLOCKED"
+        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
+       (todo
         "TODO"
         ((org-agenda-overriding-header "Staging todo")
          (org-agenda-skip-function #'hax/org-agenda-skip)
@@ -2714,9 +2720,6 @@ line or end of buffer, with only blank lines in between."
               (hax/org-agenda-skip-low-priority))
              (t (point-max)))))
          (org-agenda-files (list hax/notes.org hax/projects.org))))
-       (todo
-        "NEXT|WIP|PAUSED|BLOCKED"
-        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
        (agenda
         ""
         ((org-agenda-overriding-header "2-week preview")
@@ -3398,6 +3401,7 @@ holding contextual information."
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))
+
 ;; (require 'org-capture)
 (defun remove-string-properties (text)
   (with-temp-buffer
