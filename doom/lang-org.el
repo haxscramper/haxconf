@@ -309,17 +309,12 @@ If the user inputs a new value, update the file and return it."
   "Insert a logbook entry with TAG-NAME and ACTION ('added or 'removed) into the subtree logbook."
   (let ((current-time (format-time-string (org-time-stamp-format t t))))
     (hax/ensure-logbook-drawer-exists)
-    (save-excursion
-      (org-back-to-heading t)
-      (when (re-search-forward ":LOGBOOK:" (save-excursion (outline-next-heading)) t)
-        (end-of-line)
-        (insert "\n")
-        (insert
-         (format "%s- Tag \"%s\" %s on %s"
-                 (s-repeat (+ 1 (org-current-level)) " ")
-                 (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
-                 (if (eq action 'added) "Added" "Removed")
-                 current-time))))))
+    (hax/org-add-log-entry
+     (format "- Tag \"%s\" %s on %s"
+             (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
+             (if (eq action 'added) "Added" "Removed")
+             current-time) 
+     "LOGBOOK")))
 
 
 
