@@ -154,6 +154,7 @@ mode"
            nil
            'org-tags-history)))
     (when action
+      (message "Running tag action %s" action)
       (funcall action selected))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
@@ -2276,48 +2277,18 @@ ARCHIVE_OLPATH_PARENT_ID."
                                 ))
 
 (require 'ivy)
-(defun hax/counsel-org-tag-action (x)
-  "Add tag X to `counsel-org-tags'.
-If X is already part of the list, remove it instead.  Quit the selection if
-X is selected by either `ivy-done', `ivy-alt-done' or `ivy-immediate-done',
-otherwise continue prompting for tags."
-  (if (member x counsel-org-tags)
-      (progn
-        (setq counsel-org-tags (delete x counsel-org-tags)))
-    (unless (equal x "")
-      (setq counsel-org-tags (append counsel-org-tags (list x)))
-      (unless (member x ivy--all-candidates)
-        (setq ivy--all-candidates (append ivy--all-candidates (list x))))))
-  (let ((prompt (counsel-org-tag-prompt)))
-    (setf (ivy-state-prompt ivy-last) prompt)
-    (setq ivy--prompt (concat "%-4d " prompt)))
-  (cond ((memq this-command '(ivy-done
-                              ivy-alt-done
-                              ivy-immediate-done))
-         (if (eq major-mode 'org-agenda-mode)
-             (if (null org-agenda-bulk-marked-entries)
-                 (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
-                                     (org-agenda-error))))
-                   (with-current-buffer (marker-buffer hdmarker)
-                     (goto-char hdmarker)
-                     (counsel-org--set-tags)))
-               (let ((add-tags (copy-sequence counsel-org-tags)))
-                 (dolist (m org-agenda-bulk-marked-entries)
-                   (with-current-buffer (marker-buffer m)
-                     (save-excursion
-                       (goto-char m)
-                       (setq counsel-org-tags
-                             (delete-dups
-                              (append (counsel--org-get-tags) add-tags)))
-                       (counsel-org--set-tags))))))
-           (counsel-org--set-tags)
-           (if (member x counsel-org-tags)
-               (hax/insert-logbook-tag-entry x 'added)
-             (hax/insert-logbook-tag-entry x 'removed)
-             (message "Tag %S has been removed." x))))
-        ((eq this-command 'ivy-call)
-         (with-selected-window (active-minibuffer-window)
-           (delete-minibuffer-contents)))))
+(defun hax/counsel-org-tag-action (tag)
+  (unless (equal tag "")
+    (let* ((current-tags (counsel--org-get-tags))
+           (had-tag (member tag current-tags)))
+      (setq counsel-org-tags
+            (if had-tag
+                (delete tag (copy-sequence current-tags))
+              (append current-tags (list tag))))
+      (counsel-org--set-tags)
+      (if had-tag
+          (hax/insert-logbook-tag-entry tag 'removed)
+        (hax/insert-logbook-tag-entry tag 'added)))))
 
 (defface hax/org-agenda-header
   '((t :inherit org-agenda-structure
