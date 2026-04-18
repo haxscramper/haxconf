@@ -3726,3 +3726,59 @@ until \\[keyboard-quit] is pressed."
     (error "Couldn't find filename in current buffer")))
 
 
+
+(defun hax/--get-language ()
+  "Extract the language name from the current `major-mode'.
+Strips standard modes (-mode) and Doom's Tree-sitter modes (-ts-mode)."
+  (let* ((mode-str (symbol-name major-mode))
+         (lang (replace-regexp-in-string "-ts-mode$" "" mode-str))
+         (lang (replace-regexp-in-string "-mode$" "" lang)))
+    lang))
+
+(defun hax/goto-end-of-last-non-empty-line ()
+  "Move point to the end of the last non-empty line in the buffer.
+A non-empty line is defined as a line containing at least one non-whitespace character."
+  (interactive)
+  (goto-char (point-max))
+  (when (re-search-backward "\\S-" nil t) (end-of-line)))
+
+(defun hax/log-context-to-scratch ()
+  "Capture current line context and append it to the *scratch* buffer.
+Format: - <timestamp> src_<lang>{<line>} in =<file>= at ~<sha>~"
+  (interactive)
+  (let* ((line-text (string-trim-left 
+                     (buffer-substring-no-properties 
+                      (line-beginning-position) (line-end-position))))
+         (lang (hax/--get-language))
+         (fname (file-name-nondirectory (or (buffer-file-name) "unnamed-buffer")))
+         (fline (line-number-at-pos))
+         ;; Safely get the full SHA using magit (if available) or vc
+         (full-sha (condition-case nil
+                       (if (fboundp 'magit-rev-parse)
+                           (magit-rev-parse "HEAD")
+                         (vc-git-working-revision (buffer-file-name)))
+                     (error nil)))
+         (sha (if full-sha (substring full-sha 0 8) "N/A"))
+         (formatted (format "src_%s{%s} in =%s:%s= at ~%s~" lang line-text fname fline sha))
+         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M]"))
+         (hax/goto-end-of-last-non-empty-line)
+         (final-line (format "- %s %s" timestamp formatted))
+         (state-dir (expand-file-name "~/.local/state/hax/"))
+         (org-file (expand-file-name "scratch.org" state-dir))
+         (org-buffer (progn
+                       (make-directory state-dir t) 
+                       (find-file-noselect org-file)))) 
+
+    (with-current-buffer org-buffer
+      (goto-char (point-max))
+      (insert final-line)
+      (insert "\n")
+      (goto-char (point-max))
+      (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+        (unless (string= line "  - ")
+          (delete-region (line-beginning-position) (line-end-position))
+          (insert "  - ")))
+      (evil-insert 0)
+      (save-buffer)) 
+
+    (pop-to-buffer org-buffer)))
