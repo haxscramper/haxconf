@@ -144,21 +144,25 @@ mode"
                   (unless (boundp 'org-current-tag-alist)
                     org-tag-persistent-alist)
                   org-tag-alist))
-         (selected (ivy-read (counsel-org-tag-prompt)
-                             (lambda (str _pred _action)
-                               (delete-dups
-                                (all-completions
-                                 str #'org-tags-completion-function)))
-                             :history 'org-tags-history
-                             :action action
-                             :caller 'hax/org-assign-tag)))
+         (selected
+          (completing-read
+           (counsel-org-tag-prompt)
+           (delete-dups
+            (all-completions "" #'org-tags-completion-function))
+           nil
+           nil
+           nil
+           'org-tags-history)))
+    (when action
+      (funcall action selected))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
              (file (if is-private hax/private-tags-file hax/tags-file)))
         (setq org-tag-alist (push (cons selected ??) org-tag-alist))
-        (f-write-text (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
-                      'utf-8
-                      file)
+        (f-write-text
+         (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
+         'utf-8
+         file)
         (message
          "New %s tag %s"
          (if is-private "private" "public")
@@ -173,34 +177,37 @@ mode"
             (vc-root-dir))))
     (vc-root-dir)))
 
+(defvar hax/select-from-list-or-add-history nil)
+
 (defun hax/select-from-list-or-add (list-name)
-  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt
-   If the user inputs a new value (not already in the list), update the file and print that the new value has been selected."
+  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt.
+If the user inputs a new value, update the file and return it."
   (let* ((git-root (hax/org-capture-vc-root-dir))
          (filename (expand-file-name (f-join git-root (concat list-name ".txt"))))
-         (existing-items (if (file-exists-p filename)
-                             (with-temp-buffer
-                               (insert-file-contents filename)
-                               (split-string (buffer-string) "\n" t))
-                           nil)))
-    (ivy-read (concat "Select " list-name ": ")
-              (lambda (str pred action)
-                (if (eq action 'metadata)
-                    nil
-                  (complete-with-action action existing-items str pred)))
-              :require-match nil
-              :sort t
-              :caller 'hax/select-from-list-or-add
-              :action (lambda (x)
-                        (if (member x existing-items)
-                            (message "%s selected from existing items" x)
-                          (with-temp-buffer
-                            (when existing-items
-                              (insert (string-join existing-items "\n"))
-                              (insert "\n"))
-                            (insert x)
-                            (write-file filename)
-                            (message "%s added to the list and selected" x)))))))
+         (existing-items
+          (if (file-exists-p filename)
+              (with-temp-buffer
+                (insert-file-contents filename)
+                (split-string (buffer-string) "\n" t))
+            nil))
+         (choice
+          (completing-read
+           (concat "Select " list-name ": ")
+           existing-items
+           nil
+           nil
+           nil
+           'hax/select-from-list-or-add-history)))
+    (if (member choice existing-items)
+        (message "%s selected from existing items" choice)
+      (with-temp-buffer
+        (when existing-items
+          (insert (string-join existing-items "\n"))
+          (insert "\n"))
+        (insert choice)
+        (write-file filename)
+        (message "%s added to the list and selected" choice)))
+    choice))
 
 (defun hax/org-insert-uuid-anchor ()
   (interactive)
@@ -429,15 +436,18 @@ created today."
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional (entries (org-collect-known-entries)))
-  "Select subtree from ENTRIES and execute CALLBACK on the
-selection result. Provide PROMPT for selection input"
+  "Select subtree from ENTRIES and execute CALLBACK on the selected result."
   (interactive)
-  (let (result)
-    (ivy-read
-     prompt
-     entries
-     :history 'counsel-org-goto-history
-     :action callback)))
+  (let* ((choice
+          (completing-read
+           prompt
+           entries
+           nil
+           t
+           nil
+           'counsel-org-goto-history))
+         (result (assoc choice entries)))
+    (funcall callback result)))
 
 (cl-defun hax/org-select-subtree (&optional (entries (org-collect-known-entries)))
   "Interactively select subtree and return cons with `(description . marker)'"
@@ -2698,6 +2708,9 @@ line or end of buffer, with only blank lines in between."
          (org-deadline-warning-days 35)))))
      ("*" "All"
       ((todo
+        "NEXT|WIP|PAUSED|BLOCKED"
+        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
+       (todo
         "TODO"
         ((org-agenda-overriding-header "Staging todo")
          (org-agenda-skip-function #'hax/org-agenda-skip)
@@ -2714,9 +2727,6 @@ line or end of buffer, with only blank lines in between."
               (hax/org-agenda-skip-low-priority))
              (t (point-max)))))
          (org-agenda-files (list hax/notes.org hax/projects.org))))
-       (todo
-        "NEXT|WIP|PAUSED|BLOCKED"
-        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
        (agenda
         ""
         ((org-agenda-overriding-header "2-week preview")
@@ -3398,6 +3408,7 @@ holding contextual information."
       (pop-to-buffer-same-window (org-capture-get :buffer))
       (goto-char (org-capture-get :pos))
       (point-marker))))
+
 ;; (require 'org-capture)
 (defun remove-string-properties (text)
   (with-temp-buffer

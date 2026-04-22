@@ -300,7 +300,7 @@
     },
     "workbench.secondarySideBar.defaultVisibility": "hidden",
     "python.analysis.typeCheckingMode": "standard",
-    "diffEditor.renderSideBySideInlineBreakpoint": 9000,
+    "diffEditor.renderSideBySideInlineBreakpoint": 1400,
     "mesonbuild.downloadLanguageServer": true,
     "kilo-code.debug": false,
     "kilo-code.allowedCommands": [
@@ -320,5 +320,13 @@
     },
     "workbench.editor.pinnedTabsOnSeparateRow": true,
     "python.analysis.enableParallelIndexing": true,
-    "python.defaultInterpreterPath": ""
+    "python.defaultInterpreterPath": "",
+    "python.terminal.activateEnvironment": false,
+    "terminal.integrated.commandsToSkipShell": [
+        "kilo-code.new.agentManagerOpen",
+        "kilo-code.new.agentManager.showTerminal"
+    ],
+    "fracturedjsonvsc.MaxInlineComplexity": 4,
+    "fracturedjsonvsc.MaxCompactArrayComplexity": 3,
+    "fracturedjsonvsc.MaxTableRowComplexity": 3
 }
