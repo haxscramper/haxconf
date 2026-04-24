@@ -3750,7 +3750,11 @@ Format: - <timestamp> src_<lang>{<line>} in =<file>= at ~<sha>~"
                      (buffer-substring-no-properties 
                       (line-beginning-position) (line-end-position))))
          (lang (hax/--get-language))
-         (fname (file-name-nondirectory (or (buffer-file-name) "unnamed-buffer")))
+         (fname (let* ((full-path (or (buffer-file-name) "unnamed-buffer"))
+                       (dir (file-name-nondirectory
+                             (directory-file-name (file-name-directory full-path))))
+                       (file (file-name-nondirectory full-path)))
+                  (concat dir "/" file)))
          (fline (line-number-at-pos))
          ;; Safely get the full SHA using magit (if available) or vc
          (full-sha (condition-case nil

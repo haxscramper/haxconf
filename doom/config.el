@@ -350,6 +350,7 @@ more nitpickery about stuff I write in my configuration files."
 (set-popup-rule! "*Telega Root*" :ignore t)
 (set-popup-rule! "eshell" :ignore t :modeline t)
 (set-popup-rule! "COMMIT_EDITMSG" :height 0.6)
+(set-popup-rule! "scratch.org" :height 0.3)
 
 (defun hax/telega-mode-hook ()
   (interactive)
