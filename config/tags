@@ -32,6 +32,7 @@
 #bug##logic
 #bug##maybe
 #bug##missing
+#bug##not_handled
 #bug##refactoring
 #chat_quote
 #chatc
@@ -65,6 +66,7 @@
 #code##cpp##templates
 #code##cpp##threading
 #code##cpp##tool##clang
+#code##cpp##tool##clang_format
 #code##cpp##tool##codechecker
 #code##cpp##tool##conan
 #code##cpp##tool##gcc
