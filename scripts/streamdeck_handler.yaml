@@ -45,6 +45,13 @@ decks:
             action:
               type: "emulate_shortcut"
               shortcut: "ctrl+6"
+          6:
+            title_text:
+              text: "ESC"
+              font_size: 28
+            action:
+              type: "emulate_shortcut"
+              shortcut: "esc"
           7:
             title_text:
               text: "OK"
