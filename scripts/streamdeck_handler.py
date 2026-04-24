@@ -162,6 +162,7 @@ class StreamDeckController:
         self.quit_script = False
 
     def initialize_devices(self) -> None:
+        logging.info("init devices")
         device_manager = DeviceManager()
         devices = device_manager.enumerate()
         import time
@@ -171,6 +172,7 @@ class StreamDeckController:
             deck.reset()
             time.sleep(1)
             deck_name = deck.deck_type()
+            logging.info(f"found deck {deck_name}")
             for deck_config in self.config.decks:
                 if deck_config.device_type == deck_name:
                     logger.info(f"Configuring device {deck_name}")
@@ -181,7 +183,10 @@ class StreamDeckController:
                     self.last_activity_time[deck_name] = time.time()
                     self.pregenerate_images(deck_name)
                     self.update_display(deck)
+                    logging.info("device OK")
                     break
+
+        logging.info("init devices ok")
 
     def pregenerate_images(self, device_name: str) -> None:
         device = self.devices[device_name]
@@ -238,14 +243,17 @@ class StreamDeckController:
         logger.info(f"Running action {action} on desk {deck}")
         match action:
             case ExecuteScriptAction():
+
                 def execute_subprocess(action: Action):
-                    result = subprocess.run(action.script, shell=True, capture_output=True)
+                    result = subprocess.run(action.script,
+                                            shell=True,
+                                            capture_output=True)
                     if action.insert_output:
                         logger.info(f"Got stdout {result.stdout.decode()}")
                         self.fast_type_text(result.stdout.decode())
 
-
-                threading.Thread(target=lambda: execute_subprocess(action)).start()
+                threading.Thread(
+                    target=lambda: execute_subprocess(action)).start()
             case EmulateShortcutAction():
                 threading.Thread(target=lambda: pyautogui.hotkey(
                     *action.shortcut.split("+"))).start()
@@ -478,4 +486,5 @@ class StreamDeckController:
 
 if __name__ == "__main__":
     controller = StreamDeckController(Path("streamdeck_handler.yaml"))
+    logging.info("running controller")
     controller.run()
