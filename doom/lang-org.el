@@ -428,6 +428,7 @@ created today."
                (planning :from ,begin-7 :to ,end+7)
                ;; Track any entries that were created/stamped today
                (ts :on today))))
+       :sort '(todo)
        :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
@@ -3743,46 +3744,72 @@ A non-empty line is defined as a line containing at least one non-whitespace cha
   (when (re-search-backward "\\S-" nil t) (end-of-line)))
 
 (defun hax/log-context-to-scratch ()
-  "Capture current line context and append it to the *scratch* buffer.
-Format: - <timestamp> src_<lang>{<line>} in =<file>= at ~<sha>~"
+  "Capture current context and append it to the *scratch* buffer.
+
+If nothing is selected, use the full current line.
+If a single-line range is selected, use the selected text inline.
+If a multi-line range is selected, insert it as an Org source block."
   (interactive)
-  (let* ((line-text (string-trim-left 
-                     (buffer-substring-no-properties 
-                      (line-beginning-position) (line-end-position))))
+  (let* ((has-selection (use-region-p))
+         (region-beg (when has-selection (region-beginning)))
+         (region-end (when has-selection (region-end)))
+         (selected-text
+          (when has-selection
+            (buffer-substring-no-properties region-beg region-end)))
+         (multiline-selection
+          (and selected-text (string-match-p "\n" selected-text)))
+         (line-text
+          (string-trim-left
+           (buffer-substring-no-properties
+            (line-beginning-position) (line-end-position))))
+         (context-text
+          (cond
+           ((not has-selection) line-text)
+           (multiline-selection selected-text)
+           (t selected-text)))
          (lang (hax/--get-language))
          (fname (let* ((full-path (or (buffer-file-name) "unnamed-buffer"))
                        (dir (file-name-nondirectory
                              (directory-file-name (file-name-directory full-path))))
                        (file (file-name-nondirectory full-path)))
                   (concat dir "/" file)))
-         (fline (line-number-at-pos))
-         ;; Safely get the full SHA using magit (if available) or vc
+         (fline (if has-selection
+                    (line-number-at-pos region-beg)
+                  (line-number-at-pos)))
          (full-sha (condition-case nil
                        (if (fboundp 'magit-rev-parse)
                            (magit-rev-parse "HEAD")
                          (vc-git-working-revision (buffer-file-name)))
                      (error nil)))
          (sha (if full-sha (substring full-sha 0 8) "N/A"))
-         (formatted (format "src_%s{%s} in =%s:%s= at ~%s~" lang line-text fname fline sha))
          (timestamp (format-time-string "[%Y-%m-%d %a %H:%M]"))
-         (hax/goto-end-of-last-non-empty-line)
-         (final-line (format "- %s %s" timestamp formatted))
          (state-dir (expand-file-name "~/.local/state/hax/"))
          (org-file (expand-file-name "scratch.org" state-dir))
          (org-buffer (progn
-                       (make-directory state-dir t) 
-                       (find-file-noselect org-file)))) 
+                       (make-directory state-dir t)
+                       (find-file-noselect org-file))))
 
     (with-current-buffer org-buffer
       (goto-char (point-max))
-      (insert final-line)
-      (insert "\n")
+      (if multiline-selection
+          (progn
+            (insert (format "- %s\n" timestamp))
+            (insert (format "  #+caption: =%s:%s= at ~%s~\n" fname fline sha))
+            (insert (format "  #+begin_src %s\n" lang))
+            (insert context-text)
+            (unless (string-suffix-p "\n" context-text)
+              (insert "\n"))
+            (insert "  #+end_src\n"))
+        (insert
+         (format "- %s src_%s{%s} in =%s:%s= at ~%s~\n"
+                 timestamp lang context-text fname fline sha)))
       (goto-char (point-max))
-      (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+      (let ((line (buffer-substring-no-properties
+                   (line-beginning-position) (line-end-position))))
         (unless (string= line "  - ")
           (delete-region (line-beginning-position) (line-end-position))
           (insert "  - ")))
       (evil-insert 0)
-      (save-buffer)) 
+      (save-buffer))
 
     (pop-to-buffer org-buffer)))
