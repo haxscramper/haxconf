@@ -1,4 +1,4 @@
-#!/usr/bin/env pythonimport os
+import os
 import shlex
 from dataclasses import dataclass, field
 from typing import Optional
@@ -167,12 +167,21 @@ def _extract_value(val: lldb.SBValue, depth: int = 0) -> ValueNode:
     if depth >= MAX_DEPTH:
         return node
 
-    children_vals: list[lldb.SBValue] = _iterate_children(val)
-    for child in children_vals:
-        node.children.append(_extract_value(child, depth + 1))
+    # Prefer synthetic children — this is what makes chained synthetic
+    # providers work (Tensor → TensorSpec → Shape → Span).
+    synth: lldb.SBValue = val.GetDynamicValue(lldb.eDynamicCanRunTarget)
+    source: lldb.SBValue = synth if (synth.IsValid() and synth.MightHaveChildren()) else val
+
+    # If the source has a synthetic provider, use it; the provider's
+    # get_child_at_index returns full SBValues that preserve type identity.
+    num: int = min(source.GetNumChildren(), MAX_CHILDREN)
+    for i in range(num):
+        child: lldb.SBValue = source.GetChildAtIndex(i)
+        if child is not None and child.IsValid():
+            node.children.append(_extract_value(child, depth + 1))
 
     return node
-
+    
 
 def _extract_value_via_eval(
     frame: lldb.SBFrame, arg: lldb.SBValue, depth: int = 0
@@ -595,6 +604,240 @@ def _ttsl_span_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
     suffix: str = ", ..." if count > max_inline else ""
     return f"size={count} {{{', '.join(elems)}{suffix}}}"
 
+class TensorSyntheticProvider:
+    """
+    Synthetic children provider for tt::tt_metal::Tensor.
+    Exposes tensor_id (field) and tensor_spec (method call) as children.
+    """
+
+    _FIELD_CHILDREN: list[str] = [
+        "tensor_id",
+    ]
+
+    _METHOD_CHILDREN: list[str] = [
+        "tensor_spec",
+    ]
+
+    def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
+        self.valobj: lldb.SBValue = valobj
+        self.children: list[Optional[lldb.SBValue]] = []
+        self.child_names: list[str] = []
+
+    def num_children(self) -> int:
+        return len(self.children)
+
+    def get_child_index(self, name: str) -> int:
+        try:
+            return self.child_names.index(name)
+        except ValueError:
+            return -1
+
+    def get_child_at_index(self, index: int) -> Optional[lldb.SBValue]:
+        if 0 <= index < len(self.children):
+            return self.children[index]
+        return None
+
+    def update(self) -> None:
+        self.children = []
+        self.child_names = []
+        frame: lldb.SBFrame = self.valobj.GetFrame()
+        if not frame.IsValid():
+            return
+
+        expr_base: str = self._expr_base()
+
+        # Direct field access children
+        for field_name in self._FIELD_CHILDREN:
+            expr: str = f"({expr_base}).{field_name}"
+            result: lldb.SBValue = _eval(frame, expr)
+            if result.IsValid() and result.GetError().Success():
+                self.children.append(result)
+                self.child_names.append(field_name)
+            else:
+                self.children.append(None)
+                self.child_names.append(field_name)
+
+        # Method call children — keep the SBValue from EvaluateExpression
+        # directly so its type identity is preserved and downstream
+        # synthetic providers (e.g. TensorSpecSyntheticProvider) activate.
+        for method_name in self._METHOD_CHILDREN:
+            expr = f"({expr_base}).{method_name}()"
+            result = _eval(frame, expr)
+            if result.IsValid() and result.GetError().Success():
+                self.children.append(result)
+                self.child_names.append(method_name)
+            else:
+                self.children.append(None)
+                self.child_names.append(method_name)
+
+    def has_children(self) -> bool:
+        return len(self.children) > 0
+
+    def _expr_base(self) -> str:
+        name: str = self.valobj.GetName() or ""
+        if self.valobj.GetType().IsPointerType():
+            return f"(*({name}))"
+        return f"({name})"
+
+def _tensor_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
+    """One-line summary for tt::tt_metal::Tensor."""
+    frame: lldb.SBFrame = valobj.GetFrame()
+    if not frame.IsValid():
+        return ""
+
+    name: str = valobj.GetName() or ""
+    base: str = f"({name})" if name else ""
+    if not base:
+        return ""
+
+    parts: list[str] = []
+
+    # tensor_id
+    tid: lldb.SBValue = _eval(frame, f"{base}.tensor_id")
+    if tid.IsValid() and tid.GetError().Success():
+        parts.append(f"id={tid.GetValue()}")
+
+    # shape via tensor_spec().logical_shape().view()
+    shape_expr: str = f"{base}.tensor_spec().logical_shape().view()"
+    size_expr: str = f"{base}.tensor_spec().logical_shape().view().size()"
+    size_val: lldb.SBValue = _eval(frame, size_expr)
+    if size_val.IsValid() and size_val.GetError().Success():
+        count: int = int(size_val.GetValueAsUnsigned(0))
+        dims: list[str] = []
+        for i in range(min(count, 8)):
+            elem: lldb.SBValue = _eval(frame, f"{shape_expr}[{i}]")
+            if elem.IsValid() and elem.GetError().Success():
+                dims.append(elem.GetValue() or "?")
+            else:
+                dims.append("?")
+        parts.append(f"shape=[{', '.join(dims)}]")
+
+    # dtype
+    dt: lldb.SBValue = _eval(frame, f"{base}.tensor_spec().data_type()")
+    if dt.IsValid() and dt.GetError().Success():
+        dt_summary: Optional[str] = dt.GetValue() or dt.GetSummary()
+        if dt_summary:
+            parts.append(f"dtype={dt_summary}")
+
+    # layout
+    lay: lldb.SBValue = _eval(frame, f"{base}.tensor_spec().layout()")
+    if lay.IsValid() and lay.GetError().Success():
+        lay_summary: Optional[str] = lay.GetValue() or lay.GetSummary()
+        if lay_summary:
+            parts.append(f"layout={lay_summary}")
+
+    return " ".join(parts) if parts else ""
+
+class TensorSpecSyntheticProvider:
+    """
+    Synthetic children provider for tt::tt_metal::TensorSpec.
+    Calls accessor methods and exposes them as named children.
+    """
+
+    _METHODS: list[str] = [
+        "logical_shape",
+        "tensor_layout",
+        "data_type",
+        "layout",
+        "page_config",
+        "memory_config",
+        "padded_shape",
+        "logical_2d_shape",
+        "physical_shape",
+        "tile",
+    ]
+
+    def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
+        self.valobj: lldb.SBValue = valobj
+        self.children: list[Optional[lldb.SBValue]] = []
+        self.child_names: list[str] = []
+
+    def num_children(self) -> int:
+        return len(self.children)
+
+    def get_child_index(self, name: str) -> int:
+        try:
+            return self.child_names.index(name)
+        except ValueError:
+            return -1
+
+    def get_child_at_index(self, index: int) -> Optional[lldb.SBValue]:
+        if 0 <= index < len(self.children):
+            return self.children[index]
+        return None
+
+    def update(self) -> None:
+        self.children = []
+        self.child_names = []
+        frame: lldb.SBFrame = self.valobj.GetFrame()
+        if not frame.IsValid():
+            return
+
+        expr_base: str = self._expr_base()
+
+        for method_name in self._METHODS:
+            expr: str = f"({expr_base}).{method_name}()"
+            result: lldb.SBValue = _eval(frame, expr)
+            if result.IsValid() and result.GetError().Success():
+                # Return the SBValue directly — do NOT use CreateValueFromData,
+                # which strips dynamic type info and prevents downstream
+                # synthetic providers from activating.
+                self.children.append(result)
+                self.child_names.append(method_name)
+            else:
+                self.children.append(None)
+                self.child_names.append(method_name)
+
+    def has_children(self) -> bool:
+        return len(self.children) > 0
+
+    def _expr_base(self) -> str:
+        name: str = self.valobj.GetName() or ""
+        if self.valobj.GetType().IsPointerType():
+            return f"(*({name}))"
+        return f"({name})"
+
+def _tensor_spec_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
+    """One-line summary for tt::tt_metal::TensorSpec."""
+    frame: lldb.SBFrame = valobj.GetFrame()
+    if not frame.IsValid():
+        return ""
+
+    name: str = valobj.GetName() or ""
+    base: str = f"({name})" if name else ""
+    if not base:
+        return ""
+
+    parts: list[str] = []
+
+    # logical_shape
+    shape_size_expr: str = f"{base}.logical_shape().view().size()"
+    size_val: lldb.SBValue = _eval(frame, shape_size_expr)
+    if size_val.IsValid() and size_val.GetError().Success():
+        count: int = int(size_val.GetValueAsUnsigned(0))
+        dims: list[str] = []
+        for i in range(min(count, 8)):
+            elem: lldb.SBValue = _eval(frame, f"{base}.logical_shape().view()[{i}]")
+            if elem.IsValid() and elem.GetError().Success():
+                dims.append(elem.GetValue() or "?")
+            else:
+                dims.append("?")
+        parts.append(f"shape=[{', '.join(dims)}]")
+
+    dt: lldb.SBValue = _eval(frame, f"{base}.data_type()")
+    if dt.IsValid() and dt.GetError().Success():
+        v: Optional[str] = dt.GetValue() or dt.GetSummary()
+        if v:
+            parts.append(f"dtype={v}")
+
+    lay: lldb.SBValue = _eval(frame, f"{base}.layout()")
+    if lay.IsValid() and lay.GetError().Success():
+        v = lay.GetValue() or lay.GetSummary()
+        if v:
+            parts.append(f"layout={v}")
+
+    return " ".join(parts) if parts else ""
+
 
 # ---------------------------------------------------------------------------
 # Module initialisation
@@ -619,6 +862,23 @@ def _register_synthetic_providers(debugger: lldb.SBDebugger) -> None:
     debugger.HandleCommand(
         f'type summary add -x "^std::span<.+>$" '
         f'--python-function {__name__}._ttsl_span_summary'
+    )
+    
+
+    # --- tt::tt_metal::Tensor ---
+    debugger.HandleCommand(
+        f'type synthetic add -x "^tt::tt_metal::Tensor$" --python-class {__name__}.TensorSyntheticProvider'
+    )
+    debugger.HandleCommand(
+        f'type summary add -x "^tt::tt_metal::Tensor$" --python-function {__name__}._tensor_summary'
+    )
+
+    # --- tt::tt_metal::TensorSpec ---
+    debugger.HandleCommand(
+        f'type synthetic add -x "^tt::tt_metal::TensorSpec$" --python-class {__name__}.TensorSpecSyntheticProvider'
+    )
+    debugger.HandleCommand(
+        f'type summary add -x "^tt::tt_metal::TensorSpec$" --python-function {__name__}._tensor_spec_summary'
     )
 
 def __lldb_init_module(debugger: lldb.SBDebugger, internal_dict: dict) -> None:
