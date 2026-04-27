@@ -1,7 +1,7 @@
 import os
 import shlex
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, ClassVar
 
 import lldb
 
@@ -17,7 +17,6 @@ BREAKPOINT_FUNCTIONS: list[str] = [
     "tt::assert::detail::tt_throw",
 ]
 
-# Junk substrings / patterns to strip from type names
 _TYPE_JUNK: list[str] = [
     ", __gnu_cxx::_S_atomic",
     "__gnu_cxx::_S_atomic",
@@ -31,6 +30,7 @@ _TYPE_JUNK: list[str] = [
 
 MAX_DEPTH: int = 4
 MAX_CHILDREN: int = 64
+SUMMARY_MAX_DEPTH: int = 2
 
 
 # ---------------------------------------------------------------------------
@@ -40,8 +40,6 @@ MAX_CHILDREN: int = 64
 
 @dataclass
 class ValueNode:
-    """Extracted representation of a single value / variable."""
-
     name: str
     type_name: str
     value: Optional[str] = None
@@ -52,8 +50,6 @@ class ValueNode:
 
 @dataclass
 class FrameInfo:
-    """Extracted representation of a stack frame."""
-
     index: int
     function_name: str
     file_path: str
@@ -63,8 +59,6 @@ class FrameInfo:
 
 @dataclass
 class BreakpointReport:
-    """Full report for one breakpoint hit."""
-
     pid: int
     tid: int
     frames: list[FrameInfo] = field(default_factory=list)
@@ -76,11 +70,9 @@ class BreakpointReport:
 
 
 def _clean_type_name(raw: str) -> str:
-    """Remove well-known noisy substrings from a C++ type name."""
     result: str = raw
     for junk in _TYPE_JUNK:
         result = result.replace(junk, "")
-    # Collapse multiple spaces / trailing commas inside angle brackets
     while "  " in result:
         result = result.replace("  ", " ")
     result = result.replace(", >", ">").replace(",>", ">")
@@ -101,17 +93,57 @@ def _eval(frame: lldb.SBFrame, expr_text: str) -> lldb.SBValue:
     return frame.EvaluateExpression(expr_text, opts)
 
 
+def _value_text(val: lldb.SBValue) -> str:
+    if not val or not val.IsValid():
+        return "<invalid>"
+    if val.GetValue() is not None:
+        return val.GetValue()
+    if val.GetSummary() is not None:
+        return val.GetSummary()
+    name = val.GetName() or ""
+    typ = _clean_type_name(val.GetTypeName() or "")
+    if name and typ:
+        return f"{name}: {typ}"
+    return typ or "<unavailable>"
+
+
+def _flat_format_value(val: lldb.SBValue, depth: int = 0, max_depth: int = SUMMARY_MAX_DEPTH) -> str:
+    if not val or not val.IsValid():
+        return "<invalid>"
+
+    base = val.GetValue()
+    if base is None:
+        base = val.GetSummary()
+
+    if depth >= max_depth or not val.MightHaveChildren() or val.GetNumChildren() == 0:
+        return base if base is not None else _value_text(val)
+
+    children: list[str] = []
+    count = min(val.GetNumChildren(), MAX_CHILDREN)
+    for i in range(count):
+        child = val.GetChildAtIndex(i)
+        if not child or not child.IsValid():
+            continue
+        child_name = child.GetName() or f"[{i}]"
+        child_repr = _flat_format_value(child, depth + 1, max_depth)
+        children.append(f"{child_name}={child_repr}")
+
+    if children:
+        prefix = f"{base} " if base is not None else ""
+        return f"{prefix}{{{', '.join(children)}}}"
+
+    return base if base is not None else _value_text(val)
+
+
 # ---------------------------------------------------------------------------
 # Synthetic / libcxx-aware child iteration
 # ---------------------------------------------------------------------------
 
 
 def _has_synthetic_children(val: lldb.SBValue) -> bool:
-    """Return True when LLDB provides a synthetic children provider for *val*."""
     synth: lldb.SBValue = val.GetDynamicValue(lldb.eDynamicCanRunTarget)
     if synth.IsValid() and synth.MightHaveChildren():
         return True
-    # Check if the value itself already exposes synthetic children
     if val.IsSynthetic() or val.MightHaveChildren():
         num = val.GetNumChildren()
         if num > 0:
@@ -120,10 +152,6 @@ def _has_synthetic_children(val: lldb.SBValue) -> bool:
 
 
 def _iterate_children(val: lldb.SBValue) -> list[lldb.SBValue]:
-    """
-    Yield children using synthetic provider when available, otherwise raw children.
-    """
-    # Prefer the synthetic representation (honours libcxx formatters)
     synth: lldb.SBValue = val.GetDynamicValue(lldb.eDynamicCanRunTarget)
     source: lldb.SBValue = synth if synth.IsValid() and synth.MightHaveChildren() else val
 
@@ -142,7 +170,6 @@ def _iterate_children(val: lldb.SBValue) -> list[lldb.SBValue]:
 
 
 def _extract_value(val: lldb.SBValue, depth: int = 0) -> ValueNode:
-    """Recursively convert an SBValue tree into a ValueNode tree."""
     if not val or not val.IsValid():
         return ValueNode(name="<invalid>", type_name="", error="invalid SBValue")
 
@@ -167,13 +194,9 @@ def _extract_value(val: lldb.SBValue, depth: int = 0) -> ValueNode:
     if depth >= MAX_DEPTH:
         return node
 
-    # Prefer synthetic children — this is what makes chained synthetic
-    # providers work (Tensor → TensorSpec → Shape → Span).
     synth: lldb.SBValue = val.GetDynamicValue(lldb.eDynamicCanRunTarget)
     source: lldb.SBValue = synth if (synth.IsValid() and synth.MightHaveChildren()) else val
 
-    # If the source has a synthetic provider, use it; the provider's
-    # get_child_at_index returns full SBValues that preserve type identity.
     num: int = min(source.GetNumChildren(), MAX_CHILDREN)
     for i in range(num):
         child: lldb.SBValue = source.GetChildAtIndex(i)
@@ -181,22 +204,16 @@ def _extract_value(val: lldb.SBValue, depth: int = 0) -> ValueNode:
             node.children.append(_extract_value(child, depth + 1))
 
     return node
-    
+
 
 def _extract_value_via_eval(
     frame: lldb.SBFrame, arg: lldb.SBValue, depth: int = 0
 ) -> ValueNode:
-    """
-    Try to re-evaluate the variable through the expression evaluator so that
-    synthetic providers and formatters are active, then fall back to the raw
-    SBValue.
-    """
     name: str = arg.GetName() or ""
     if name:
         ev: lldb.SBValue = _eval(frame, name)
         if ev.IsValid() and ev.GetError().Success():
             node = _extract_value(ev, depth)
-            # Preserve the original source name
             node.name = name
             return node
 
@@ -211,14 +228,6 @@ def _extract_value_via_eval(
 def _try_shape_extraction(
     frame: lldb.SBFrame, arg_name: str, node: ValueNode
 ) -> bool:
-    """
-    If *arg_name* refers to a ``tt::tt_metal::Shape`` (or reference/pointer
-    to it), call ``.view()`` to get a ``Span<const uint32_t>`` and replace
-    the children with the formatted span contents.
-
-    Returns True if the replacement was performed.
-    """
-    # Quick heuristic: check if the type looks like Shape
     if "tt::tt_metal::Shape" not in node.type_name and "ShapeBase" not in node.type_name:
         return False
 
@@ -239,7 +248,6 @@ def _try_shape_extraction(
         ]
         return True
 
-    # The span should have pointer + size; try to read elements
     size_expr: str = f"({arg_name}).view().size()"
     size_val: lldb.SBValue = _eval(frame, size_expr)
     if not size_val.IsValid() or size_val.GetError().Fail():
@@ -292,10 +300,6 @@ def _try_shape_extraction(
 def _try_optional_extraction(
     frame: lldb.SBFrame, arg_name: str, node: ValueNode
 ) -> bool:
-    """
-    If *node* looks like an ``std::optional`` that has a value, call
-    ``*name`` (dereference) to obtain the contained value.
-    """
     if "optional" not in node.type_name.lower():
         return False
 
@@ -356,13 +360,8 @@ def _extract_frame(frame: lldb.SBFrame, index: int) -> FrameInfo:
 
         arg_name: str = arg.GetName() or ""
 
-        # Enrich optionals
         _try_optional_extraction(frame, arg_name, node)
-
-        # Walk children and try enrichment on each
         _enrich_children(frame, arg_name, node)
-
-        # Top-level shape handling
         _try_shape_extraction(frame, arg_name, node)
 
         info.arguments.append(node)
@@ -373,7 +372,6 @@ def _extract_frame(frame: lldb.SBFrame, index: int) -> FrameInfo:
 def _enrich_children(
     frame: lldb.SBFrame, parent_expr: str, node: ValueNode, depth: int = 0
 ) -> None:
-    """Recursively try to enrich optional / shape children."""
     if depth > MAX_DEPTH:
         return
     for child in node.children:
@@ -406,7 +404,6 @@ def _extract_report(frame: lldb.SBFrame) -> BreakpointReport:
 
 
 def _format_node(node: ValueNode, base_indent: str, depth: int) -> list[str]:
-    """Return lines representing *node* at the given *depth*."""
     indent: str = base_indent * depth
     parts: list[str] = []
 
@@ -481,17 +478,128 @@ def _bp_callback(frame: lldb.SBFrame, bp_loc: lldb.SBBreakpointLocation, _dict: 
 
 
 # ---------------------------------------------------------------------------
+# Formatter metaclass + generic formatter base
+# ---------------------------------------------------------------------------
+
+
+class FormatterMeta(type):
+    _registry: list[type["GenericObjectFormatter"]] = []
+
+    def __new__(mcls, name, bases, namespace):
+        cls = super().__new__(mcls, name, bases, namespace)
+        if name != "GenericObjectFormatter" and namespace.get("_TYPE_REGEX"):
+            FormatterMeta._registry.append(cls)
+        return cls
+
+    @classmethod
+    def register(mcls, debugger: lldb.SBDebugger) -> None:
+        for cls in mcls._registry:
+            cls.register(debugger)
+
+
+class GenericObjectFormatter(metaclass=FormatterMeta):
+    _TYPE_REGEX: ClassVar[str] = ""
+    _FIELDS: ClassVar[list[str]] = []
+    _METHODS: ClassVar[list[str]] = []
+    _SUMMARY_NAMES: ClassVar[list[str]] = []
+
+    def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
+        self.valobj: lldb.SBValue = valobj
+        self.children: list[Optional[lldb.SBValue]] = []
+        self.child_names: list[str] = []
+
+    def num_children(self) -> int:
+        return len(self.children)
+
+    def get_child_index(self, name: str) -> int:
+        try:
+            return self.child_names.index(name)
+        except ValueError:
+            return -1
+
+    def get_child_at_index(self, index: int) -> Optional[lldb.SBValue]:
+        if 0 <= index < len(self.children):
+            return self.children[index]
+        return None
+
+    def has_children(self) -> bool:
+        return len(self.children) > 0
+
+    def update(self) -> None:
+        self.children = []
+        self.child_names = []
+
+        frame: lldb.SBFrame = self.valobj.GetFrame()
+        if not frame.IsValid():
+            return
+
+        expr_base: str = self._expr_base()
+        for field_name in self._FIELDS:
+            self._append_eval_child(frame, field_name, f"({expr_base}).{field_name}")
+
+        for method_name in self._METHODS:
+            self._append_eval_child(frame, method_name, f"({expr_base}).{method_name}()")
+
+    def _append_eval_child(self, frame: lldb.SBFrame, child_name: str, expr: str) -> None:
+        result: lldb.SBValue = _eval(frame, expr)
+        if result.IsValid() and result.GetError().Success():
+            self.children.append(result)
+            self.child_names.append(child_name)
+        else:
+            self.children.append(None)
+            self.child_names.append(child_name)
+
+    def _expr_base(self) -> str:
+        name: str = self.valobj.GetName() or ""
+        if self.valobj.GetType().IsPointerType():
+            return f"(*({name}))"
+        return f"({name})"
+
+    @classmethod
+    def _summary_expr_for_name(cls, base: str, name: str) -> str:
+        if name in cls._FIELDS:
+            return f"({base}).{name}"
+        if name in cls._METHODS:
+            return f"({base}).{name}()"
+        raise ValueError(f"{cls.__name__}: unknown summary name '{name}'")
+
+    @classmethod
+    def summary(cls, valobj: lldb.SBValue, internal_dict: dict) -> str:
+        frame: lldb.SBFrame = valobj.GetFrame()
+        if not frame.IsValid():
+            return ""
+
+        name: str = valobj.GetName() or ""
+        if not name:
+            return ""
+
+        base: str = f"({name})"
+        parts: list[str] = []
+
+        for item_name in cls._SUMMARY_NAMES:
+            expr = cls._summary_expr_for_name(base, item_name)
+            result: lldb.SBValue = _eval(frame, expr)
+            if result.IsValid() and result.GetError().Success():
+                parts.append(f"{item_name}={_flat_format_value(result, 0, SUMMARY_MAX_DEPTH)}")
+
+        return " ".join(parts)
+
+    @classmethod
+    def register(cls, debugger: lldb.SBDebugger) -> None:
+        debugger.HandleCommand(
+            f'type synthetic add -x "{cls._TYPE_REGEX}" --python-class {__name__}.{cls.__name__}'
+        )
+        debugger.HandleCommand(
+            f'type summary add -x "{cls._TYPE_REGEX}" --python-function {__name__}.{cls.__name__}.summary'
+        )
+
+
+# ---------------------------------------------------------------------------
 # Synthetic providers
 # ---------------------------------------------------------------------------
 
 
 class TtslSpanSyntheticProvider:
-    """
-    Synthetic children provider for ttsl::Span<T>, which is a type alias
-    for std::span<T>. Reads _M_ptr and _M_extent._M_extent_value to
-    present the span as an array of elements.
-    """
-
     def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
         self.valobj: lldb.SBValue = valobj
         self.count: int = 0
@@ -530,7 +638,6 @@ class TtslSpanSyntheticProvider:
         self.element_type = None
         self.element_size = 0
 
-        # _M_ptr holds the pointer to the data
         ptr_val: lldb.SBValue = self.valobj.GetChildMemberWithName("_M_ptr")
         if not ptr_val.IsValid():
             return
@@ -539,25 +646,21 @@ class TtslSpanSyntheticProvider:
         if self.data_ptr == 0:
             return
 
-        # Determine element type from the pointer type
         ptr_type: lldb.SBType = ptr_val.GetType()
         if ptr_type.IsPointerType():
             self.element_type = ptr_type.GetPointeeType()
             self.element_size = self.element_type.GetByteSize()
 
-        # _M_extent is std::__detail::__extent_storage<...> with _M_extent_value
         extent_member: lldb.SBValue = self.valobj.GetChildMemberWithName("_M_extent")
         if extent_member.IsValid():
             extent_val: lldb.SBValue = extent_member.GetChildMemberWithName("_M_extent_value")
             if extent_val.IsValid():
                 self.count = int(extent_val.GetValueAsUnsigned(0))
         else:
-            # Some implementations store it directly
             extent_val = self.valobj.GetChildMemberWithName("_M_extent_value")
             if extent_val.IsValid():
                 self.count = int(extent_val.GetValueAsUnsigned(0))
 
-        # Clamp to avoid runaway
         if self.count > MAX_CHILDREN:
             self.count = MAX_CHILDREN
 
@@ -566,7 +669,6 @@ class TtslSpanSyntheticProvider:
 
 
 def _ttsl_span_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
-    """Summary string for ttsl::Span — shows size and element values inline."""
     ptr_val: lldb.SBValue = valobj.GetChildMemberWithName("_M_ptr")
     extent_member: lldb.SBValue = valobj.GetChildMemberWithName("_M_extent")
     count: int = 0
@@ -578,7 +680,6 @@ def _ttsl_span_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
     if count == 0:
         return "size=0 {}"
 
-    # Read up to 8 elements inline for the summary
     data_ptr: int = ptr_val.GetValueAsUnsigned(0) if ptr_val.IsValid() else 0
     if data_ptr == 0:
         return f"size={count} {{...}}"
@@ -604,137 +705,25 @@ def _ttsl_span_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
     suffix: str = ", ..." if count > max_inline else ""
     return f"size={count} {{{', '.join(elems)}{suffix}}}"
 
-class TensorSyntheticProvider:
-    """
-    Synthetic children provider for tt::tt_metal::Tensor.
-    Exposes tensor_id (field) and tensor_spec (method call) as children.
-    """
 
-    _FIELD_CHILDREN: list[str] = [
+class TensorSyntheticProvider(GenericObjectFormatter):
+    _TYPE_REGEX = "^tt::tt_metal::Tensor$"
+    _FIELDS = [
         "tensor_id",
     ]
-
-    _METHOD_CHILDREN: list[str] = [
+    _METHODS = [
+        "tensor_spec",
+    ]
+    _SUMMARY_NAMES = [
+        "tensor_id",
         "tensor_spec",
     ]
 
-    def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
-        self.valobj: lldb.SBValue = valobj
-        self.children: list[Optional[lldb.SBValue]] = []
-        self.child_names: list[str] = []
 
-    def num_children(self) -> int:
-        return len(self.children)
-
-    def get_child_index(self, name: str) -> int:
-        try:
-            return self.child_names.index(name)
-        except ValueError:
-            return -1
-
-    def get_child_at_index(self, index: int) -> Optional[lldb.SBValue]:
-        if 0 <= index < len(self.children):
-            return self.children[index]
-        return None
-
-    def update(self) -> None:
-        self.children = []
-        self.child_names = []
-        frame: lldb.SBFrame = self.valobj.GetFrame()
-        if not frame.IsValid():
-            return
-
-        expr_base: str = self._expr_base()
-
-        # Direct field access children
-        for field_name in self._FIELD_CHILDREN:
-            expr: str = f"({expr_base}).{field_name}"
-            result: lldb.SBValue = _eval(frame, expr)
-            if result.IsValid() and result.GetError().Success():
-                self.children.append(result)
-                self.child_names.append(field_name)
-            else:
-                self.children.append(None)
-                self.child_names.append(field_name)
-
-        # Method call children — keep the SBValue from EvaluateExpression
-        # directly so its type identity is preserved and downstream
-        # synthetic providers (e.g. TensorSpecSyntheticProvider) activate.
-        for method_name in self._METHOD_CHILDREN:
-            expr = f"({expr_base}).{method_name}()"
-            result = _eval(frame, expr)
-            if result.IsValid() and result.GetError().Success():
-                self.children.append(result)
-                self.child_names.append(method_name)
-            else:
-                self.children.append(None)
-                self.child_names.append(method_name)
-
-    def has_children(self) -> bool:
-        return len(self.children) > 0
-
-    def _expr_base(self) -> str:
-        name: str = self.valobj.GetName() or ""
-        if self.valobj.GetType().IsPointerType():
-            return f"(*({name}))"
-        return f"({name})"
-
-def _tensor_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
-    """One-line summary for tt::tt_metal::Tensor."""
-    frame: lldb.SBFrame = valobj.GetFrame()
-    if not frame.IsValid():
-        return ""
-
-    name: str = valobj.GetName() or ""
-    base: str = f"({name})" if name else ""
-    if not base:
-        return ""
-
-    parts: list[str] = []
-
-    # tensor_id
-    tid: lldb.SBValue = _eval(frame, f"{base}.tensor_id")
-    if tid.IsValid() and tid.GetError().Success():
-        parts.append(f"id={tid.GetValue()}")
-
-    # shape via tensor_spec().logical_shape().view()
-    shape_expr: str = f"{base}.tensor_spec().logical_shape().view()"
-    size_expr: str = f"{base}.tensor_spec().logical_shape().view().size()"
-    size_val: lldb.SBValue = _eval(frame, size_expr)
-    if size_val.IsValid() and size_val.GetError().Success():
-        count: int = int(size_val.GetValueAsUnsigned(0))
-        dims: list[str] = []
-        for i in range(min(count, 8)):
-            elem: lldb.SBValue = _eval(frame, f"{shape_expr}[{i}]")
-            if elem.IsValid() and elem.GetError().Success():
-                dims.append(elem.GetValue() or "?")
-            else:
-                dims.append("?")
-        parts.append(f"shape=[{', '.join(dims)}]")
-
-    # dtype
-    dt: lldb.SBValue = _eval(frame, f"{base}.tensor_spec().data_type()")
-    if dt.IsValid() and dt.GetError().Success():
-        dt_summary: Optional[str] = dt.GetValue() or dt.GetSummary()
-        if dt_summary:
-            parts.append(f"dtype={dt_summary}")
-
-    # layout
-    lay: lldb.SBValue = _eval(frame, f"{base}.tensor_spec().layout()")
-    if lay.IsValid() and lay.GetError().Success():
-        lay_summary: Optional[str] = lay.GetValue() or lay.GetSummary()
-        if lay_summary:
-            parts.append(f"layout={lay_summary}")
-
-    return " ".join(parts) if parts else ""
-
-class TensorSpecSyntheticProvider:
-    """
-    Synthetic children provider for tt::tt_metal::TensorSpec.
-    Calls accessor methods and exposes them as named children.
-    """
-
-    _METHODS: list[str] = [
+class TensorSpecSyntheticProvider(GenericObjectFormatter):
+    _TYPE_REGEX = "^tt::tt_metal::TensorSpec$"
+    _FIELDS = []
+    _METHODS = [
         "logical_shape",
         "tensor_layout",
         "data_type",
@@ -746,97 +735,11 @@ class TensorSpecSyntheticProvider:
         "physical_shape",
         "tile",
     ]
-
-    def __init__(self, valobj: lldb.SBValue, internal_dict: dict) -> None:
-        self.valobj: lldb.SBValue = valobj
-        self.children: list[Optional[lldb.SBValue]] = []
-        self.child_names: list[str] = []
-
-    def num_children(self) -> int:
-        return len(self.children)
-
-    def get_child_index(self, name: str) -> int:
-        try:
-            return self.child_names.index(name)
-        except ValueError:
-            return -1
-
-    def get_child_at_index(self, index: int) -> Optional[lldb.SBValue]:
-        if 0 <= index < len(self.children):
-            return self.children[index]
-        return None
-
-    def update(self) -> None:
-        self.children = []
-        self.child_names = []
-        frame: lldb.SBFrame = self.valobj.GetFrame()
-        if not frame.IsValid():
-            return
-
-        expr_base: str = self._expr_base()
-
-        for method_name in self._METHODS:
-            expr: str = f"({expr_base}).{method_name}()"
-            result: lldb.SBValue = _eval(frame, expr)
-            if result.IsValid() and result.GetError().Success():
-                # Return the SBValue directly — do NOT use CreateValueFromData,
-                # which strips dynamic type info and prevents downstream
-                # synthetic providers from activating.
-                self.children.append(result)
-                self.child_names.append(method_name)
-            else:
-                self.children.append(None)
-                self.child_names.append(method_name)
-
-    def has_children(self) -> bool:
-        return len(self.children) > 0
-
-    def _expr_base(self) -> str:
-        name: str = self.valobj.GetName() or ""
-        if self.valobj.GetType().IsPointerType():
-            return f"(*({name}))"
-        return f"({name})"
-
-def _tensor_spec_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
-    """One-line summary for tt::tt_metal::TensorSpec."""
-    frame: lldb.SBFrame = valobj.GetFrame()
-    if not frame.IsValid():
-        return ""
-
-    name: str = valobj.GetName() or ""
-    base: str = f"({name})" if name else ""
-    if not base:
-        return ""
-
-    parts: list[str] = []
-
-    # logical_shape
-    shape_size_expr: str = f"{base}.logical_shape().view().size()"
-    size_val: lldb.SBValue = _eval(frame, shape_size_expr)
-    if size_val.IsValid() and size_val.GetError().Success():
-        count: int = int(size_val.GetValueAsUnsigned(0))
-        dims: list[str] = []
-        for i in range(min(count, 8)):
-            elem: lldb.SBValue = _eval(frame, f"{base}.logical_shape().view()[{i}]")
-            if elem.IsValid() and elem.GetError().Success():
-                dims.append(elem.GetValue() or "?")
-            else:
-                dims.append("?")
-        parts.append(f"shape=[{', '.join(dims)}]")
-
-    dt: lldb.SBValue = _eval(frame, f"{base}.data_type()")
-    if dt.IsValid() and dt.GetError().Success():
-        v: Optional[str] = dt.GetValue() or dt.GetSummary()
-        if v:
-            parts.append(f"dtype={v}")
-
-    lay: lldb.SBValue = _eval(frame, f"{base}.layout()")
-    if lay.IsValid() and lay.GetError().Success():
-        v = lay.GetValue() or lay.GetSummary()
-        if v:
-            parts.append(f"layout={v}")
-
-    return " ".join(parts) if parts else ""
+    _SUMMARY_NAMES = [
+        "logical_shape",
+        "data_type",
+        "layout",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -844,8 +747,6 @@ def _tensor_spec_summary(valobj: lldb.SBValue, internal_dict: dict) -> str:
 # ---------------------------------------------------------------------------
 
 def _register_synthetic_providers(debugger: lldb.SBDebugger) -> None:
-    """Register custom type synthetic providers and summaries."""
-    # The regex matches ttsl::Span<...> regardless of template parameter
     debugger.HandleCommand(
         f'type synthetic add -x "^ttsl::Span<.+>$" '
         f'--python-class {__name__}.TtslSpanSyntheticProvider'
@@ -854,7 +755,6 @@ def _register_synthetic_providers(debugger: lldb.SBDebugger) -> None:
         f'type summary add -x "^ttsl::Span<.+>$" '
         f'--python-function {__name__}._ttsl_span_summary'
     )
-    # Also catch the underlying std::span if it shows up with the ttsl alias resolved
     debugger.HandleCommand(
         f'type synthetic add -x "^std::span<.+>$" '
         f'--python-class {__name__}.TtslSpanSyntheticProvider'
@@ -863,26 +763,11 @@ def _register_synthetic_providers(debugger: lldb.SBDebugger) -> None:
         f'type summary add -x "^std::span<.+>$" '
         f'--python-function {__name__}._ttsl_span_summary'
     )
-    
 
-    # --- tt::tt_metal::Tensor ---
-    debugger.HandleCommand(
-        f'type synthetic add -x "^tt::tt_metal::Tensor$" --python-class {__name__}.TensorSyntheticProvider'
-    )
-    debugger.HandleCommand(
-        f'type summary add -x "^tt::tt_metal::Tensor$" --python-function {__name__}._tensor_summary'
-    )
+    FormatterMeta.register(debugger)
 
-    # --- tt::tt_metal::TensorSpec ---
-    debugger.HandleCommand(
-        f'type synthetic add -x "^tt::tt_metal::TensorSpec$" --python-class {__name__}.TensorSpecSyntheticProvider'
-    )
-    debugger.HandleCommand(
-        f'type summary add -x "^tt::tt_metal::TensorSpec$" --python-function {__name__}._tensor_spec_summary'
-    )
 
 def __lldb_init_module(debugger: lldb.SBDebugger, internal_dict: dict) -> None:
-    # Import libcxx formatters so synthetic providers are available
     debugger.HandleCommand("command script import lldb.formatters")
     debugger.HandleCommand("command script import lldb.formatters.cpp")
 
