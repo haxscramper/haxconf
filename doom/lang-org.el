@@ -3810,6 +3810,7 @@ If a multi-line range is selected, insert it as an Org source block."
           (delete-region (line-beginning-position) (line-end-position))
           (insert "  - ")))
       (evil-insert 0)
+      (hax/goto-end-of-last-non-empty-line)
       (save-buffer))
 
     (pop-to-buffer org-buffer)))
