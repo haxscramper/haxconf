@@ -154,6 +154,7 @@ mode"
            nil
            'org-tags-history)))
     (when action
+      (message "Running tag action %s" action)
       (funcall action selected))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
@@ -308,17 +309,12 @@ If the user inputs a new value, update the file and return it."
   "Insert a logbook entry with TAG-NAME and ACTION ('added or 'removed) into the subtree logbook."
   (let ((current-time (format-time-string (org-time-stamp-format t t))))
     (hax/ensure-logbook-drawer-exists)
-    (save-excursion
-      (org-back-to-heading t)
-      (when (re-search-forward ":LOGBOOK:" (save-excursion (outline-next-heading)) t)
-        (end-of-line)
-        (insert "\n")
-        (insert
-         (format "%s- Tag \"%s\" %s on %s"
-                 (s-repeat (+ 1 (org-current-level)) " ")
-                 (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
-                 (if (eq action 'added) "Added" "Removed")
-                 current-time))))))
+    (hax/org-add-log-entry
+     (format "- Tag \"%s\" %s on %s"
+             (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
+             (if (eq action 'added) "Added" "Removed")
+             current-time) 
+     "LOGBOOK")))
 
 
 
@@ -432,6 +428,7 @@ created today."
                (planning :from ,begin-7 :to ,end+7)
                ;; Track any entries that were created/stamped today
                (ts :on today))))
+       :sort '(todo)
        :action 'element-with-markers))))
 
 (cl-defun hax/org-select-subtree-callback
@@ -2276,48 +2273,18 @@ ARCHIVE_OLPATH_PARENT_ID."
                                 ))
 
 (require 'ivy)
-(defun hax/counsel-org-tag-action (x)
-  "Add tag X to `counsel-org-tags'.
-If X is already part of the list, remove it instead.  Quit the selection if
-X is selected by either `ivy-done', `ivy-alt-done' or `ivy-immediate-done',
-otherwise continue prompting for tags."
-  (if (member x counsel-org-tags)
-      (progn
-        (setq counsel-org-tags (delete x counsel-org-tags)))
-    (unless (equal x "")
-      (setq counsel-org-tags (append counsel-org-tags (list x)))
-      (unless (member x ivy--all-candidates)
-        (setq ivy--all-candidates (append ivy--all-candidates (list x))))))
-  (let ((prompt (counsel-org-tag-prompt)))
-    (setf (ivy-state-prompt ivy-last) prompt)
-    (setq ivy--prompt (concat "%-4d " prompt)))
-  (cond ((memq this-command '(ivy-done
-                              ivy-alt-done
-                              ivy-immediate-done))
-         (if (eq major-mode 'org-agenda-mode)
-             (if (null org-agenda-bulk-marked-entries)
-                 (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
-                                     (org-agenda-error))))
-                   (with-current-buffer (marker-buffer hdmarker)
-                     (goto-char hdmarker)
-                     (counsel-org--set-tags)))
-               (let ((add-tags (copy-sequence counsel-org-tags)))
-                 (dolist (m org-agenda-bulk-marked-entries)
-                   (with-current-buffer (marker-buffer m)
-                     (save-excursion
-                       (goto-char m)
-                       (setq counsel-org-tags
-                             (delete-dups
-                              (append (counsel--org-get-tags) add-tags)))
-                       (counsel-org--set-tags))))))
-           (counsel-org--set-tags)
-           (if (member x counsel-org-tags)
-               (hax/insert-logbook-tag-entry x 'added)
-             (hax/insert-logbook-tag-entry x 'removed)
-             (message "Tag %S has been removed." x))))
-        ((eq this-command 'ivy-call)
-         (with-selected-window (active-minibuffer-window)
-           (delete-minibuffer-contents)))))
+(defun hax/counsel-org-tag-action (tag)
+  (unless (equal tag "")
+    (let* ((current-tags (counsel--org-get-tags))
+           (had-tag (member tag current-tags)))
+      (setq counsel-org-tags
+            (if had-tag
+                (delete tag (copy-sequence current-tags))
+              (append current-tags (list tag))))
+      (counsel-org--set-tags)
+      (if had-tag
+          (hax/insert-logbook-tag-entry tag 'removed)
+        (hax/insert-logbook-tag-entry tag 'added)))))
 
 (defface hax/org-agenda-header
   '((t :inherit org-agenda-structure
@@ -3777,42 +3744,72 @@ A non-empty line is defined as a line containing at least one non-whitespace cha
   (when (re-search-backward "\\S-" nil t) (end-of-line)))
 
 (defun hax/log-context-to-scratch ()
-  "Capture current line context and append it to the *scratch* buffer.
-Format: - <timestamp> src_<lang>{<line>} in =<file>= at ~<sha>~"
+  "Capture current context and append it to the *scratch* buffer.
+
+If nothing is selected, use the full current line.
+If a single-line range is selected, use the selected text inline.
+If a multi-line range is selected, insert it as an Org source block."
   (interactive)
-  (let* ((line-text (string-trim-left 
-                     (buffer-substring-no-properties 
-                      (line-beginning-position) (line-end-position))))
+  (let* ((has-selection (use-region-p))
+         (region-beg (when has-selection (region-beginning)))
+         (region-end (when has-selection (region-end)))
+         (selected-text
+          (when has-selection
+            (buffer-substring-no-properties region-beg region-end)))
+         (multiline-selection
+          (and selected-text (string-match-p "\n" selected-text)))
+         (line-text
+          (string-trim-left
+           (buffer-substring-no-properties
+            (line-beginning-position) (line-end-position))))
+         (context-text
+          (cond
+           ((not has-selection) line-text)
+           (multiline-selection selected-text)
+           (t selected-text)))
          (lang (hax/--get-language))
-         (fname (file-name-nondirectory (or (buffer-file-name) "unnamed-buffer")))
-         (fline (line-number-at-pos))
-         ;; Safely get the full SHA using magit (if available) or vc
+         (fname (let* ((full-path (or (buffer-file-name) "unnamed-buffer"))
+                       (dir (file-name-nondirectory
+                             (directory-file-name (file-name-directory full-path))))
+                       (file (file-name-nondirectory full-path)))
+                  (concat dir "/" file)))
+         (fline (if has-selection
+                    (line-number-at-pos region-beg)
+                  (line-number-at-pos)))
          (full-sha (condition-case nil
                        (if (fboundp 'magit-rev-parse)
                            (magit-rev-parse "HEAD")
                          (vc-git-working-revision (buffer-file-name)))
                      (error nil)))
          (sha (if full-sha (substring full-sha 0 8) "N/A"))
-         (formatted (format "src_%s{%s} in =%s:%s= at ~%s~" lang line-text fname fline sha))
          (timestamp (format-time-string "[%Y-%m-%d %a %H:%M]"))
-         (hax/goto-end-of-last-non-empty-line)
-         (final-line (format "- %s %s" timestamp formatted))
          (state-dir (expand-file-name "~/.local/state/hax/"))
          (org-file (expand-file-name "scratch.org" state-dir))
          (org-buffer (progn
-                       (make-directory state-dir t) 
-                       (find-file-noselect org-file)))) 
+                       (make-directory state-dir t)
+                       (find-file-noselect org-file))))
 
     (with-current-buffer org-buffer
       (goto-char (point-max))
-      (insert final-line)
-      (insert "\n")
+      (if multiline-selection
+          (progn
+            (insert (format "- %s\n" timestamp))
+            (insert (format "  #+caption: =%s:%s= at ~%s~\n" fname fline sha))
+            (insert (format "  #+begin_src %s\n" lang))
+            (insert context-text)
+            (unless (string-suffix-p "\n" context-text)
+              (insert "\n"))
+            (insert "  #+end_src\n"))
+        (insert
+         (format "- %s src_%s{%s} in =%s:%s= at ~%s~\n"
+                 timestamp lang context-text fname fline sha)))
       (goto-char (point-max))
-      (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
+      (let ((line (buffer-substring-no-properties
+                   (line-beginning-position) (line-end-position))))
         (unless (string= line "  - ")
           (delete-region (line-beginning-position) (line-end-position))
           (insert "  - ")))
       (evil-insert 0)
-      (save-buffer)) 
+      (save-buffer))
 
     (pop-to-buffer org-buffer)))

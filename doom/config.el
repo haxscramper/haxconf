@@ -3,7 +3,32 @@
 (setq user-full-name "haxscramper"
       user-mail-address "haxscramper@gmail.com")
 
-(setq shell-file-name (executable-find "sh"))
+;; (defun hax/message-to-stdout (format-string &rest args)
+;;   "Print the formatted message to stdout."
+;;   (let ((msg (apply #'format-message format-string args)))
+;;     (princ (concat msg "\n") #'external-debugging-output)))
+
+;; (advice-add 'message :after #'hax/message-to-stdout)
+
+;; (defun hax/error-to-stderr (error-symbol data)
+;;   "Print Lisp errors to stderr."
+;;   (when (memq error-symbol '(error user-error))
+;;     (princ
+;;      (concat
+;;       (error-message-string (cons error-symbol data))
+;;       "\n")
+;;      #'external-debugging-output)))
+
+;; (advice-add 'signal :before #'hax/error-to-stderr)
+
+;; (defun hax/warning-to-stderr (_type message &rest _args)
+;;   "Print warning MESSAGE to stderr."
+;;   (princ (concat message "\n") #'external-debugging-output))
+
+;; (advice-add 'display-warning :after #'hax/warning-to-stderr)
+
+;; (setq shell-file-name (executable-find "sh"))
+
 
 (setq doom-font (font-spec :family "Iosevka" :size 18)
       doom-unicode-font (font-spec :family "Noto Sans Mono" :size 18)
@@ -147,6 +172,9 @@ You can insert or kill the name of the selected font."
   (global-evil-mc-mode t))
 
 (global-company-mode -1)
+(global-so-long-mode -1)
+(setq so-long-threshold 1000000000000)
+(setq so-long-target-modes '())
 
 ;; Use `C-c C-return' to annotate single lines in the commit message. Maybe
 ;; this can somehow be integrated with github review (read the anotations
@@ -443,7 +471,6 @@ more nitpickery about stuff I write in my configuration files."
            :foreground ,(doom-color 'yellow)
            :underline t)
 
-
 (defface-derive hl-todo-IMPORTANT warning "IMPORTANT" :weight bold :underline t)
 (defface-derive hl-todo-TODO warning "TODO" :weight bold :underline t)
 (defface-derive hl-todo-FIXME error "FIXME" :weight bold :underline t)
@@ -469,6 +496,33 @@ more nitpickery about stuff I write in my configuration files."
 
 (defface-derive hl-todo-ASSUME warning "ASSUME" :underline t :slant italic)
 
+(defvar hax/hl-todo--keywords nil)
+
+(defun hax/hl-todo--build-keywords ()
+  (setq hax/hl-todo--keywords
+        (mapcar
+         (lambda (entry)
+           (let ((keyword (car entry))
+                 (face (cdr entry)))
+             `(,(concat "\\(?:^\\|[^[:alnum:]_]\\)\\(" (regexp-quote keyword) "\\)\\(?:[^[:alnum:]_]\\|$\\)")
+               (1 ',face t))))
+         hl-todo-keyword-faces)))
+
+(define-minor-mode hax/hl-todo-mode
+  "Highlight hl-todo keywords in markup buffers."
+  :lighter " hax-todo"
+  (if hax/hl-todo-mode
+      (progn
+        (unless hax/hl-todo--keywords
+          (hax/hl-todo--build-keywords))
+        (font-lock-add-keywords nil hax/hl-todo--keywords 'append)
+        (font-lock-flush)
+        (font-lock-ensure))
+    (when hax/hl-todo--keywords
+      (font-lock-remove-keywords nil hax/hl-todo--keywords)
+      (font-lock-flush)
+      (font-lock-ensure))))
+
 (after! hl-todo
   (setq hl-todo-keyword-faces
         '(("TODO" . hl-todo-TODO)
@@ -492,7 +546,9 @@ more nitpickery about stuff I write in my configuration files."
           ("TEST" . hl-todo-TEST)
           ("WARNING" . hl-todo-WARNING)
           ("ERROR" . hl-todo-ERROR)
-          ("TEMP" . hl-todo-TEMP))))
+          ("TEMP" . hl-todo-TEMP)))
+  (hax/hl-todo--build-keywords))
+
 
 ;; '(("TODO" . "#dc752f")
 ;;   ("NEXT" . "#dc752f")

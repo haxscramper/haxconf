@@ -14,7 +14,6 @@ lxml-html-clean = "^0.1.1"
 dominate = "^2.9.1"
 nltk = "^3.8.1"
 pillow = "^11.0.0"
-streamdeck = "^0.9.7"
 pip = "^25.2"
 pyyaml = "^6.0.2"
 pydantic = "^2.11.7"
@@ -24,6 +23,7 @@ beartype = "^0.21.0"
 markdown = "^3.10.1"
 pygments = "^2.19.2"
 ruamel-yaml = "^0.19.1"
+streamdeck = "^0.9.8"
 
 
 [build-system]

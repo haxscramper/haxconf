@@ -224,7 +224,9 @@
     "workbench.editor.enablePreviewFromQuickOpen": true,
     "workbench.editor.enablePreviewFromCodeNavigation": true,
     "python.testing.pytestArgs": [
-        "--color=yes"
+        "--color=yes",
+        "--tb=short",
+        "--log-cli-level=DEBUG"
     ],
     "explorer.excludeGitIgnore": true,
     "diffEditor.ignoreTrimWhitespace": false,
@@ -329,5 +331,6 @@
     "http.systemCertificatesNode": true,
     "fracturedjsonvsc.MaxInlineComplexity": 4,
     "fracturedjsonvsc.MaxCompactArrayComplexity": 3,
-    "fracturedjsonvsc.MaxTableRowComplexity": 3
+    "fracturedjsonvsc.MaxTableRowComplexity": 3,
+    "kilo-code.new.showTaskTimeline": false
 }
