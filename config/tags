@@ -17,6 +17,7 @@
 #activity##random
 #activity##read
 #activity##read##post
+#activity##shopping
 #activity##time_management
 #activity##tourism
 #activity##video
@@ -481,6 +482,7 @@
 #project##target
 #project##translations
 #project##tree_diff
+#project##utility##image_organization
 #project##web##firefox
 #project##website
 #project##writing
@@ -584,6 +586,7 @@
 #software##llm
 #software##llm##llama
 #software##llm##mcp
+#software##llm##qmd
 #software##llm##rag
 #software##llvm
 #software##memex
