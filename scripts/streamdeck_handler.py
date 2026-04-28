@@ -151,17 +151,20 @@ def focus_on_window(window_name: str):
 class StreamDeckController:
 
     def __init__(self, config_path: Path):
-        with open(config_path, "r") as f:
+        self.config_path = Path(config_path).expanduser().resolve()
+        with open(self.config_path, "r") as f:
             config_data = yaml.safe_load(f)
         self.config = Config(**config_data)
+        self.last_config_mtime = self.config_path.stat().st_mtime
+        self.configuration_changed = False
         self.devices: Dict[str, StreamDeck] = {}
         self.current_pages = {}
         self.image_cache: Dict[str, Dict[int, bytes]] = {}
         self.quit_script = False
         self.last_activity_time = {}
-        self.quit_script = False
 
     def initialize_devices(self) -> None:
+        logging.info("init devices")
         device_manager = DeviceManager()
         devices = device_manager.enumerate()
         import time
@@ -171,6 +174,7 @@ class StreamDeckController:
             deck.reset()
             time.sleep(1)
             deck_name = deck.deck_type()
+            logging.info(f"found deck {deck_name}")
             for deck_config in self.config.decks:
                 if deck_config.device_type == deck_name:
                     logger.info(f"Configuring device {deck_name}")
@@ -181,7 +185,10 @@ class StreamDeckController:
                     self.last_activity_time[deck_name] = time.time()
                     self.pregenerate_images(deck_name)
                     self.update_display(deck)
+                    logging.info("device OK")
                     break
+
+        logging.info("init devices ok")
 
     def pregenerate_images(self, device_name: str) -> None:
         device = self.devices[device_name]
@@ -212,7 +219,33 @@ class StreamDeckController:
 
         deck.set_key_color(key, r, g, b)
 
+    def check_config_changed(self) -> bool:
+        try:
+            current_mtime = self.config_path.stat().st_mtime
+            if current_mtime != self.last_config_mtime:
+                self.last_config_mtime = current_mtime
+                return True
+        except OSError:
+            pass
+        return False
+
+    def reload_configuration(self) -> None:
+        logger.info("Configuration file changed, reloading...")
+        with open(self.config_path, "r") as f:
+            config_data = yaml.safe_load(f)
+        self.config = Config(**config_data)
+        self.current_pages = {name: 0 for name in self.devices}
+        self.image_cache = {}
+        for device_name in self.devices:
+            self.pregenerate_images(device_name)
+            self.update_display(self.devices[device_name])
+        self.configuration_changed = True
+        logger.info("Configuration reloaded successfully")
+
     def key_callback(self, deck: StreamDeck, key: int, state: bool) -> None:
+        if self.check_config_changed():
+            self.reload_configuration()
+
         self.update_display(deck)
         self.last_activity_time[deck.deck_type] = time.time()
         if not state:
@@ -238,14 +271,17 @@ class StreamDeckController:
         logger.info(f"Running action {action} on desk {deck}")
         match action:
             case ExecuteScriptAction():
+
                 def execute_subprocess(action: Action):
-                    result = subprocess.run(action.script, shell=True, capture_output=True)
+                    result = subprocess.run(action.script,
+                                            shell=True,
+                                            capture_output=True)
                     if action.insert_output:
                         logger.info(f"Got stdout {result.stdout.decode()}")
                         self.fast_type_text(result.stdout.decode())
 
-
-                threading.Thread(target=lambda: execute_subprocess(action)).start()
+                threading.Thread(
+                    target=lambda: execute_subprocess(action)).start()
             case EmulateShortcutAction():
                 threading.Thread(target=lambda: pyautogui.hotkey(
                     *action.shortcut.split("+"))).start()
@@ -478,4 +514,5 @@ class StreamDeckController:
 
 if __name__ == "__main__":
     controller = StreamDeckController(Path("streamdeck_handler.yaml"))
+    logging.info("running controller")
     controller.run()

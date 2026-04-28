@@ -224,7 +224,9 @@
     "workbench.editor.enablePreviewFromQuickOpen": true,
     "workbench.editor.enablePreviewFromCodeNavigation": true,
     "python.testing.pytestArgs": [
-        "--color=yes"
+        "--color=yes",
+        "--tb=short",
+        "--log-cli-level=DEBUG"
     ],
     "explorer.excludeGitIgnore": true,
     "diffEditor.ignoreTrimWhitespace": false,
@@ -278,7 +280,7 @@
         }
       ]
     },
-    "window.zoomLevel": 1,
+    "window.zoomLevel": 2,
     "editor.stickyScroll.enabled": false,
     "xml.server.preferBinary": true,
     "workbench.tree.enableStickyScroll": false,
@@ -326,7 +328,9 @@
         "kilo-code.new.agentManagerOpen",
         "kilo-code.new.agentManager.showTerminal"
     ],
+    "http.systemCertificatesNode": true,
     "fracturedjsonvsc.MaxInlineComplexity": 4,
     "fracturedjsonvsc.MaxCompactArrayComplexity": 3,
-    "fracturedjsonvsc.MaxTableRowComplexity": 3
+    "fracturedjsonvsc.MaxTableRowComplexity": 3,
+    "kilo-code.new.showTaskTimeline": false
 }
