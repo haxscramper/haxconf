@@ -349,3 +349,24 @@ Works in all contexts including minibuffer and prompts."
 ;; Uncomment these if you want even more aggressive kill-ring prevention
 ;; (advice-add 'backward-delete-char-untabify :around #'hax/disable-kill-ring-advice)
 ;; (advice-add 'delete-backward-char :around #'hax/disable-kill-ring-advice)
+
+(defun hax/rename-file-with-timestamp ()
+  "Rename current buffer's file, appending or updating an ISO 8601 timestamp."
+  (interactive)
+  (let* ((filename (buffer-file-name))
+         (timestamp (format-time-string "%Y-%m-%dT%H%M%S"))
+         (dir (file-name-directory filename))
+         (ext (file-name-extension filename))
+         (name (file-name-sans-extension (file-name-nondirectory filename)))
+         (ts-pattern "--[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}T[0-9]\\{6\\}")
+         (new-name
+          (if (string-match ts-pattern name)
+              (replace-match (concat "--" timestamp) t t name)
+            (concat name "--" timestamp)))
+         (new-filename (expand-file-name
+                        (if (string-empty-p ext)
+                            new-name
+                          (concat new-name "." ext))
+                        dir)))
+    (rename-file filename new-filename)
+    (set-visited-file-name new-filename)))
