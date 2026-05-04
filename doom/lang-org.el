@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t; -*-
 
-
+(load! "lang-org.d/hax-agenda.el")
 
 (defun hax/org-update-all-cookies ()
   (interactive)
@@ -419,6 +419,8 @@ interactive function call"
          (time-less-p
           (or (car b) (seconds-to-time 0))
           (or (car a) (seconds-to-time 0))))
+       ;; TODO Extract this into a separate function for getting the
+       ;; last clocked time in a subtree. 
        (--map
         (let* ((marker (org-element-property :org-marker it))
                (clock (org-with-point-at marker
@@ -2491,6 +2493,7 @@ line or end of buffer, with only blank lines in between."
   (org-link-set-parameters "coords" :follow #'org-coords-open)
   (require 'ts)
   (require 'org-expiry)
+  (require 'org-clock)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("anon" "anonymous")
       ("inf" "infinite")
