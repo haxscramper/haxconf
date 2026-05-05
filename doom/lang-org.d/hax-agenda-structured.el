@@ -1,12 +1,30 @@
 ;;; -*- lexical-binding: t; -*-
 
+(require 'org)
+(require 'org-element)
+(require 'org-clock)
+(require 'org-ql)
+(require 'json)
+(require 'cl-lib)
+
 (defun hax/org-time-to-iso-8601 (time)
   (when time
     (format-time-string "%Y-%m-%dT%H:%M:%S%z" time)))
 
-(defun hax/org-element-timestamp-to-time (timestamp)
-  (when-let ((raw (org-element-property :raw-value timestamp)))
-    (org-time-string-to-time raw)))
+(defun hax/org--timestamp-repeat (time-string)
+  (when (and time-string
+             (string-match "\\s-+\\([.+]?\\+[0-9]+[hdwmy]\\)" time-string))
+    (match-string 1 time-string)))
+
+(defun hax/org-timestamp-string-to-plist (time-string)
+  (when time-string
+    (list
+     :timestamp (hax/org-time-to-iso-8601 (org-time-string-to-time time-string))
+     :repeat (hax/org--timestamp-repeat time-string))))
+
+(defun hax/org-entry-timestamp-plist (marker property)
+  (org-with-point-at marker
+    (hax/org-timestamp-string-to-plist (org-entry-get nil property))))
 
 (defun hax/org-element--headline-path (headline)
   (let ((path nil)
@@ -20,16 +38,40 @@
       (setq node (org-element-property :parent node)))
     (cdr path)))
 
-(defun hax/org-element--latest-clock-value (headline)
-  (message "%s headline" headline)
+(defun hax/org-element--clock-end-time (clock)
+  (let ((clock-text
+         (buffer-substring-no-properties
+          (org-element-property :begin clock)
+          (org-element-property :end clock))))
+    (when (string-match "--\\(\\[[^]]+\\]\\|<[^>]+>\\)" clock-text)
+      (org-time-string-to-time (match-string 1 clock-text)))))
+
+(defun hax/org-element--latest-clock-end-value (_headline marker)
   (let ((latest nil))
-    (org-element-map headline 'clock
-      (lambda (clock)
-        (message "clock: %s" clock)
-        (when-let ((value (org-element-property :value clock))
-                   (start (car value)))
-          (when (or (null latest) (time-less-p latest start))
-            (setq latest start)))))
+    (org-with-point-at marker
+      (save-excursion
+        (org-back-to-heading t)
+        (let ((end (save-excursion (org-end-of-subtree t t)))
+              (case-fold-search nil))
+          (hax/dbg/point (point))
+          (when (re-search-forward "^[ \t]*:LOGBOOK:[ \t]*$" end t)
+            (let ((logbook-begin (match-end 0))
+                  (logbook-end
+                   (save-excursion
+                     (when (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
+                       (match-beginning 0)))))
+              (when logbook-end (hax/dbg/point logbook-end))
+              (when logbook-begin (hax/dbg/point logbook-begin))
+              (when logbook-end
+                (goto-char logbook-begin)
+                (while (re-search-forward
+                        "^[ \t]*CLOCK:.*?--\\(\\[[^]\n]+\\]\\)[ \t]*=>"
+                        logbook-end
+                        t)
+                  (let* ((end-string (match-string-no-properties 1))
+                         (end-time (org-time-string-to-time end-string)))
+                    (when (or (null latest) (time-less-p latest end-time))
+                      (setq latest end-time))))))))))
     latest))
 
 (defun hax/org-element-entry-plist (headline)
@@ -38,16 +80,15 @@
                  (or (org-element-property :raw-value headline) "")))
          (todo-state (when-let ((todo (org-element-property :todo-keyword headline)))
                        (substring-no-properties todo)))
-         (tags (--map (substring-no-properties it)
-                      (org-element-property :tags headline)))
-         (created
-          (org-element-map headline 'node-property
-            (lambda (node)
-              (when (string= (org-element-property :key node) "CREATED")
-                (org-time-string-to-time
-                 (org-element-property :value node))))
-            nil t))
-         (last-clocked-in (hax/org-element--latest-clock-value headline))
+         (tags (mapcar #'substring-no-properties
+                       (org-element-property :tags headline)))
+         (priority-value (org-element-property :priority headline))
+         (priority (when priority-value
+                     (char-to-string priority-value)))
+         (created (hax/org-entry-timestamp-plist marker "CREATED"))
+         (deadline (hax/org-entry-timestamp-plist marker "DEADLINE"))
+         (scheduled (hax/org-entry-timestamp-plist marker "SCHEDULED"))
+         (last-clocked-in (hax/org-element--latest-clock-end-value headline marker))
          (file (substring-no-properties
                 (or (buffer-file-name (marker-buffer marker)) "")))
          (path (hax/org-element--headline-path headline))
@@ -56,10 +97,13 @@
             (org-clock-sum-current-item))))
     (list
      :title title
-     :created (hax/org-time-to-iso-8601 created)
+     :created created
+     :deadline deadline
+     :scheduled scheduled
      :last-clocked-in (hax/org-time-to-iso-8601 last-clocked-in)
      :overall-time overall-minutes
      :todo-state todo-state
+     :subtree-priority priority
      :subtree-tags tags
      :file file
      :subtree-path path)))
@@ -72,8 +116,8 @@
             (query (plist-get group :query))
             (sort (plist-get group :sort))
             (entries
-             (--map
-              (hax/org-element-entry-plist it)
+             (mapcar
+              #'hax/org-element-entry-plist
               (org-ql-select files query
                 :sort sort
                 :action 'element-with-markers))))
@@ -120,10 +164,6 @@
            :files (,(expand-file-name hax/repeated.org))
            :query (todo "TODO")))))
 
-
-(require 'json)
-(require 'cl-lib)
-
 (defun hax/json-normalize (value)
   (cond
    ((null value)
@@ -143,6 +183,7 @@
     value)))
 
 (when t
+  (write-to-file-unquoted "/tmp/hax-emacs.log" "")
   (hax/detail/configure-org-agenda-query)
   (let ((json-object-type 'alist)
         (json-array-type 'list)

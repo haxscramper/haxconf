@@ -8,7 +8,9 @@
 
 (defun hax/log-file--initialize ()
   (unless hax/log-file--initialized
-    (with-temp-file hax/log-file)
+    (unless (file-exists-p hax/log-file)
+      (let ((coding-system-for-write 'utf-8))
+        (write-region "" nil hax/log-file nil 'silent)))
     (setq hax/log-file--initialized t)))
 
 (defun hax/log-file--cli-handler (option)
@@ -18,15 +20,28 @@
 
 (defun hax/log--format-location (file line function)
   (format "%s:%s%s"
-          (or file "<unknown>")
+          (if file
+              (file-name-nondirectory file)
+            "<unknown>")
           (or line "?")
           (if function
               (format " %s" function)
             "")))
 
+(defun hax/log--read-file-string (file)
+  (if (file-exists-p file)
+      (with-temp-buffer
+        (let ((coding-system-for-read 'utf-8))
+          (insert-file-contents file))
+        (buffer-string))
+    ""))
+
 (defun hax/log--write-string (text file append)
   (let ((coding-system-for-write 'utf-8))
-    (write-region text nil file append 'silent)))
+    (if append
+        (let ((current (hax/log--read-file-string file)))
+          (write-region (concat current text) nil file nil 'silent))
+      (write-region text nil file nil 'silent))))
 
 (defun hax/log--emit (text print-stdout print-stderr append-to redirect-and-overwrite)
   (hax/log-file--initialize)
@@ -121,13 +136,10 @@
                  (nth 1 form)))))))
     `(hax/log--call ,file ,line ',function ,@args)))
 
-
-
 (defun hax/dbg/point (p)
   (save-excursion
     (goto-char p)
     (hax/dbg/looking-at)))
-
 
 (defun hax/dbg/looking-at ()
   (interactive)
@@ -141,11 +153,10 @@
     'face 'font-lock-warning-face)
    (current-buffer)))
 
-
 (defun hax/dbg/looking-around ()
   (interactive)
   (hax/log
-   "looking at: %s:%s..%s = [%s%s] in %s"
+   "looking-around: %s:%s..%s = [%s%s] in %s"
    (line-number-at-pos)
    (line-beginning-position)
    (line-end-position)
@@ -156,7 +167,6 @@
     (buffer-substring-no-properties (point) (line-end-position))
     'face 'font-lock-warning-face)
    (current-buffer)))
-
 
 ;; Scroll to the last position of the message buffer after something has
 ;; been printed.
@@ -170,4 +180,3 @@
            (set-window-point window (point-max))))
      nil
      t)))
-
