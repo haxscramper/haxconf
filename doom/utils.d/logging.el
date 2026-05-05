@@ -46,30 +46,39 @@
 
 (defun hax/log--parse-options (args)
   (let ((message nil)
+        (format-args nil)
         (print-stdout nil)
         (print-stderr nil)
         (append-to nil)
-        (redirect-and-overwrite nil))
+        (redirect-and-overwrite nil)
+        (in-options nil))
+    (unless args
+      (error "hax/log requires a message argument"))
+
+    (setq message (pop args))
+
     (while args
       (let ((arg (pop args)))
         (if (keywordp arg)
-            (pcase arg
-              (:print-stdout
-               (setq print-stdout t))
-              (:print-stderr
-               (setq print-stderr t))
-              (:append-to
-               (setq append-to (pop args)))
-              (:redirect-and-overwrite
-               (setq redirect-and-overwrite (pop args)))
-              (_
-               (error "Unknown hax/log option: %S" arg)))
-          (if message
-              (error "Multiple message arguments passed to hax/log")
-            (setq message arg)))))
-    (unless message
-      (error "hax/log requires a message argument"))
+            (progn
+              (setq in-options t)
+              (pcase arg
+                (:print-stdout
+                 (setq print-stdout t))
+                (:print-stderr
+                 (setq print-stderr t))
+                (:append-to
+                 (setq append-to (pop args)))
+                (:redirect-and-overwrite
+                 (setq redirect-and-overwrite (pop args)))
+                (_
+                 (error "Unknown hax/log option: %S" arg))))
+          (if in-options
+              (error "Positional format arguments must come before options in hax/log: %S" arg)
+            (push arg format-args)))))
+
     (list :message message
+          :format-args (nreverse format-args)
           :print-stdout print-stdout
           :print-stderr print-stderr
           :append-to append-to
@@ -78,12 +87,19 @@
 (defun hax/log--call (file line function &rest args)
   (let* ((parsed (hax/log--parse-options args))
          (message (plist-get parsed :message))
+         (format-args (plist-get parsed :format-args))
          (print-stdout (plist-get parsed :print-stdout))
          (print-stderr (plist-get parsed :print-stderr))
          (append-to (plist-get parsed :append-to))
          (redirect-and-overwrite (plist-get parsed :redirect-and-overwrite))
          (location (hax/log--format-location file line function))
-         (text (format "[%s] %s\n" location message)))
+         (rendered-message
+          (if format-args
+              (apply #'format message format-args)
+            (if (stringp message)
+                message
+              (format "%s" message))))
+         (text (format "[%s] %s\n" location rendered-message)))
     (hax/log--emit text
                    print-stdout
                    print-stderr
