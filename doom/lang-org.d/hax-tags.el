@@ -92,4 +92,30 @@ it in the persistent list of tags, and update current list of tags"
       (setq counsel-org-tags (counsel--org-get-tags)))
     (hax/select-tag #'hax/counsel-org-tag-action)))
 
+(defun hax/counsel-org-tag-action (tag)
+  (unless (equal tag "")
+    (let* ((current-tags (counsel--org-get-tags))
+           (had-tag (member tag current-tags)))
+      (setq counsel-org-tags
+            (if had-tag
+                (delete tag (copy-sequence current-tags))
+              (append current-tags (list tag))))
+      (counsel-org--set-tags)
+      (if had-tag
+          (hax/insert-logbook-tag-entry tag 'removed)
+        (hax/insert-logbook-tag-entry tag 'added)))))
 
+
+(setq hax/immediate-note-content "")
+(setq hax/immediate-note-tags '())
+
+(defun hax/get-immediate-note-content ()
+  hax/immediate-note-content)
+
+(cl-defun hax/immediate-note-tags (&optional (predefined '()))
+  (let ((tags (append predefined hax/immediate-note-tags)))
+    (if (< 0 (length tags))
+        (s-wrap (s-join ":" tags) ":" ":")
+      "")))
+
+(hax/immediate-note-tags)

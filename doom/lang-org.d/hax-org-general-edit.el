@@ -113,3 +113,18 @@ the empty area."
      (org-insert-time-stamp (current-time) t t)
      (insert "))"))))
 
+
+
+(defun hax/org-add-trailing-note ()
+  (interactive)
+  (goto-char (hax/org-before-logical-end))
+  (backward-char)
+  (hax/back-to-first-footnote)
+  (hax/back-until-content)
+  (insert (format "- %s " (hax/org-current-timestamp)))
+  (save-excursion (insert "\n")))
+
+(defun org-wrapping-subtree (&optional tree)
+  (if (or (eq 'headline (car tree)) (not tree))
+      tree
+    (org-wrapping-subtree (org-element-property :parent tree))))

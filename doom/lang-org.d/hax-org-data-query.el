@@ -193,3 +193,37 @@ subtree can be found."
     (buffer-substring (point-min) (point-max))))
 
 
+(defun hax/org-element-inspect ()
+  "Parse the element at point and insert it into the `*element-inspect*' buffer"
+  (interactive)
+  (let* ((el (org-element-at-point)))
+    (with-current-buffer (get-buffer-create "*element-inspect*")
+      (delete-region (point-min) (point-max))
+      (insert (format "%s" el)))))
+
+(defun hax/org-get-logbook-ranges ()
+  (org-element-map
+      (hax/org-element-get-logbook)
+      'clock
+    (lambda (item) (org-element-property :value item))))
+
+
+(defun hax/org-before-logical-end ()
+  (interactive)
+  (let* ((wrap (org-wrapping-subtree (org-element-at-point)))
+         (end (org-element-property :end wrap))
+         (level (org-element-property :level wrap))
+         (result (if end
+                     (save-excursion
+                       (if (re-search-forward
+                            (rx-to-string `(and bol ,(s-repeat (+ 1 level) "*")))
+                            end t)
+                           (progn (backward-char (+ 1 level)) (point))
+                         end))
+                   (point-max)))
+         (with-newline (save-excursion
+                         (goto-char result)
+                         (if (eq result (line-beginning-position))
+                             result
+                           (progn (insert "\n") (point))))))
+    with-newline))

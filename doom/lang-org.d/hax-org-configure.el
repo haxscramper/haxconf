@@ -1,5 +1,7 @@
 ;;; -*- lexical-binding: t; -*-
 
+(defconst hax/cache.d (expand-file-name "$HOME/.cache/haxscramper"))
+
 (defun hax/org-mode-configure ()
   (interactive)
   ;; Default inline latex highlighting is a bold white text, which is too
@@ -428,4 +430,7 @@
                                 ;; ("s" . "src\n")
                                 ;; ("v" . "verse\n")
                                 ))
+
+(after! org
+  (hax/org-mode-configure))
 

@@ -123,3 +123,66 @@
        ("7AM" . "07") ("8AM" . "08") ("9AM" . "09")) str))
   ;; (fixup-text-dates "[Feb 15, 2011] [2 March 2020]")
   )
+
+(progn
+  (cl-defun org-note-insert-at-time+date
+      (text second minute hour day month year &optional (tags '()))
+
+    (let ((org-overriding-default-time
+           (encode-time second minute hour day month year)))
+      (setq hax/immediate-note-tags tags)
+      (setq hax/immediate-note-content text)
+      (org-capture nil "@")
+      (setq hax/immediate-note-content "")
+      (setq hax/immediate-note-tags '())))
+
+  (defun hax/tg-extract-date (msg)
+    (with-temp-buffer
+      (insert (fixup-text-dates msg))
+      (goto-char 0)
+      (re-search-forward (rx "["
+                             (group (1+ digit)) "-" ;; 1 year
+                             (group (1+ digit)) "-" ;; 2 month
+                             (group (1+ digit)) " " ;; 3 day
+                             (group (1+ digit)) ":" ;; 4 hour
+                             (group (1+ digit)) ;; 5 minute
+                             "]"))
+      (list
+       0 ;; sec
+       (string-to-number (match-string 5)) ;; min
+       (string-to-number (match-string 4)) ;; hour
+       (string-to-number (match-string 3)) ;; day
+       (string-to-number (match-string 2)) ;; mon
+       (string-to-number (match-string 1)) ;; year
+       )))
+
+  (defun hax/tg-extract-tags (msg)
+    (with-temp-buffer
+      (insert msg)
+      (goto-char 0)
+      (-distinct (matches-in-buffer
+                  (rx "#" (group (1+ (| word "_" "#"))))
+                  (lambda () (match-string 1))))))
+  (defun hax/tg-insert-note (msg)
+    (interactive)
+    (pcase (hax/tg-extract-date msg)
+      (`(,sec ,min ,hour ,day ,month ,year)
+       (hax/log
+        "Inserted note with sec:%s min:%s hour:%s day:%s month:%s year:%s"
+        sec min hour day month year)
+       ;; (calendar-gregorian-from-absolute
+       ;;  (time-to-days (encode-time sec min hour day month year))
+       ;;  )
+       (org-note-insert-at-time+date
+        (s-trim msg) sec min hour day month year
+        (append '("from_tg") (hax/tg-extract-tags msg)))
+       )))
+
+  (defun hax/tg-insert-selected-note (beginning end)
+    (interactive "r")
+    (hax/tg-insert-note (s-replace "𝖍𝖆𝖝𝖘𝖈𝖗𝖆𝖒𝖕𝖊𝖗"
+                                   "haxscramper"
+                                   (buffer-substring beginning end)))
+    (kill-region beginning end)
+    (hax/log (propertize "inserted note" 'face
+                         `(:foreground ,(doom-color 'red))))))

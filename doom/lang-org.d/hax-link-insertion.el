@@ -107,6 +107,17 @@
       (hax/org-insert-clipboard-link)
       (insert "\n\n"))))
 
+(defun hax/org-gen-footnote-name ()
+  (interactive)
+  (point)
+  (format
+   "%s-%s"
+   (s-replace-regexp
+    (rx (not word))
+    ""
+    (s-trim (buffer-substring (point) (save-excursion (backward-word) (point)))))
+   (line-number-at-pos)))
+
 (cl-defun hax/org-insert-footnote (footnote &optional (goto-created t))
   (interactive "sfootnote name: ")
   (insert (format "[fn:%s]" footnote))

@@ -45,6 +45,7 @@
                                            "Noto"))
 
 (load! "utils.d/logging.el")
+(load! "utils.d/pure.el")
 
 (hax/log "startup %s" "message" :print-stdout)
 
@@ -733,3 +734,14 @@ Uses caching to avoid re-parsing unchanged files."
 (map! :leader
       :desc "Goto org heading (repository)" "s o" #'hax/counsel-org-goto-repository
       :desc "Clear org goto cache" "s O" #'hax/clear-org-goto-repository-cache)
+
+(defun advice-remove-all (sym)
+  "AUTOMATICALLY remove all advice from a function symbol, without
+having to go through repeated invocations of the same function
+over and over as suggested in the
+https://lists.gnu.org/archive/html/emacs-devel/2017-04/msg00767.html (the
+use case is 'I want to automate the logic and this is a basic
+function for cleaning up in case the 'smart' advice system shits
+itself once again')"
+  (interactive "aFunction symbol: ")
+  (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
