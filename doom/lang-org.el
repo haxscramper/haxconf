@@ -1,6 +1,11 @@
 ;;; -*- lexical-binding: t; -*-
 
 (load! "lang-org.d/hax-agenda.el")
+(load! "lang-org.d/hax-link-insertion.el")
+(load! "lang-org.d/hax-link-insertion-code.el")
+(load! "lang-org.d/hax-org-utils.el")
+(load! "lang-org.d/hax-refile.el")
+(load! "lang-org.d/subtree-navigation.el")
 
 (defun hax/org-update-all-cookies ()
   (interactive)
@@ -24,7 +29,7 @@ the current one."
 
 (defun hax/popup-mode-hook ()
   (interactive)
-  (message "Evil insertt state triggered"))
+  (hax/log "Evil insertt state triggered"))
 
 (defun font-lock-replace-keywords (mode keyword-list)
   "Use `font-lock-remove-keywords' on each keyword and then add
@@ -154,7 +159,7 @@ mode"
            nil
            'org-tags-history)))
     (when action
-      (message "Running tag action %s" action)
+      (hax/log "Running tag action %s" action)
       (funcall action selected))
     (unless (--any (s-equals? (car it) selected) org-tag-alist)
       (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
@@ -164,7 +169,7 @@ mode"
          (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
          'utf-8
          file)
-        (message
+        (hax/log
          "New %s tag %s"
          (if is-private "private" "public")
          (propertize selected 'face `(:foreground ,(doom-color 'red))))))
@@ -200,14 +205,14 @@ If the user inputs a new value, update the file and return it."
            nil
            'hax/select-from-list-or-add-history)))
     (if (member choice existing-items)
-        (message "%s selected from existing items" choice)
+        (hax/log "%s selected from existing items" choice)
       (with-temp-buffer
         (when existing-items
           (insert (string-join existing-items "\n"))
           (insert "\n"))
         (insert choice)
         (write-file filename)
-        (message "%s added to the list and selected" choice)))
+        (hax/log "%s added to the list and selected" choice)))
     choice))
 
 (defun hax/org-insert-uuid-anchor ()
@@ -347,7 +352,7 @@ interactive function call"
     else))
 
 (defun hax/?? (&optional last-n)
-  (message "[%s]" last-n))
+  (hax/log "[%s]" last-n))
 
 (map! :n "M-s-d" (cmd! (hax/?? (hax/maybe-numeric-prefix))))
 
@@ -394,66 +399,7 @@ interactive function call"
 ;;  :filter-return #'hax/org-add-filename-to-counsel-outline-candidates)
 
 
-(defun hax/org-collect-active-entries (&optional with-todo)
-  "Get list of the 'targetable' entries, sorted by last clock-in time."
-  (let ((begin-7 (ts-adjust 'day -7 (ts-now)))
-        (end+7 (ts-adjust 'day +7 (ts-now)))
-        (begin-1 (ts-adjust 'day -1 (ts-now)))
-        (end+1 (ts-adjust 'day +1 (ts-now))))
-    (--map
-     (let* ((marker (org-element-property :org-marker it))
-            (outline (hax/org-outline-path-at-marker marker)))
-       (cons
-        (if with-todo
-            (format "%s %s %s"
-                    ;; TODO make buffer file name optional formatting parameter
-                    (f-base (buffer-file-name (marker-buffer marker)))
-                    (org-element-property :todo-keyword it)
-                    outline)
-          outline)
-        marker))
-     (-map
-      #'cdr
-      (-sort
-       (lambda (a b)
-         (time-less-p
-          (or (car b) (seconds-to-time 0))
-          (or (car a) (seconds-to-time 0))))
-       ;; TODO Extract this into a separate function for getting the
-       ;; last clocked time in a subtree. 
-       (--map
-        (let* ((marker (org-element-property :org-marker it))
-               (clock (org-with-point-at marker
-                        (org-clock-sum-current-item)
-                        (save-excursion
-                          (goto-char marker)
-                          (let ((latest nil))
-                            (org-element-map (org-element-at-point) 'clock
-                              (lambda (cl)
-                                (let ((value (org-element-property :value cl)))
-                                  (when (and value (string-match "\\[\\([^]]+\\)\\]" value))
-                                    (let ((ts (org-time-string-to-time
-                                               (match-string 1 value))))
-                                      (when (or (null latest)
-                                                (time-less-p latest ts))
-                                        (setq latest ts))))))
-                              nil nil 'clock)
-                            latest)))))
-          (cons clock it))
-        (org-ql-select (org-agenda-files)
-          `(or
-            (todo "POSTPONED" "WIP" "NEXT")
-            (and (todo "TODO")
-                 (or
-                  ;; Explicitly marked as an inbox entry
-                  (tags "@inbox")
-                  ;; track activity in daily notes for one week before and after
-                  (and (path "notes.org$") (ts :from ,begin-7 :to ,end+7))
-                  ;; Track general planning in 14-day frame
-                  (planning :from ,begin-7 :to ,end+7)
-                  ;; Track any entries that were created/stamped today
-                  (ts :on today))))
-          :action 'element-with-markers)))))))
+
 
 (cl-defun hax/org-select-subtree-callback
     (prompt callback caller &optional
@@ -461,7 +407,7 @@ interactive function call"
             (history 'counsel-org-goto-history))
   "Select subtree from ENTRIES and execute CALLBACK on the selected result."
   (interactive)
-  (message "%s" entries)
+  (hax/log "%s" entries)
   (let* ((choice
           (completing-read
            prompt
@@ -473,21 +419,7 @@ interactive function call"
          (result (assoc choice entries)))
     (funcall callback result)))
 
-(cl-defun hax/org-select-subtree (&optional
-                                  (entries (org-collect-known-entries))
-                                  (history 'counsel-org-goto-history))
-  "Interactively select subtree and return cons with `(description . marker)'"
-  (interactive)
-  (let (result)
-    (hax/org-select-subtree-callback
-     "Select: "
-     ;; IMPORTANT in order for this hack to work, lexical binding must be
-     ;; enabled.
-     (lambda (x) (setq result x))
-     'hax/org-select-subtree
-     entries
-     history)
-    result))
+
 
 (defun goto-marker (marker)
   (switch-to-buffer (marker-buffer marker))
@@ -570,72 +502,6 @@ interactive function call"
   (interactive)
   (goto-marker (cdr (hax/org-select-subtree entries))))
 
-(defun hax/org-goto-select-active-subtree ()
-  "Interactively select active subtree and return position of the marker for it"
-  (interactive)
-  (goto-marker (cdr (hax/org-select-subtree
-                     (hax/org-collect-active-entries t)
-                     nil))))
-
-(defun hax/org-unformat-title (title)
-  (s-replace-all '(("=" . "") ("*" . "") ("~" . "")) title))
-
-
-(defun hax/set-archive-to-full-path ()
-  "Set the :ARCHIVE: property of the current subtree to its full path."
-  (interactive)
-  (let ((full-path (hax/org-get-outline-path-full)))
-    (org-set-property "ARCHIVE" (format "%%s_archive::* %s" full-path))))
-
-(defun hax/org-get-outline-path-full ()
-  "Return the full path of the current subtree."
-  (save-window-excursion
-    (save-excursion
-      (let ((path (org-get-heading t t t t)))
-        (if (org-up-heading-safe)
-            (concat (hax/org-get-outline-path-full) "/" path)
-          path)) ) ))
-
-(defun hax/org-outline-path-at-marker (marker &optional last-n with-tags cleanup-name-formatting)
-  "Get formatted outline entry at position specified by MARKER"
-  (with-current-buffer (marker-buffer marker)
-    (save-excursion
-      (goto-char (marker-position marker))
-      ;; If full path is requested, return it
-      ;; formatted directly, otherwise fall back to
-      ;; default formatting logic.
-      (let* ((tags (org-get-tags-string))
-             (loc (-slice (org-get-outline-path t)
-                          (if last-n (- 0 last-n) 0)))
-             (path (org-format-outline-path loc 256)))
-        (concat (if cleanup-name-formatting (hax/org-unformat-title path) path)
-                (if with-tags tags ""))))))
-
-(defun hax/get-subtree-id-for-marker (marker)
-  (save-window-excursion
-    (save-excursion
-      (with-current-buffer (marker-buffer marker)
-        ;; Save excursion to avoid moving cursor in
-        ;; other buffers (or in the same buffer if
-        ;; linking within one file)
-        (save-excursion
-          (goto-char (marker-position marker))
-          (org-id-get-create)))) ))
-
-(defun hax/insert-subtree-link-cb
-    (tree-car description last-n with-tags cleanup-name-formatting)
-  ;; If function is called with prefix value
-  (let* ((name (hax/org-outline-path-at-marker
-                (cdr tree-car)
-                last-n
-                with-tags
-                cleanup-name-formatting))
-         ;; Go to position of the found entry, get IT's id (creating
-         ;; one if it is missing), and then insert result into the
-         ;; final output
-         (id (hax/get-subtree-id-for-marker (cdr tree-car))))
-    (insert (format "[[id:%s][%s]]" id (if description description name)))))
-
 (cl-defun hax/org-insert-subtree-old-archive (&optional only-archives)
   (interactive)
   (hax/org-select-subtree-callback
@@ -659,23 +525,6 @@ interactive function call"
               (e (org-element-property :end drawer)))
           (org-flag-region b e nil 'org-hide-drawer))))))
 
-(cl-defun hax/org-insert-link-to-subtree
-    (&key description
-          last-n
-          (entries (org-collect-known-entries))
-          (with-tags nil)
-          (cleanup-name-formatting t))
-  "Insert link to any subtree in any org file, using
-  `[[path][ID]]' link. If DESCRIPTION is `nil', use the heading
-  name, otherwise use description."
-  (interactive)
-  (hax/org-select-subtree-callback
-   "Goto: "
-   (lambda (x) (hax/insert-subtree-link-cb
-                x description last-n with-tags cleanup-name-formatting))
-   'hax/org-insert-link-to-heading
-   entries))
-
 (defun hax/add-subtree-refs ()
   (interactive)
   (let* ((newref (with-temp-buffer
@@ -698,7 +547,7 @@ interactive function call"
 (cl-defun www-get-page-title (url &optional (timeout 15))
   "Return title of the URL page, or if not found the page's
   filename (as an approximation)"
-  (message "%s" timeout)
+  (hax/log "%s" timeout)
   (let ((title)
         (content (url-retrieve-synchronously url nil nil timeout)))
     (if (not content)
@@ -723,48 +572,10 @@ interactive function call"
 
 ;; (www-get-page-title "https://www.studyinjapan.go.jp/en/planning/about-scholarship/")
 
-
-(defun hax/org-insert-clipboard-link (&optional description)
-  ;; FIXME https://astralcodexten.substack.com/p/heuristics-that-almost-always-work?s=r
-  (interactive)
-  (let ((run-again t))
-    (while run-again
-      (let* ((link (simpleclip-get-contents))
-             (name (if description description
-                     (when link (www-get-page-title link))))
-             (org-link (format "[[%s][%s]]" link name))
-             (read-answer-short t)
-             (selected
-              (if name
-                  (read-answer
-                   (format "Insert '%s" org-link)
-                   '(("yes" ?y "insert link")
-                     ("no" ?n "do not insert link")
-                     ("update" ?u "update link from clipboard")
-                     ("help" ?h "show help")
-                     ("edit" ?e "prompt for new link name")
-                     ("quit" ?q "quit")))
-                (warn "Bad url: %s" link)
-                (setq run-again nil)
-                nil)))
-        (setq description name)
-        (cond
-         ((string= selected "yes") (insert org-link) (setq run-again nil))
-         ((string= selected "no") (setq run-again nil))
-         ((string= selected "edit") (setq description
-                                          (read-string "New link name: ")))
-         ((string= selected "update") t)
-         ((string= selected "help") (setq run-again nil))
-         ((string= selected "quit") (setq run-again nil)))))))
-
 (defun org-wrapping-subtree (&optional tree)
   (if (or (eq 'headline (car tree)) (not tree))
       tree
     (org-wrapping-subtree (org-element-property :parent tree))))
-
-
-
-
 
 (defun hax/org-before-logical-end ()
   (interactive)
@@ -828,25 +639,6 @@ interactive function call"
     (s-trim (buffer-substring (point) (save-excursion (backward-word) (point)))))
    (line-number-at-pos)))
 
-(defun hax/org-insert-footnote-link (footnote)
-  "Interactively insert trailing footnote and link with specified
-  FOOTNOTE as a name"
-  (interactive "sfootnote name: ")
-  (insert (format "[fn:%s]" footnote))
-  (let* ((at (org-element-at-point))
-         (tree (if (eq 'headline (car at))
-                   at
-                 (org-element-property :parent at))))
-    (save-excursion
-      (goto-char (org-element-property :end tree))
-      (insert (format "\n[fn:%s] " footnote))
-      (hax/org-insert-clipboard-link)
-      (insert "\n\n"))))
-
-(defvar hax/org-refile-refiled-from-id nil)
-(defvar hax/org-refile-refiled-from-header nil)
-(defvar hax/org-refile-refiled-from-mark nil)
-(defvar hax/org-refile-refiled-from-file nil)
 
 
 (defun diary-day (daylist)
@@ -962,28 +754,6 @@ interactive function call"
 
 (add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
 
-(defun hax/org-save-source-id-and-header (&optional name file xxx pos)
-  "Saves refile's source entry's id and header name to
-  `hax/org-refile-refiled-from-id' and
-  `hax/org-refile-refiled-from-header'. If refiling entry is
-  first level entry then it stores file path and buffer name
-  respectively."
-  (interactive)
-  (save-excursion
-    (setq hax/org-refile-refiled-from-mark (point-marker))
-    (setq hax/org-refile-refiled-from-file (buffer-file-name (buffer-base-buffer)))
-    (if (org-up-heading-safe)
-        ;; If we are in some outline, assign
-        (progn
-          (setq org-adapt-indentation t)
-          ;; Store original node ID, optionally creating it if missing
-          (setq hax/org-refile-refiled-from-id (cons 'id (org-id-get-create)))
-          ;; Get original heading path, without tags, todo, priority elements
-          (setq hax/org-refile-refiled-from-header
-                (org-format-outline-path (org-get-outline-path t))))
-      (setq hax/org-refile-refiled-from-id
-            (cons 'file (buffer-file-name)))
-      (setq hax/org-refile-refiled-from-header (buffer-name)))))
 
 ;; IDEA add more complex log entries too: make this function accept
 ;; org-mode subtree in elisp form (parsed from org-elements)
@@ -996,43 +766,6 @@ interactive function call"
         (insert "\n")
         (indent-line-to ind)
         (insert line)))))
-
-(defun hax/org-refile-add-refiled-from-note ()
-  "Adds a note to entry at point on where the entry was refiled
-  from using the org ID from `hax/org-refile-refiled-from-id'
-  and `hax/org-refile-refiled-from-header' variables."
-  (interactive)
-  (save-excursion
-    (when (and hax/org-refile-refiled-from-id
-               hax/org-refile-refiled-from-header)
-      (let* ((time-format (substring (cdr org-time-stamp-formats) 1 -1))
-             (kind (car hax/org-refile-refiled-from-id))
-             (src (cdr hax/org-refile-refiled-from-id))
-             (time-stamp (format-time-string time-format (current-time))))
-        (org-add-log-entry
-         (format
-          "- Refiled on [%s] from [[%s][%s:%s]]"
-          time-stamp
-          (if (eq kind 'id)
-              (format "id:%s" src)
-            (format "file:%s" (f-relative src (f-dirname (buffer-file-name)))))
-          (f-base hax/org-refile-refiled-from-file)
-          hax/org-refile-refiled-from-header)))
-      (when hax/org-refile-refiled-from-mark
-        (goto-marker hax/org-refile-refiled-from-mark)
-        (setq hax/org-refile-refiled-from-mark nil))
-
-      (setq hax/org-refile-refiled-from-file nil)
-      (setq hax/org-refile-refiled-from-id nil)
-      (setq hax/org-refile-refiled-from-header nil))))
-
-
-(add-hook
- 'org-after-refile-insert-hook
- #'hax/org-refile-add-refiled-from-note)
-
-(advice-add
- 'org-refile :before #'hax/org-save-source-id-and-header)
 
 (defun hax/org-add-log-entry (text &optional drawer)
   "Insert TEXT as a log entry for the current Org heading, respecting indentation.
@@ -1058,7 +791,7 @@ contents (drawer indentation + 2 spaces)."
                  (current-indentation)))
               (prefix (make-string drawer-indent ?\s)))
          (goto-char pos)
-         (message "DRAWER-INDENT: %s" drawer-indent)
+         (hax/log "DRAWER-INDENT: %s" drawer-indent)
          (unless (bolp) (insert "\n"))
          (dolist (line (split-string text "\n"))
            (insert prefix line "\n")))))))
@@ -1380,7 +1113,7 @@ ARCHIVE_OLPATH_PARENT_ID."
           (save-excursion
             (org-up-heading-safe)
             (org-update-statistics-cookies nil)))
-        (message "Subtree archived %s"
+        (hax/log "Subtree archived %s"
                  (if (eq this-buffer buffer)
                      (concat "under heading: " heading)
                    (concat "in file: " (abbreviate-file-name afile)))))))
@@ -1419,7 +1152,7 @@ ARCHIVE_OLPATH_PARENT_ID."
 
   (require 'evil-surround)
   (require 'counsel)
-  (message "Org-mode hook executed")
+  (hax/log "Org-mode hook executed")
   (setq hl-todo-exclude-modes '(asdf-whatever-mode))
   (hl-todo-mode 1)
   ;; hl-todo-mode works randomly, most of the time it does not work after
@@ -1679,7 +1412,7 @@ ARCHIVE_OLPATH_PARENT_ID."
     (goto-char (point-min))
     (let* ((el (org-element-at-point))
            (end (org-element-property :end el)))
-      (message "reformattting %s %s" end (point-max))
+      (hax/log "reformattting %s %s" end (point-max))
       (goto-char end)
       (indent-code-rigidly end (point-max) (* -1 (current-line-indent))))))
 
@@ -1704,7 +1437,7 @@ ARCHIVE_OLPATH_PARENT_ID."
   ;; indent the text inside of the subtrees.
   (let ((text (buffer-substring (line-beginning-position) (point))))
     (when (string-match "^\s+$" text)
-      (message "%s" text)
+      (hax/log "%s" text)
       (delete-region (line-beginning-position) (point)))))
 
 ;; Scroll to the last position of the message buffer after something has
@@ -1800,7 +1533,7 @@ ARCHIVE_OLPATH_PARENT_ID."
                             (if dead (- (time-to-days (org-timestamp-to-time dead)) now) nil))
                            (shed-days
                             (if shed (- (time-to-days (org-timestamp-to-time shed)) now) nil)))
-                      ;; (message "dead: %s shed: %s" dead-days shed-days)
+                      ;; (hax/log "dead: %s shed: %s" dead-days shed-days)
                       (or (and dead-days (< 15 dead-days 90))
                           (and shed-days (< 15 shed-days 90)))))))
 
@@ -1817,7 +1550,7 @@ ARCHIVE_OLPATH_PARENT_ID."
   subtree deadline/sheduled/timestamp if any."
   (save-excursion
     ;; (with-no-warnings (defvar date) (defvar entry))
-    ;; (message "%s" (calendar-absolute-from-gregorian date))
+    ;; (hax/log "%s" (calendar-absolute-from-gregorian date))
 
     (if (org-current-level)
         (let* ((time (org-entry-get nil "TIMESTAMP"))
@@ -1857,7 +1590,7 @@ ARCHIVE_OLPATH_PARENT_ID."
                (now (current-time))
                (diff-time (time-subtract now last-time))
                (minutes (/ (float-time diff-time) 60)))
-          ;; (message "LT: %s" last-time)
+          ;; (hax/log "LT: %s" last-time)
           (let* ((raw-time (seconds-to-time (* minutes 60)))
                  (years (/ minutes (* 60 24 365)))
                  (months (/ minutes (* 60 24 30)))
@@ -1941,7 +1674,7 @@ ARCHIVE_OLPATH_PARENT_ID."
         (uuid
          (substring
           (s-replace "-" "" (s-upcase (uuidgen-4))) 0 8)))
-    (message "[%s]" hax/fullscreen-client-name)
+    (hax/log "[%s]" hax/fullscreen-client-name)
     (if (magit-toplevel)
         (let* ((top (f-filename (magit-toplevel)))
                (file (magit-file-relative-name orig)))
@@ -2145,7 +1878,7 @@ ARCHIVE_OLPATH_PARENT_ID."
     (interactive)
     (pcase (hax/tg-extract-date msg)
       (`(,sec ,min ,hour ,day ,month ,year)
-       (message
+       (hax/log
         "Inserted note with sec:%s min:%s hour:%s day:%s month:%s year:%s"
         sec min hour day month year)
        ;; (calendar-gregorian-from-absolute
@@ -2162,7 +1895,7 @@ ARCHIVE_OLPATH_PARENT_ID."
                                    "haxscramper"
                                    (buffer-substring beginning end)))
     (kill-region beginning end)
-    (message (propertize "inserted note" 'face
+    (hax/log (propertize "inserted note" 'face
                          `(:foreground ,(doom-color 'red))))))
 
 (defun org-coords-open (path _)
@@ -2221,8 +1954,8 @@ ARCHIVE_OLPATH_PARENT_ID."
     (with-temp-buffer
       (find-file file-path)
       (if (-contains-p (org-get-tags) "DO_NOT_ORG_ROAM")
-          (message "org-roam: skipping update of %s" file-path)
-        (progn (message "org-roam: scheduling update of %s" file-path)
+          (hax/log "org-roam: skipping update of %s" file-path)
+        (progn (hax/log "org-roam: scheduling update of %s" file-path)
                (if (not (memq file-path org-roam-db-update-queue))
                    (push file-path org-roam-db-update-queue))))))
 
@@ -2232,7 +1965,7 @@ ARCHIVE_OLPATH_PARENT_ID."
     ;; if we're not idle anymore, stop. will get rest of queue next idle.
     (while (and org-roam-db-update-queue (current-idle-time))
       (let ((file (pop org-roam-db-update-queue)))
-        (message "org-roam: running update of %s" file)
+        (hax/log "org-roam: running update of %s" file)
         ;; apply takes function var and list
         (org-roam-db-update-file file))))
 
@@ -2401,7 +2134,7 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
   (let* ((subtree-point (or (and (org-at-heading-p) (point))
                             (save-excursion (org-back-to-heading) (point))))
          (current-subtree (org-get-tags-at subtree-point)))
-    ;; (message "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
+    ;; (hax/log "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
     (if (member tag current-subtree)
         (goto-char (org-end-of-subtree current-subtree))
       nil)))
@@ -2815,6 +2548,8 @@ line or end of buffer, with only blank lines in between."
             (--filter (< 0 (length it)) tag-list))
            :test #'equal))))
 
+(defconst hax/cache.d (expand-file-name "$HOME/.cache/haxscramper"))
+
 (after! org
   (require 'org-capture)
   (hax/org-mode-configure))
@@ -2947,9 +2682,6 @@ parsing."
   (with-temp-file file
     (prin1 data (current-buffer))))
 
-(defconst hax/cache.d (expand-file-name "$HOME/.cache/haxscramper"))
-
-
 
 (defun org-element-subtree-by-id (id)
   "Get parsed org-element for entry with `id', or `nil' if no such
@@ -2960,7 +2692,7 @@ subtree can be found."
 
 (defun hax/dbg/looking-at ()
   (interactive)
-  (message
+  (hax/log
    "looking at: %s:%s..%s = [%s] in %s"
    (line-number-at-pos)
    (point)
@@ -2973,7 +2705,7 @@ subtree can be found."
 
 (defun hax/dbg/looking-around ()
   (interactive)
-  (message
+  (hax/log
    "looking at: %s:%s..%s = [%s%s] in %s"
    (line-number-at-pos)
    (line-beginning-position)
@@ -3099,7 +2831,7 @@ items. If logbook is does not exist, might create new one."
 subsequent (nested) ones"
   (when (not id) (error "Cannot clock out `nil' task."))
   (save-excursion
-    (message "Finished task %s" id)
+    (hax/log "Finished task %s" id)
     (org-id-open id nil)
     (hax/dbg/looking-at)
     (hax/org-clock-out-this-task)))
@@ -3191,9 +2923,9 @@ all known agenda entries."
              nil
              `(,hax/main.org))
       (when it
-        (message "%s" (org-format-outline-path (-slice (car it) -2) 256))
+        (hax/log "%s" (org-format-outline-path (-slice (car it) -2) 256))
         (dolist (time (cdr it))
-          (message "  %s" (org-element-property :raw-value time)))))))
+          (hax/log "  %s" (org-element-property :raw-value time)))))))
 
 (defun hax/closest-unicode-fraction (value)
   (let* ((values '((1 . "⅟")
@@ -3316,7 +3048,7 @@ skips capitalized and upperacsed words (names and abbreviations)"
                 (if todo1 t
                   (if todo2 t
                     (string< head1 head2))))))
-    ;; (message ">> %s ? %s = %s" t1 t2 res)
+    ;; (hax/log ">> %s ? %s = %s" t1 t2 res)
     res))
 
 (defun hax/getkey-title ()
@@ -3426,9 +3158,9 @@ holding contextual information."
 (defun hax/org-refile-marker-position (target at-start)
   (save-window-excursion
     (save-excursion
-      ;; (message "Marker target is %s" target)
+      ;; (hax/log "Marker target is %s" target)
       ;; (marker-position target)
-      ;; (message "Target original target buffer and position is %s:%s"
+      ;; (hax/log "Target original target buffer and position is %s:%s"
       ;;          (marker-buffer target) (marker-position target))
       (with-current-buffer (marker-buffer target)
         (goto-char (marker-position target))
@@ -3448,7 +3180,7 @@ holding contextual information."
                       (buffer-file-name (marker-buffer target))
                       nil
                       (hax/org-refile-marker-position target at-start))))
-    (message "Reile list target %s" refile-list)
+    (hax/log "Reile list target %s" refile-list)
     (org-refile nil nil refile-list nil)))
 
 
@@ -3471,8 +3203,8 @@ being called."
 
   (let ((current-state (remove-string-properties (org-get-todo-state))))
     (if (string-equal current-state arg)
-        (message "State is already \"%s\"" current-state)
-      ;; (message "Override transitioning states %s -> %s" current-state arg)
+        (hax/log "State is already \"%s\"" current-state)
+      ;; (hax/log "Override transitioning states %s -> %s" current-state arg)
       (cl-return-from org-todo))))
 
 ;; (advice-add 'org-todo :around #'hax/org-prevent-same-state-change)
@@ -3634,7 +3366,7 @@ until \\[keyboard-quit] is pressed."
          (base-font-color     (face-foreground 'default nil 'default))
          (headline           `(:inherit default :weight bold :foreground ,base-font-color)))
 
-    (message "Using %s and %s" headline variable-tuple)
+    (hax/log "Using %s and %s" headline variable-tuple)
     (custom-theme-set-faces
      'user
      `(org-level-8 ((t (,@headline ,@variable-tuple))))
@@ -3681,7 +3413,7 @@ until \\[keyboard-quit] is pressed."
         (kill-buffer "*Org GFM Export*")))
     (if region-p
         (deactivate-mark))
-    (message "Exported to GFM and copied to clipboard.")))
+    (hax/log "Exported to GFM and copied to clipboard.")))
 
 (defun org-get-x-clipboard (value) "")
 
@@ -3757,7 +3489,7 @@ until \\[keyboard-quit] is pressed."
                     filename)))
         (kill-new path)
         (if (string= path (car kill-ring))
-            (message "Copied path: %s" path)
+            (hax/log "Copied path: %s" path)
           (user-error "Couldn't copy filename in current buffer")))
     (error "Couldn't find filename in current buffer")))
 
