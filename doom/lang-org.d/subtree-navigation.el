@@ -1,5 +1,54 @@
 ;;; -*- lexical-binding: t; -*-
 
+
+(defun org-collect-known-entries (&optional sources)
+  (let* ((buffers
+          (if sources
+              (--map (if (bufferp it) it (get-file-buffer it)) sources)
+            (org-get-known-file-buffers)))
+         (entries nil))
+    (dolist (b (delq nil buffers))
+      (with-current-buffer b
+        (setq entries
+              (nconc entries
+                     (counsel-outline-candidates
+                      (cdr (assq 'org-mode counsel-outline-settings))
+                      (counsel-org-goto-all--outline-path-prefix))))))
+    entries))
+
+(defun org-collect-known-entries (&optional file-list)
+  (let (entries)
+    (dolist (b (if file-list
+                   (--map (get-file-buffer it) file-list)
+                 (org-get-known-file-buffers)))
+      (with-current-buffer b
+        (setq entries
+              (nconc entries
+                     (counsel-outline-candidates
+                      (cdr (assq 'org-mode counsel-outline-settings))
+                      (counsel-org-goto-all--outline-path-prefix))))))
+    entries))
+
+
+(cl-defun hax/org-select-subtree-callback
+    (prompt callback caller &optional
+            (entries (org-collect-known-entries))
+            (history 'counsel-org-goto-history))
+  "Select subtree from ENTRIES and execute CALLBACK on the selected result."
+  (interactive)
+  (hax/log "%s" entries)
+  (let* ((choice
+          (completing-read
+           prompt
+           entries
+           nil
+           t
+           nil
+           history))
+         (result (assoc choice entries)))
+    (funcall callback result)))
+
+
 (cl-defun hax/org-select-subtree (&optional
                                   (entries (org-collect-known-entries))
                                   (history 'counsel-org-goto-history))
@@ -83,3 +132,9 @@
   (goto-marker (cdr (hax/org-select-subtree
                      (hax/org-collect-active-entries t)
                      nil))))
+
+
+(cl-defun hax/org-goto-select-subtree (&optional (entries (org-collect-known-entries)))
+  "Interactively select subtree and return position of the marker for it"
+  (interactive)
+  (goto-marker (cdr (hax/org-select-subtree entries))))

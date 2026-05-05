@@ -64,3 +64,49 @@
 (advice-add
  'org-refile :before #'hax/org-save-source-id-and-header)
 
+(defun hax/disable-adapt-indentation (&rest args) (setq org-adapt-indentation nil))
+(defun hax/enable-adapt-indentation (&rest args) (setq org-adapt-indentation t))
+
+(advice-add 'org-refile :before #'hax/disable-adapt-indentation)
+(advice-add 'org-refile :after #'hax/enable-adapt-indentation)
+
+
+(defun hax/org-refile-marker-position (target at-start)
+  (save-window-excursion
+    (save-excursion
+      ;; (hax/log "Marker target is %s" target)
+      ;; (marker-position target)
+      ;; (hax/log "Target original target buffer and position is %s:%s"
+      ;;          (marker-buffer target) (marker-position target))
+      (with-current-buffer (marker-buffer target)
+        (goto-char (marker-position target))
+        (hax/dbg/looking-around)
+        (point)
+        ;; (let* ((subtree (org-element-at-point))
+        ;;        (final-position (org-element-property :contents-begin subtree)))
+        ;;   (save-excursion
+        ;;     (goto-char final-position)
+        ;;     (hax/dbg/looking-around)
+        ;;     final-position))
+        ))))
+
+(defun hax/org-refile-under-marker (target at-start)
+  (let ((refile-list (list
+                      (get-headline-from-marker target)
+                      (buffer-file-name (marker-buffer target))
+                      nil
+                      (hax/org-refile-marker-position target at-start))))
+    (hax/log "Reile list target %s" refile-list)
+    (org-refile nil nil refile-list nil)))
+
+
+(defun hax/org-refile-to-staging ()
+  (interactive)
+  (hax/org-refile-under-marker
+   (get-capture-target-marker '(file hax/staging.org)) t))
+
+(defun hax/org-refile-to-daily ()
+  (interactive)
+  (hax/org-refile-under-marker
+   (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
+

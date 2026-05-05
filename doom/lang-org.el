@@ -5,6 +5,7 @@
 (load! "lang-org.d/hax-link-insertion-code.el")
 (load! "lang-org.d/hax-org-utils.el")
 (load! "lang-org.d/hax-refile.el")
+(load! "lang-org.d/hax-org-keybinds.el")
 (load! "lang-org.d/subtree-navigation.el")
 
 (defun hax/org-update-all-cookies ()
@@ -135,45 +136,7 @@ mode"
       (evil-paste-after-without-register 1))))
 
 
-(load! "lang-org-tags.el")
-
-
-
-(defun hax/select-tag (action)
-  (interactive)
-  (let* ((org-last-tags-completion-table
-          (append (and (or org-complete-tags-always-offer-all-agenda-tags
-                           (eq major-mode 'org-agenda-mode))
-                       (org-global-tags-completion-table
-                        (org-agenda-files)))
-                  (unless (boundp 'org-current-tag-alist)
-                    org-tag-persistent-alist)
-                  org-tag-alist))
-         (selected
-          (completing-read
-           (counsel-org-tag-prompt)
-           (delete-dups
-            (all-completions "" #'org-tags-completion-function))
-           nil
-           nil
-           nil
-           'org-tags-history)))
-    (when action
-      (hax/log "Running tag action %s" action)
-      (funcall action selected))
-    (unless (--any (s-equals? (car it) selected) org-tag-alist)
-      (let* ((is-private (--any (s-prefix? it selected) hax/private-tags-prefix-list))
-             (file (if is-private hax/private-tags-file hax/tags-file)))
-        (setq org-tag-alist (push (cons selected ??) org-tag-alist))
-        (f-write-text
-         (s-join "\n" (sort (mapcar (lambda (it) (concat "#" (car it))) org-tag-alist) 's-less?))
-         'utf-8
-         file)
-        (hax/log
-         "New %s tag %s"
-         (if is-private "private" "public")
-         (propertize selected 'face `(:foreground ,(doom-color 'red))))))
-    selected))
+(load! "lang-org.d/hax-tags.el")
 
 (defun hax/org-capture-vc-root-dir ()
   (if (bound-and-true-p org-capture-mode)
@@ -223,70 +186,12 @@ If the user inputs a new value, update the file and return it."
    (progn (uuidgen t) (point)))
   (insert ">>"))
 
-(defun hax/org-insert-link (type with-description)
-  (let* ((target-base (pcase type
-                        ('file (counsel-find-file))
-                        ('attachment (counsel-find-file))
-                        ('id (hax/org-select-subtree))
-                        ('tag (hax/select-tag nil))
-                        ('person (hax/select-from-list-or-add "person"))
-                        ('organization (hax/select-from-list-or-add "organization"))
-                        (_ (error (format "Unexpected type %s" type)))))
-
-         (target (pcase type
-                   ('id (hax/get-subtree-id-for-marker (cdr target-base)))
-                   (_ target-base)))
-
-         (default-desc (pcase type
-                         ('id (save-window-excursion
-                                (save-excursion
-                                  (org-goto-marker-or-bmk (cdr target-base))
-                                  (substring-no-properties (org-get-heading t t t t)))))
-                         ('person "")
-                         ('tag "")
-                         (_ (file-name-nondirectory target))))
-
-         (description (if with-description
-                          (read-string "Description: "
-                                       default-desc)
-                        "")))
-
-    (pcase type
-      ('tag (insert target))
-      (_ (if (string-empty-p description)
-             (insert (format "[[%s:%s]]" (symbol-name type) target))
-           (insert (format "[[%s:%s][%s]]" (symbol-name type) target description)))))))
-
 (defun hax/insert-q ()
   (interactive)
   (insert "\\q{")
   (hax/org-insert-link 'person nil)
   (insert "}{")
   (save-excursion (insert "}")))
-
-(defhydra hydra-insert-link (:color blue :hint nil)
-  "
-  Insert Link:
-  _f_: file         _F_: file
-  _a_: attachment   _A_: attachment
-  _i_: ID           _I_: ID
-  _t_: Tag          _T_: Tag
-  _p_: Person       _P_: Person
-  _o_: Organization _O_: Organization
-  "
-  ("f" (hax/org-insert-link 'file nil))
-  ("F" (hax/org-insert-link 'file t))
-  ("a" (hax/org-insert-link 'attachment nil))
-  ("A" (hax/org-insert-link 'attachment t))
-  ("i" (hax/org-insert-link 'id nil))
-  ("I" (hax/org-insert-link 'id t))
-  ("t" (hax/org-insert-link 'tag nil))
-  ("T" (hax/org-insert-link 'tag t))
-  ("p" (hax/org-insert-link 'person nil))
-  ("P" (hax/org-insert-link 'person t))
-  ("o" (hax/org-insert-link 'organization nil))
-  ("O" (hax/org-insert-link 'organization t))
-  ("q" nil "cancel"))
 
 (defun at-empty-line () (and (not (bobp)) (looking-at-p "^\\s-*$")))
 
@@ -295,54 +200,6 @@ If the user inputs a new value, update the file and return it."
   (interactive)
   (while (at-empty-line) (forward-line -1))
   (unless (bobp) (forward-line 1)))
-
-(defun hax/ensure-logbook-drawer-exists ()
-  "Ensure a LOGBOOK drawer exists in the current subtree."
-  (interactive)
-  (save-excursion
-    (org-back-to-heading t)
-    (let ((indentation (org-current-level)))
-      (unless (re-search-forward ":LOGBOOK:" (save-excursion (outline-next-heading)) t)
-        (org-end-of-meta-data t)
-        (forward-line -1)
-        (backward-to-empty-line-after-non-empty)
-        (insert (format "%s:LOGBOOK:\n%s:END:\n"
-                        (s-repeat (+ 1 indentation) " ")
-                        (s-repeat (+ 1 indentation) " ")))))))
-
-(defun hax/insert-logbook-tag-entry (tag-name action)
-  "Insert a logbook entry with TAG-NAME and ACTION ('added or 'removed) into the subtree logbook."
-  (let ((current-time (format-time-string (org-time-stamp-format t t))))
-    (hax/ensure-logbook-drawer-exists)
-    (hax/org-add-log-entry
-     (format "- Tag \"%s\" %s on %s"
-             (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
-             (if (eq action 'added) "Added" "Removed")
-             current-time) 
-     "LOGBOOK")))
-
-
-
-
-
-
-(defun hax/org-assign-tag ()
-  "Add or remove tags in `org-mode'. If new tag is added, store
-it in the persistent list of tags, and update current list of tags"
-  (interactive)
-  (save-excursion
-    (if (eq major-mode 'org-agenda-mode)
-        (if org-agenda-bulk-marked-entries
-            (setq counsel-org-tags nil)
-          (let ((hdmarker (or (org-get-at-bol 'org-hd-marker)
-                              (org-agenda-error))))
-            (with-current-buffer (marker-buffer hdmarker)
-              (goto-char hdmarker)
-              (setq counsel-org-tags (counsel--org-get-tags)))))
-      (unless (org-at-heading-p)
-        (org-back-to-heading t))
-      (setq counsel-org-tags (counsel--org-get-tags)))
-    (hax/select-tag #'hax/counsel-org-tag-action)))
 
 (defun hax/maybe-numeric-prefix (else)
   "Return optional numeric prefix, if one was supplied for current
@@ -364,62 +221,6 @@ interactive function call"
           (when (derived-mode-p 'org-mode)
             (setq entries (nconc entries (list b))))))
       entries)))
-
-(defun org-collect-known-entries (&optional sources)
-  (let* ((buffers
-          (if sources
-              (--map (if (bufferp it) it (get-file-buffer it)) sources)
-            (org-get-known-file-buffers)))
-         (entries nil))
-    (dolist (b (delq nil buffers))
-      (with-current-buffer b
-        (setq entries
-              (nconc entries
-                     (counsel-outline-candidates
-                      (cdr (assq 'org-mode counsel-outline-settings))
-                      (counsel-org-goto-all--outline-path-prefix))))))
-    entries))
-
-(defun org-collect-known-entries (&optional file-list)
-  (let (entries)
-    (dolist (b (if file-list
-                   (--map (get-file-buffer it) file-list)
-                 (org-get-known-file-buffers)))
-      (with-current-buffer b
-        (setq entries
-              (nconc entries
-                     (counsel-outline-candidates
-                      (cdr (assq 'org-mode counsel-outline-settings))
-                      (counsel-org-goto-all--outline-path-prefix))))))
-    entries))
-
-
-;; (advice-add
-;;  'counsel-outline-candidates
-;;  :filter-return #'hax/org-add-filename-to-counsel-outline-candidates)
-
-
-
-
-(cl-defun hax/org-select-subtree-callback
-    (prompt callback caller &optional
-            (entries (org-collect-known-entries))
-            (history 'counsel-org-goto-history))
-  "Select subtree from ENTRIES and execute CALLBACK on the selected result."
-  (interactive)
-  (hax/log "%s" entries)
-  (let* ((choice
-          (completing-read
-           prompt
-           entries
-           nil
-           t
-           nil
-           history))
-         (result (assoc choice entries)))
-    (funcall callback result)))
-
-
 
 (defun goto-marker (marker)
   (switch-to-buffer (marker-buffer marker))
@@ -476,31 +277,6 @@ interactive function call"
       (hax/org-action-interactively
        (lambda () (hax/ensure-todo state))
        target))))
-
-(map!
- :leader
- :n "oai" #'hax/org-clock-in-interactively
- :desc "Clock in repeated tasks"
- :n "oari" (cmd! (hax/org-clock-in-interactively 'repeated))
- :desc "Complete repeated task"
- :n "oarc" (cmd! (hax/org-complete-interactively "COMPLETED" 'repeated))
-
- :n "oao" #'org-clock-out
- :desc "Complete current clock"
- :n "oac" (cmd! (save-excursion
-                  (org-clock-goto)
-                  (org-clock-out)
-                  (hax/ensure-todo "COMPLETED")))
- :n "oag" #'hax/org-goto-select-active-subtree
- :n "oaC" #'hax/org-complete-interactively)
-
-
-
-
-(cl-defun hax/org-goto-select-subtree (&optional (entries (org-collect-known-entries)))
-  "Interactively select subtree and return position of the marker for it"
-  (interactive)
-  (goto-marker (cdr (hax/org-select-subtree entries))))
 
 (cl-defun hax/org-insert-subtree-old-archive (&optional only-archives)
   (interactive)
@@ -609,16 +385,6 @@ interactive function call"
             (rx bol "[fn:")
             (org-element-property :begin wrap) t))))
 
-(cl-defun hax/org-insert-footnote (footnote &optional (goto-created t))
-  (interactive "sfootnote name: ")
-  (insert (format "[fn:%s]" footnote))
-  (let* ((real-start (point)))
-    (goto-char (hax/org-before-logical-end))
-    (insert (format "[fn:%s] " footnote))
-    (evil-insert-state)
-    (save-excursion (insert "\n\n"))
-    (when (not goto-created) (goto-char real-start))))
-
 (defun hax/org-add-trailing-note ()
   (interactive)
   (goto-char (hax/org-before-logical-end))
@@ -639,8 +405,6 @@ interactive function call"
     (s-trim (buffer-substring (point) (save-excursion (backward-word) (point)))))
    (line-number-at-pos)))
 
-
-
 (defun diary-day (daylist)
   (memq (calendar-day-of-week date) daylist))
 
@@ -656,177 +420,9 @@ interactive function call"
   default org-mode abomination."
   (diary-block m-before d-before year m-after d-after year))
 
-(defun hax/org-subtree-timestamp (arg &optional inactive)
-  "Insert active timestamp in current subtree"
-  ;; TODO Implement insertion of the time ranges
-  ;; MAYBE Check for conflicts with 'DEADLINE' and 'SCHEDULED'
-  (interactive "P")
-  (save-excursion
-    (org-back-to-heading)
-    (let* ((old (org-entry-get nil "TIMESTAMP"))
-           (tree (org-element-at-point))
-           (dedl (org-entry-get nil "DEADLINE"))
-           (shed (org-entry-get nil "SCHEDULED"))
-           (lvl (org-element-property :level tree)))
-      (if old
-          (error "FIXME - implement update of the existing dates")
-        (let ((time (org-read-date arg 'totime)))
-          (next-line)
-          (insert (s-repeat (1+ lvl) " "))
-          (insert "TIMESTAMP: ")
-          (org-insert-time-stamp time (or org-time-was-given arg) inactive)
-          (if (not (or dedl shed))
-              (insert "\n")))))))
+(load! "lang-org.d/hax-org-data-query.el")
+(load! "lang-org.d/hax-org-subtree-edit.el")
 
-(defun org-is-completed-state (state)
-  "Check if STATE is a complete org-mode todo state (todo entry has
-                                                          been completed - DONE, CANCELLED etc.)"
-  (and state
-       (let* ((result nil))
-         (catch 'done
-           (dolist (line org-todo-keywords)
-             (dolist (it line)
-               (if (s-starts-with-p state it) (throw 'done t)
-                 (when (s-equals-p it "|")
-                   (setq result t)
-                   (throw 'done t))))))
-         result)))
-
-(defun org-is-incomplete-state (state)
-  "Check if STATE is an active org-mode todo state (todo entry has
-                                                          not been completed yet - TODO, WIP, REVIEW etc.)"
-  (and state
-       (let ((result nil))
-         (catch 'done
-           (dolist (line org-todo-keywords)
-             (dolist (it line)
-               (if (s-starts-with-p state it) (progn (setq result t) (throw 'done t))
-                 (when (s-equals-p it "|") (throw 'done))))))
-         result)))
-
-(defun org-at-active-timestamp ()
-  "Check if currently at the active timestamp"
-  (when (org-at-timestamp-p 'lax)
-    (save-excursion
-      (goto-char (match-beginning 0))
-      ;; There is no dedicated function to check if current timestamp is
-      ;; active or not, so using direct character checking here
-      (eq (char-after) ?<))))
-
-(defun org-toggle-timestamp-or-range-type ()
-  "Change type of the org-mode timestamp under cursor"
-  (interactive)
-  (org-at-timestamp-p 'lax)
-  (let* (;; Timestamp range checking uses regex and
-         ;; implicitly fills in necessary data to use
-         ;; for later matching. The same approach is
-         ;; used in `org-toggle-timestamp-type', so I
-         ;; hope it won't be replaced later on.
-         (beg (match-beginning 0))
-         (end (match-end 0))
-         (active (org-at-active-timestamp)))
-    (save-excursion
-      (goto-char beg)
-      ;; `<' or `[' at the start of the time range does not trigger
-      ;; `org-at-date-range-p', so move one character forward here
-      (forward-char)
-      (if (org-at-date-range-p)
-          (progn
-            (org-toggle-timestamp-type)
-            (goto-char end)
-            (forward-char 4)
-            (org-toggle-timestamp-type))
-        (org-toggle-timestamp-type)))))
-
-(defun hax/org-after-todo-change-hook ()
-  "Execute after TODO change state in the org-mode tree"
-  (interactive)
-  (when (org-is-completed-state org-state)
-    (save-excursion
-      (org-back-to-heading)
-      (let* ((tree (org-element-at-point))
-             (old (org-entry-get nil "TIMESTAMP")))
-        (when old
-          ;; Search for active timestamp range
-          (search-forward "TIMESTAMP")
-          (if (search-forward "<")
-              (org-toggle-timestamp-or-range-type)))))))
-
-(add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
-
-
-;; IDEA add more complex log entries too: make this function accept
-;; org-mode subtree in elisp form (parsed from org-elements)
-(defun org-add-log-entry (text)
-  "Add log entry for current subtree"
-  (save-excursion
-    (goto-char (- (org-log-beginning t) 1))
-    (let ((ind (current-indentation)))
-      (dolist (line (s-lines text))
-        (insert "\n")
-        (indent-line-to ind)
-        (insert line)))))
-
-(defun hax/org-add-log-entry (text &optional drawer)
-  "Insert TEXT as a log entry for the current Org heading, respecting indentation.
-
-Uses `org-log-beginning' to find/create the drawer insertion point.
-If DRAWER is non-nil, log into that drawer name (default: \"LOGBOOK\").
-
-TEXT is inserted without text properties and indented like other drawer
-contents (drawer indentation + 2 spaces)."
-  (let* ((org-log-into-drawer (or drawer "LOGBOOK"))
-         (text (substring-no-properties (or text "")))
-         ;; Normalize to no trailing newline; we'll add newlines ourselves.
-         (text (replace-regexp-in-string "\n\\'" "" text)))
-    (org-with-wide-buffer
-     (org-back-to-heading t)
-     (save-excursion
-       (let* ((pos (org-log-beginning t))      ; creates drawer if needed
-              (drawer-indent
-               (save-excursion
-                 (goto-char pos)
-                 ;; `org-log-beginning' commonly returns BOL of the :END: line,
-                 ;; whose indentation matches the drawer's indentation.
-                 (current-indentation)))
-              (prefix (make-string drawer-indent ?\s)))
-         (goto-char pos)
-         (hax/log "DRAWER-INDENT: %s" drawer-indent)
-         (unless (bolp) (insert "\n"))
-         (dolist (line (split-string text "\n"))
-           (insert prefix line "\n")))))))
-
-(defun hax/org-rename-subtree (new-title)
-  "Rename current Org subtree heading to NEW-TITLE and log the rename.
-
-Adds a LOGBOOK entry:
-  - Renamed on <rename date> from \"<original title>\""
-  (interactive
-   (progn
-     (unless (derived-mode-p 'org-mode)
-       (user-error "Not in org-mode"))
-     (org-back-to-heading t)
-     (let ((old (substring-no-properties (org-get-heading t t t t))))
-       (list (read-string (format "Rename \"%s\" to: " old) old)))))
-
-  (org-with-wide-buffer
-   (org-back-to-heading t)
-   (let* ((old-title (substring-no-properties (org-get-heading t t t t)))
-          ;; `org-time-stamp-format' already includes <...> (or [...] if inactive),
-          ;; so do NOT wrap it in extra <>.
-          (ts (format-time-string (org-time-stamp-format t t) (current-time))))
-     (org-edit-headline new-title)
-     (hax/org-add-log-entry
-      (format "- Renamed on %s from %S" ts old-title) ; %S gives "...", escaped
-      "LOGBOOK")
-     new-title)))
-
-
-(defun hax/disable-adapt-indentation (&rest args) (setq org-adapt-indentation nil))
-(defun hax/enable-adapt-indentation (&rest args) (setq org-adapt-indentation t))
-
-(advice-add 'org-refile :before #'hax/disable-adapt-indentation)
-(advice-add 'org-refile :after #'hax/enable-adapt-indentation)
 
 (defvar hax/org-src-use-full t
   "Org-src buffer edits should use full buffer, not small popup")
@@ -843,11 +439,6 @@ Adds a LOGBOOK entry:
   (lambda (name action) (and (s-starts-with? "*Org Src" name) hax/org-src-use-full))
   :ignore t)
 
-(defun hax/org-current-timestamp ()
-  "Return current time as formatted inactive org timestamp"
-  (s-replace-all '(("<" . "[") (">" . "]"))
-                 (ts-format (concat (cdr org-time-stamp-formats))
-                            (ts-now))))
 
 (defun hax/goto-list-end ()
   (interactive)
@@ -903,223 +494,7 @@ the empty area."
 
 ;; (global-set-key (kbd "M-i") nil)
 
-(defun hax/org-archive-subtree (&optional find-done)
-  "Move the current subtree to the archive.
 
-Like `org-archive-subtree', but it inlines the context-saving logic
-instead of depending on `org-archive-save-context-info'.
-
-Additionally, save the original parent heading ID (if any) into
-ARCHIVE_OLPATH_PARENT_ID."
-  (interactive "P")
-  (if (and (org-region-active-p) org-loop-over-headlines-in-active-region)
-      (let ((cl (if (eq org-loop-over-headlines-in-active-region 'start-level)
-                    'region-start-level 'region))
-            org-loop-over-headlines-in-active-region)
-        (org-map-entries
-         `(progn (setq org-map-continue-from (progn (org-back-to-heading) (point)))
-                 (org-archive-subtree ,find-done))
-         org-loop-over-headlines-in-active-region
-         cl (if (org-invisible-p) (org-end-of-subtree nil t))))
-    (cond
-     ((equal find-done '(4))  (org-archive-all-done))
-     ((equal find-done '(16)) (org-archive-all-old))
-     (t
-      ;; Save all relevant TODO keyword-related variables.
-      (let* ((tr-org-todo-keywords-1 org-todo-keywords-1)
-             (tr-org-todo-kwd-alist org-todo-kwd-alist)
-             (tr-org-done-keywords org-done-keywords)
-             (tr-org-todo-regexp org-todo-regexp)
-             (tr-org-todo-line-regexp org-todo-line-regexp)
-             (tr-org-odd-levels-only org-odd-levels-only)
-             (this-buffer (current-buffer))
-             (time (format-time-string
-                    (org-time-stamp-format 'with-time 'no-brackets)))
-             (file (abbreviate-file-name
-                    (or (buffer-file-name (buffer-base-buffer))
-                        (error "No file associated to buffer"))))
-             (location (org-archive--compute-location
-                        (or (org-entry-get nil "ARCHIVE" 'inherit)
-                            org-archive-location)))
-             (afile (car location))
-             (heading (cdr location))
-             (infile-p (equal file (abbreviate-file-name (or afile ""))))
-             (newfile-p (and (org-string-nw-p afile)
-                             (not (file-exists-p afile))))
-             (buffer (cond ((not (org-string-nw-p afile)) this-buffer)
-                           ((find-file-noselect afile 'nowarn))
-                           (t (error "Cannot access file \"%s\"" afile))))
-             (org-odd-levels-only
-              (if (local-variable-p 'org-odd-levels-only (current-buffer))
-                  org-odd-levels-only
-                tr-org-odd-levels-only))
-             level datetree-date datetree-subheading-p
-             ;; Suppress on-the-fly headline updates.
-             (org-element--cache-avoid-synchronous-headline-re-parsing t))
-        (when (string-match "\\`datetree/\\(\\**\\)" heading)
-          ;; "datetree/" corresponds to 3 levels of headings.
-          (let ((nsub (length (match-string 1 heading))))
-            (setq heading (concat (make-string
-                                   (+ (if org-odd-levels-only 5 3)
-                                      (* (org-level-increment) nsub))
-                                   ?*)
-                                  (substring heading (match-end 0))))
-            (setq datetree-subheading-p (> nsub 0)))
-          (setq datetree-date (org-date-to-gregorian
-                               (or (org-entry-get nil "CLOSED" t) time))))
-        (if (and (> (length heading) 0)
-                 (string-match "^\\*+" heading))
-            (setq level (match-end 0))
-          (setq heading nil level 0))
-        (save-excursion
-          (org-back-to-heading t)
-          ;; Get context information that will be lost by moving the
-          ;; tree (inlined `org-archive-save-context-info' logic),
-          ;; plus original parent ID.
-          (let* ((all-tags (org-get-tags))
-                 (local-tags
-                  (cl-remove-if (lambda (tag)
-                                  (get-text-property 0 'inherited tag))
-                                all-tags))
-                 (inherited-tags
-                  (cl-remove-if-not (lambda (tag)
-                                      (get-text-property 0 'inherited tag))
-                                    all-tags))
-                 (parent-id
-                  (save-excursion (when (org-up-heading-safe) (org-id-get-create))))
-                 (context
-                  `((category . ,(org-get-category nil 'force-refresh))
-                    (file . ,file)
-                    (itags . ,(mapconcat #'identity inherited-tags " "))
-                    (ltags . ,(mapconcat #'identity local-tags " "))
-                    (olpath . ,(mapconcat #'identity
-                                          (org-get-outline-path)
-                                          "/"))
-                    (olpath_parent_id . ,parent-id)
-                    (time . ,time)
-                    (todo . ,(org-entry-get (point) "TODO")))))
-            ;; We first only copy, in case something goes wrong.
-            ;; We need to protect `this-command', to avoid kill-region sets it,
-            ;; which would lead to duplication of subtrees.
-            (let (this-command) (org-copy-subtree 1 nil t))
-            (set-buffer buffer)
-            ;; Enforce Org mode for the archive buffer.
-            (if (not (derived-mode-p 'org-mode))
-                ;; Force the mode for future visits.
-                (let ((org-insert-mode-line-in-empty-file t)
-                      (org-inhibit-startup t))
-                  (call-interactively 'org-mode)))
-            (when (and newfile-p org-archive-file-header-format)
-              (goto-char (point-max))
-              (insert (format org-archive-file-header-format
-                              (buffer-file-name this-buffer))))
-            (when datetree-date
-              (require 'org-datetree)
-              (org-datetree-find-date-create datetree-date)
-              (org-narrow-to-subtree))
-            ;; Force the TODO keywords of the original buffer.
-            (let ((org-todo-line-regexp tr-org-todo-line-regexp)
-                  (org-todo-keywords-1 tr-org-todo-keywords-1)
-                  (org-todo-kwd-alist tr-org-todo-kwd-alist)
-                  (org-done-keywords tr-org-done-keywords)
-                  (org-todo-regexp tr-org-todo-regexp)
-                  (org-todo-line-regexp tr-org-todo-line-regexp))
-              (goto-char (point-min))
-              (org-fold-show-all '(headings blocks))
-              (if (and heading (not (and datetree-date (not datetree-subheading-p))))
-                  (progn
-                    (if (re-search-forward
-                         (concat "^" (regexp-quote heading)
-                                 "\\([ \t]+:\\(" org-tag-re ":\\)+\\)?[ \t]*$")
-                         nil t)
-                        (goto-char (match-end 0))
-                      ;; Heading not found, just insert it at the end.
-                      (goto-char (point-max))
-                      (or (bolp) (insert "\n"))
-                      ;; Datetrees don't need too much spacing.
-                      (insert (if datetree-date "" "\n") heading "\n")
-                      (end-of-line 0))
-                    ;; Make the subtree visible.
-                    (org-fold-show-subtree)
-                    (if org-archive-reversed-order
-                        (progn
-                          (org-back-to-heading t)
-                          (outline-next-heading))
-                      (org-end-of-subtree t))
-                    (skip-chars-backward " \t\r\n")
-                    (and (looking-at "[ \t\r\n]*")
-                         ;; Datetree archives don't need so much spacing.
-                         (replace-match (if datetree-date "\n" "\n\n"))))
-                ;; No specific heading, just go to end of file, or to the
-                ;; beginning, depending on `org-archive-reversed-order'.
-                (if org-archive-reversed-order
-                    (progn
-                      (goto-char (point-min))
-                      (unless (org-at-heading-p) (outline-next-heading)))
-                  (goto-char (point-max))
-                  ;; Subtree narrowing can let the buffer end on a headline.
-                  ;; `org-paste-subtree' then deletes it.  Prevent that.
-                  (unless (and datetree-date (bolp)) (insert "\n"))))
-              ;; Paste.
-              (org-paste-subtree (org-get-valid-level level (and heading 1)))
-              ;; Shall we append inherited tags?
-              (and inherited-tags
-                   (or (and (eq org-archive-subtree-add-inherited-tags 'infile)
-                            infile-p)
-                       (eq org-archive-subtree-add-inherited-tags t))
-                   (org-set-tags all-tags))
-              ;; Mark the entry as done.
-              (when (and org-archive-mark-done
-                         (let ((case-fold-search nil))
-                           (looking-at org-todo-line-regexp))
-                         (or (not (match-end 2))
-                             (not (member (match-string 2) org-done-keywords))))
-                (let (org-log-done org-todo-log-states)
-                  (org-todo
-                   (car (or (member org-archive-mark-done org-done-keywords)
-                            org-done-keywords)))))
-
-              ;; Inline context info saving (no `org-archive-save-context-info').
-              (cl-labels ((put-archive-prop (key sym)
-                            (let ((value (cdr (assq sym context))))
-                              (when (org-string-nw-p value)
-                                (org-entry-put (point) key value)))))
-                (put-archive-prop "ARCHIVE_TIME"     'time)
-                (put-archive-prop "ARCHIVE_FILE"     'file)
-                (put-archive-prop "ARCHIVE_OLPATH"   'olpath)
-                (put-archive-prop "ARCHIVE_CATEGORY" 'category)
-                (put-archive-prop "ARCHIVE_TODO"     'todo)
-                (put-archive-prop "ARCHIVE_ITAGS"    'itags)
-                ;; New: original parent ID (if any).
-                (put-archive-prop "ARCHIVE_OLPATH_PARENT_ID" 'olpath_parent_id))
-
-              ;; Save the buffer, if it is not the same buffer and
-              ;; depending on `org-archive-subtree-save-file-p'.
-              (unless (eq this-buffer buffer)
-                (when (or (eq org-archive-subtree-save-file-p t)
-                          (eq org-archive-subtree-save-file-p
-                              (if (boundp 'org-archive-from-agenda)
-                                  'from-agenda
-                                'from-org)))
-                  (save-buffer)))
-              (widen))))
-        ;; Back in original buffer: cut the tree and finish up.
-        (run-hooks 'org-archive-hook)
-        (let (this-command) (org-cut-subtree))
-        (when (featurep 'org-inlinetask)
-          (org-inlinetask-remove-END-maybe))
-        (setq org-markers-to-move nil)
-        (when org-provide-todo-statistics
-          (save-excursion
-            (org-up-heading-safe)
-            (org-update-statistics-cookies nil)))
-        (hax/log "Subtree archived %s"
-                 (if (eq this-buffer buffer)
-                     (concat "under heading: " heading)
-                   (concat "in file: " (abbreviate-file-name afile)))))))
-    (org-fold-reveal)
-    (if (looking-at "^[ \t]*$")
-        (outline-next-visible-heading 1))))
 
 (defun hax/calibre-follow (path)
   (call-process "xdg-open" nil 0 nil (concat "calibre:" path)))
@@ -1173,213 +548,7 @@ ARCHIVE_OLPATH_PARENT_ID."
   ;; (at least I was able to identifiy the implementation ot that point)
   ;; (highlight-indent-guides-mode -1)
 
-
-  ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
-  ;; because I override the default keybindings I had to use this
-  ;; abomination of a `map!' call to do what I need.
-  (map!
-   :map org-mode-map
-   [C-S-return] nil
-   [C-return] nil
-   [M-return] nil
-   )
-
-
-
-  (map!
-   :map evil-org-mode-map
-   :ni [C-S-return] nil
-   :ni [C-return] nil
-   [M-return] nil
-   )
-
-  (map!
-   :map org-mode-map
-   [M-return] #'hax/org-add-trailing-note
-   [C-S-return] #'hax/org-insert-todo-entry
-   [C-return] #'+org/insert-item-below)
-
-  (map!
-   :map evil-org-mode-map
-   :ni "M-q" #'hax/fill-paragraph
-   )
-
-  (hax/org-download-setup)
-  (map!
-   :map org-mode-map
-   :localleader
-   :nv "dt" #'hax/org-subtree-timestamp
-   :desc "sort, todo state order"
-   :nv "soo" #'hax/sort-subtree-contextually)
-
-  ;; (map!
-  ;;  :map evil-org-mode-map
-  ;;  :nvi "M-i M-l M-t" nil
-  ;;  )
-
-  (map!
-   :map evil-org-mode-map
-   ;; Consistent multicursor bindings are more important for me, so
-   ;; `org-shiftdown' and `org-shiftup' can go elsewhere.
-   :ni "C-S-j" nil
-   :ni "C-S-k" nil
-   :n [S-up] #'hax/org-shiftup
-   :n [S-down] #'hax/org-shiftdown
-
-   :ni "C-;" #'flyspell-correct-wrapper
-   :nvi [M-return] #'hax/org-add-trailing-note
-   :ni [C-S-return] #'hax/org-insert-todo-entry
-   :ni [C-return] #'+org/insert-item-below
-
-   :nv ",#" #'hax/org-update-all-cookies
-   :nv ",eh" 'org-html-export-to-html
-   :desc "Async export to pdf"
-   :nv ",ep" (cmd! (org-latex-export-to-pdf t))
-   :nv ",ea" 'org-ascii-export-to-ascii
-   :nv ",eP" 'org-latex-export-to-pdf
-   :nv ",el" 'org-latex-export-to-latex
-   :nv ",eo" 'org-odt-export-to-odt
-   :nv ",eh" 'org-html-export-to-html
-   :nv ",in" #'org-add-note
-   :desc "Set tree ID"
-   :n ",ti" #'hax/org-edit-id
-   :n ",tP" #'org-set-property-and-value
-   :n ",tp" #'org-set-property
-   :desc "Toggle checkbox"
-   :n ",tc" (cmd! (when (org-in-item-p)
-                    (save-excursion
-                      (goto-char (org-in-item-p))
-                      (org-toggle-checkbox))))
-   :n ",ta" #'hax/org-assign-tag
-   :desc "Insert tag in text"
-   :n ",tt" #'hax/org-insert-text-tag
-   :desc "Insert timestamp in text"
-   :n ",ts" #'hax/org-insert-timestamp
-   :n ",tS" #'hax/org-insert-timestamped-parens
-   :ni "M-i M-i" #'hax/org-paste-clipboard
-   :ni "M-i M-b" (cmd! (hax/org-paste-clipboard nil t))
-   :desc "math"
-   :ni "M-i M-m" (lambda (text)
-                   (interactive "sMath: ")
-                   (insert (format "\\(%s\\)" text)))
-   :desc "math"
-   :v "M-i M-m" (cmd! (insert (format "\\(%s\\)" (pop-selection))))
-   :desc "insert ~code~"
-   :ni "M-i M-`" (cmd! (insert (format "~%s~" (read-string "Code: "))))
-   :desc "insert src_code{}"
-   :ni "M-i M-c M-c" (cmd! (hax/insert-created-timestamp))
-   :desc "insert src_code{}"
-   :ni "M-i M-c M-s" (cmd!
-                      (insert
-                       (format
-                        "src_%s{%s}"
-                        (ivy-read "Language: "
-                                  '("asm" "cpp" "sh")
-                                  :history 'hax/insert-stc-code-history)
-                        (read-string "Code: "))))
-   :desc "separator"
-   :ni "M-i M-s" (cmd! (insert
-                        (format "%s\n" (s-repeat fill-column "-"))))
-   :desc "- [timestamp]"
-   :ni [M-S-return] (cmd! (org-insert-item)
-                          (insert (hax/org-current-timestamp))
-                          (insert " "))
-
-   :desc "timestamped element timestamp"
-   :ni "M-i M-e M-t" (cmd! (insert (hax/org-current-timestamp)))
-   :ni "M-i M-S-i" (cmd! (insert "#+capion: ")
-                         (save-excursion (hax/org-paste-clipboard)))
-
-   :desc "link to word"
-   :v "M-i M-l M-w" (cmd! (let ((text (get-selected-region-text)))
-                            (delete-region (get-selected-region-start)
-                                           (get-selected-region-end))
-                            (insert (format "[[%s][%s]]" text text))))
-
-   :desc "link to subtree, refs"
-   :nvi "M-i M-l M-t M-r" #'hax/add-subtree-refs
-
-   :desc "link to subtree, full name"
-   :v "M-i M-l M-t M-f" (cmd! (let ((text (get-selected-region-text)))
-                                (delete-region (get-selected-region-start)
-                                               (get-selected-region-end))
-                                (hax/org-insert-clipboard-link text)))
-   :desc "link to clipboard"
-   :v "M-i M-l M-l" (cmd! (let ((text (get-selected-region-text)))
-                            (delete-region (get-selected-region-start)
-                                           (get-selected-region-end))
-                            (hax/org-insert-clipboard-link text)))
-
-   :desc "Insert subtree"
-   :vi "M-i M-t" (cmd!
-                  (insert "\n* TODO ")
-                  (save-excursion
-                    (insert (format "
-  :PROPERTIES:
-  :CREATED:  [%s]
-  :END:
-" (format-time-string "%Y-%m-%d %a %H:%M:%S %Z" (current-time))))))
-
-   :desc "link subtree, full name"
-   :ni "M-i M-l M-t M-f" (cmd! (hax/org-insert-link-to-subtree))
-   :desc "link subtree, short name"
-   :ni "M-i M-l M-t M-s" (cmd! (hax/org-insert-link-to-subtree :last-n 1))
-   :desc "link subtree, short name"
-   :v "M-i M-l M-t M-s" (cmd! (let ((text (get-selected-region-text)))
-                                (delete-region (get-selected-region-start)
-                                               (get-selected-region-end))
-                                (hax/org-insert-link-to-subtree
-                                 :description text
-                                 :last-n 1)))
-   :desc "link subtree, manual description"
-   :ni "M-i M-l M-t M-d" (lambda (description)
-                           (interactive "sLink description: ")
-                           (hax/org-insert-link-to-subtree :description description))
-
-   :desc "subtree, only short name"
-   :ni "M-i M-l M-t M-n" (cmd! (hax/org-select-subtree-callback
-                                "Insert: "
-                                (lambda
-                                  (x) (insert (hax/org-outline-path-at-marker
-                                               (cdr x) 1)))
-                                'hax/org-insert-link-to-heading))
-
-   :desc "link active subtree, full name"
-   :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
-                            :entries (hax/org-collect-active-entries)))
-
-   :desc "Insert link"
-   :ni "S-C-i" (cmd! (hydra-insert-link/body))
-   :ni "M-i M-l M-l" #'hax/org-insert-clipboard-link
-   :ni "M-i M-l M-d" (lambda (description)
-                       (interactive "sLink description: ")
-                       (hax/org-insert-clipboard-link description))
-
-   :ni "M-i M-l M-f" (cmd! (hax/org-insert-footnote-link (hax/org-gen-footnote-name)))
-   :desc "Inline footnote"
-   :ni "M-i M-f M-i" (cmd! (insert "[fn::")
-                           (save-excursion (insert "]")))
-   :desc "footnote & prompt"
-   :ni "M-i M-f M-p" (cmd! (save-excursion
-                             (hax/org-insert-footnote (hax/org-gen-footnote-name))
-                             (insert (read-string "Footnote: "))
-                             (org-fill-paragraph)))
-   :desc "footnote & goto"
-   :ni "M-i M-f M-f" (cmd! (hax/org-insert-footnote (hax/org-gen-footnote-name)))
-   :desc "insert {{{macro}}}"
-   :ni "M-i M-{" (cmd! (insert "{{{") (save-excursion (insert "}}}")))
-   :desc "insert #+begin_src"
-   :n ",ic" (cmd!
-             (evil-insert-state)
-             (yas-expand-snippet "#+begin_src $1\n$0\n#+end_src"))
-   :nv ",hi" #'org-indent-mode
-   :nv ",ci" #'org-clock-in
-   :nv ",co" #'org-clock-out
-   :desc "start WIP clocking"
-   :nv ",cw" (cmd! (hax/ensure-todo "WIP") (org-clock-in)))
-
-
-
+  (hax/detail/configure-keybinds)
   (setq-local company-backends
               '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
 
@@ -1480,38 +649,7 @@ ARCHIVE_OLPATH_PARENT_ID."
 
 (setq warning-minimum-level :error)
 
-(map!
- :n ",nt" (cmd! (org-capture nil "t"))
- :n ",nd" (cmd! (org-capture nil "d"))
- ;; Quick access to common operations. No specific meaning behind the key
- ;; specification.
- :desc "Global agenda"
- :n [M-f7] (cmd! (org-agenda nil "*"))
- :desc "New note"
- :n [M-f8] (cmd! (org-capture nil "d"))
- :desc "Item under clocked"
- :n [M-f9] (cmd! (org-capture nil "c"))
- :desc "New immediate todo"
- :n [M-f10] (cmd! (org-capture nil "i"))
- :desc "New staging item"
- :n [M-f11] (cmd! (org-capture nil "S"))
- :desc "New capture"
- :n [M-insert] #'org-capture)
-
-(defun hax/agenda-mode-hook ()
-  (interactive)
-  (setq org-agenda-max-title-length (- (window-width) 10))
-  ;; I want to be able to use fX __**EVERYWHERE**__.
-  (local-set-key (kbd "<f1>") 'winum-select-window-1)
-  (local-set-key (kbd "<f2>") 'winum-select-window-2)
-  (local-set-key (kbd "<f3>") 'winum-select-window-3)
-  (local-set-key (kbd "<f4>") 'winum-select-window-4)
-  (local-set-key (kbd "<f5>") 'winum-select-window-5)
-  (local-set-key (kbd "<f6>") 'winum-select-window-6)
-  (local-set-key (kbd "<M-f7>") 'org-agenda-quit))
-
 (add-hook! 'org-agenda-mode-hook 'hax/agenda-mode-hook)
-
 
 (defmacro hax/defaccept! (name body)
   `(defun ,name ()
@@ -1537,117 +675,11 @@ ARCHIVE_OLPATH_PARENT_ID."
                       (or (and dead-days (< 15 dead-days 90))
                           (and shed-days (< 15 shed-days 90)))))))
 
-
-
 (defun hax/parent-subtrees()
   "test"
   (let* ((len 18)
          (str (s-pad-left len " " (s-join "." (org-get-outline-path)))))
     (substring str (- (length str) len) (length str))))
-
-(defun hax/maybe-relative-time ()
-  "Insert relative time (in hours) between current time and target
-  subtree deadline/sheduled/timestamp if any."
-  (save-excursion
-    ;; (with-no-warnings (defvar date) (defvar entry))
-    ;; (hax/log "%s" (calendar-absolute-from-gregorian date))
-
-    (if (org-current-level)
-        (let* ((time (org-entry-get nil "TIMESTAMP"))
-               (dead (org-entry-get nil "DEADLINE"))
-               (shed (org-entry-get nil "SCHEDULED")))
-          (if (or time dead shed)
-              ;; TODO Ensure prioritization of the deadline/sheduled time
-              ;; happens properly.
-              (let* ((parsed (ts-parse-org (or dead shed time)))
-                     (time-diff (ts-difference parsed (ts-now))))
-                (if (< -99 (/ time-diff 3600))
-                    (format "%03d%s"
-                            (/ time-diff 3600)
-                            (hax/closest-unicode-fraction
-                             (hax/relative-hour-fraction time-diff)))
-                  "    "))
-            "    "))
-      "    ")))
-
-(defun hax/org-agenda-clocked-time ()
-  "Safely calculate the clocked time for the current agenda item."
-  (require 'org-clock)
-  (condition-case nil
-      (save-excursion
-        (format "[%s]"
-                (s-pad-left 5 "0" (org-duration-from-minutes (org-clock-sum-current-item)))))
-    (error "")))
-
-
-(defun hax/org-agenda-last-clocked-in-time ()
-  "Get formatting string showing how much time has passed since subtree was clocked in last time."
-  (condition-case nil
-      (save-excursion
-        (let* ((last-time (if (org-clock-get-last-clock-out-time)
-                              (org-clock-get-last-clock-out-time)
-                            (org-time-string-to-time (org-entry-get (point) "CREATED"))))
-               (now (current-time))
-               (diff-time (time-subtract now last-time))
-               (minutes (/ (float-time diff-time) 60)))
-          ;; (hax/log "LT: %s" last-time)
-          (let* ((raw-time (seconds-to-time (* minutes 60)))
-                 (years (/ minutes (* 60 24 365)))
-                 (months (/ minutes (* 60 24 30)))
-                 (weeks (/ minutes (* 60 24 7)))
-                 (days (/ minutes (* 60 24)))
-                 (hours (/ minutes 60))
-                 (mins (mod minutes 60)))
-            (format "[%6s]" (cond
-                             ((>= years 1)
-                              (format "%2dy%2dm" years (mod months 12)))
-                             ((>= months 1)
-                              (format "%2dm%2dw" months (/ (mod days 30) 7)))
-                             ((>= weeks 1)
-                              (format "%2dw%2dd" weeks (mod days 7)))
-                             ((>= days 1)
-                              (format "%2dd%2dh" days (mod hours 24)))
-                             ((>= hours 1)
-                              (format "%2dh%2dm" hours mins))
-                             (t
-                              (format "%2dm" minutes))))))
-        )
-    (error
-     (format "[%6s]" "ERR"))))
-
-
-(setq
- org-agenda-prefix-format
- '(;; For regular agenda items, show (?whatever?)
-   ;; first, then align time to five characters,
-   ;; then 12 for scheduled information. Title and
-   ;; all the other data will be placed afterwards.
-   ;;
-   ;; 'e' is for time estimates.
-   (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
-   ;; Indentation to align effort time
-   (todo . "%-5(hax/org-agenda-last-clocked-in-time) %-5(hax/org-agenda-clocked-time) ")
-   (tags . "%-5(hax/org-agenda-clocked-time) ")
-   (search . "%-5(hax/org-agenda-clocked-time) "))
- org-agenda-start-on-weekday nil
- org-agenda-ndays 14
- org-agenda-show-all-dates t
- org-agenda-skip-deadline-if-done t
- org-agenda-skip-scheduled-if-done t
- org-agenda-hide-tags-regexp ".*"
- org-agenda-block-separator (s-repeat 45 "-")
- org-agenda-repeating-timestamp-show-all nil
- org-deadline-warning-days 14
- org-agenda-time-grid '(;; Unconditionally show time grid for today
-                        (daily today)
-                        ;; Show data for 8, 10, 12 hours etc.
-                        (800 1000 1200 1400 1600 1800 2000)
-                        ;; No trailing dots after hour
-                        ""
-                        ;; Unconditionally show time grid for today
-                        "")
- org-agenda-start-day "-0d")
-
 
 ;; Store capture location *before* the capture happens, this way location
 ;; information is reported to the hook properly.
@@ -1711,129 +743,7 @@ ARCHIVE_OLPATH_PARENT_ID."
   (org-end-of-line)
   (insert " "))
 
-(when t
-  (defun fixup-buffer-dates ()
-    (interactive)
-    (save-excursion
-      (let* ((point-now (point))
-             (start (buffer-substring (point-min) (point-max)))
-             (result (fixup-text-dates start)))
-        (delete-region (point-min) (point-max))
-        (insert result)
-        (goto-char point-now))))
-
-  (rx-define rx-month-name
-    (| "January" "February" "March" "April" "May"
-       "June" "July" "August" "September" "October" "November" "December"
-       "Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul"
-       "Aug" "Sep" "Oct" "Nov" "Dec"))
-
-  (rx-define rx-month-digit
-    (| "01" "02" "03" "04" "05" "06" "07" "08" "09"
-       "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12"))
-
-  (rx-define rx-month-name-or-digit (| rx-month-name rx-month-digit))
-  (rx-define rx-day-digit (1+ digit))
-  (rx-define rx-year (1+ digit))
-  (rx-define rx-space (| " " " "))
-
-  (defun fixup-text-dates (str)
-    "Automatically convert string timestamps from some unreadable and
-  unparseable formats such as `month-day-year H:M PM/AM' into a
-  sane 8601 version."
-    ;; The implementation runs in two parts. First I try to get rid of the
-    ;; AM/PM nonsense by replacing all the content into the "almost correct"
-    ;; version and then I map things to the proper ISO8601 format.
-
-    (setq
-     replacement-pairs
-     (list
-      (cons (rx "["
-                (group rx-day-digit) rx-space
-                (group rx-month-name) rx-space
-                (group rx-year)
-                "]")
-            "[\\3-\\2-\\1]")
-      (cons (rx "["
-                (group (1+ digit)) ":"
-                (group (1+ digit)) rx-space
-                (group (| "AM" "PM"))
-                "]") "[\\1\\3:\\2]")
-      (cons (rx "["
-                ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) rx-space
-                (group rx-day-digit) ", "
-                (group (1+ digit))
-                "]") "[20\\3-\\1-\\2]")
-      (cons (rx "["
-                ;; Month Day, Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) rx-space
-                (group (1+ digit)) ", "
-                (group (1+ digit)) rx-space
-                (group (1+ digit)) ":"
-                (group (1+ digit)) rx-space
-                (group (| "AM" "PM"))
-                "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
-      (cons (rx "["
-                ;; Month/Day/Year Hour:Minute AM|PM
-                (group rx-month-name-or-digit) "/"
-                (group (1+ digit)) "/"
-                (group (1+ digit))
-                (? " "
-                   (group (1+ digit)) ":"
-                   (group (1+ digit)) rx-space
-                   (group (| "AM" "PM")))
-                "]") "[20\\3-\\1-\\2 \\4\\6:\\5]")
-      (cons (rx "2020" (group digit digit)) "20\\1")
-      (cons (rx "20" (group digit digit digit digit)) "\\1")
-      (cons (rx "-" (group digit) (group (| rx-space "]"))) "-0\\1\\2")
-      (cons (rx " :]") "]")
-      (cons (rx "20" (group digit digit) "-" (group digit) "-" (group digit digit)) "20\\1-0\\2-\\3")))
-
-    (dolist (pair replacement-pairs)
-      (setq str (s-replace-regexp (car pair) (cdr pair) str)))
-
-    (setq
-     str
-     (s-replace-all
-      '(
-        ("Jan" . "01")
-        ("Feb" . "02")
-        ("Mar" . "03")
-        ("Apr" . "04")
-        ("May" . "05")
-        ("Jun" . "06")
-        ("Jul" . "07")
-        ("Aug" . "08")
-        ("Sep" . "09")
-        ("Oct" . "10")
-        ("Nov" . "11")
-        ("Dec" . "12")
-        ("January" . "01")
-        ("February" . "02")
-        ("March" . "03")
-        ("April" . "04")
-        ("May" . "05")
-        ("June" . "06")
-        ("July" . "07")
-        ("August" . "08")
-        ("September" . "09")
-        ("October" . "10")
-        ("November" . "11")
-        ("December" . "12"))
-      str))
-
-    (s-replace-all
-     '(("10PM" . "22") ("11PM" . "23") ("12PM" . "12")
-       ("10AM" . "01") ("11AM" . "11") ("12AM" . "00")
-       ("1PM" . "13") ("2PM" . "14") ("3PM" . "15")
-       ("4PM" . "16") ("5PM" . "17") ("6PM" . "18")
-       ("7PM" . "19") ("8PM" . "20") ("9PM" . "21")
-       ("1AM" . "01") ("2AM" . "02") ("3AM" . "03")
-       ("4AM" . "04") ("5AM" . "05") ("6AM" . "06")
-       ("7AM" . "07") ("8AM" . "08") ("9AM" . "09")) str))
-  ;; (fixup-text-dates "[Feb 15, 2011] [2 March 2020]")
-  )
+(load! "lang-org.d/hax-tg-message-edit.el")
 
 (progn
   (cl-defun org-note-insert-at-time+date
@@ -2091,53 +1001,8 @@ ARCHIVE_OLPATH_PARENT_ID."
 
 (add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
 
-(defun hax/org-agenda-skip-recurring ()
-  (let* ((org-repeater-regexp
-          (rx
-           (group
-            "<"  ; Opening angle bracket
-            (seq (repeat 4 digit)
-                 "-"
-                 (repeat 2 digit)
-                 "-"
-                 (repeat 2 digit)  ; Date: YYYY-MM-DD
-                 (seq " "
-                      (repeat 3 alpha))  ; Optional day of week: %a
-                 (seq " "
-                      (repeat 2 digit)
-                      ":"
-                      (repeat 2 digit)
-                      ":"
-                      (repeat 2 digit)  ; Optional time: HH:MM:SS
-                      (optional ; Optional timezone: %Z
-                       " +"
-                       (repeat 2 digit)))
-                 (seq " "
-                      (one-or-more (any ".+-"))  ; Repeater prefix
-                      (one-or-more digit)
-                      (any "dwmy")  ; Repeater
-                      (optional "/" (one-or-more digit) (any "dwmy")))
-                                        ; Secondary spacing
-                 ">"))  ; Closing angle bracket
 
-           ))
-         (subtree-end (save-excursion (org-end-of-subtree t))))
-    (if (re-search-forward org-repeater-regexp subtree-end t)
-        (progn subtree-end)
-      nil)))
 
-(defun hax/org-has-tag (tag)
-  "Skip all entries that correspond to TAG.
-
-If OTHERS is true, skip all entries that do not correspond to TAG."
-
-  (let* ((subtree-point (or (and (org-at-heading-p) (point))
-                            (save-excursion (org-back-to-heading) (point))))
-         (current-subtree (org-get-tags-at subtree-point)))
-    ;; (hax/log "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
-    (if (member tag current-subtree)
-        (goto-char (org-end-of-subtree current-subtree))
-      nil)))
 
 
 (setq org-startup-indented t)
@@ -2152,47 +1017,6 @@ If OTHERS is true, skip all entries that do not correspond to TAG."
     (unless (or (re-search-forward ":bug:" (line-end-position) t)
                 (re-search-forward "#[XAS]" (line-end-position) t))
       (or (outline-next-heading) (point-max)))))
-
-(defun hax/org-agenda-delete-empty-blocks ()
-  "Remove empty agenda blocks.
-An empty block is a header line followed immediately by another header
-line or end of buffer, with only blank lines in between."
-  (let ((inhibit-read-only t))
-    (save-excursion
-      (goto-char (point-min))
-      (let (block-start block-header-end has-content)
-        (while (not (eobp))
-          (cond
-           ;; Separator line marks the end of a block
-           ((looking-at "^-\\{10,\\}")
-            (when (and block-start (not has-content))
-              ;; Delete from block start to end of separator line
-              (delete-region block-start (line-beginning-position))
-              ;; Also remove the now-orphaned separator if it's at point
-              (when (looking-at "^-\\{10,\\}")
-                (delete-region (line-beginning-position)
-                               (min (1+ (line-end-position)) (point-max)))))
-            (setq block-start nil
-                  block-header-end nil
-                  has-content nil)
-            (unless (eobp) (forward-line 1)))
-           ;; Overriding header line (starts at column 0, non-blank, non-separator)
-           ((and (not block-start)
-                 (looking-at "^[^ \t\n-]"))
-            (setq block-start (line-beginning-position)
-                  has-content nil)
-            (forward-line 1)
-            (setq block-header-end (point)))
-           ;; Blank line — doesn't count as content
-           ((looking-at "^\\s-*$")
-            (forward-line 1))
-           ;; Anything else is content
-           (t
-            (setq has-content t)
-            (forward-line 1))))
-        ;; Handle last block if empty (no trailing separator)
-        (when (and block-start (not has-content))
-          (delete-region block-start (point-max)))))))
 
 (defun hax/org-mode-configure ()
   (interactive)
@@ -2690,39 +1514,6 @@ subtree can be found."
     (org-id-open id nil)
     (org-element-at-point)))
 
-(defun hax/dbg/looking-at ()
-  (interactive)
-  (hax/log
-   "looking at: %s:%s..%s = [%s] in %s"
-   (line-number-at-pos)
-   (point)
-   (line-end-position)
-   (propertize
-    (buffer-substring-no-properties (point) (line-end-position))
-    'face 'font-lock-warning-face)
-   (current-buffer)))
-
-
-(defun hax/dbg/looking-around ()
-  (interactive)
-  (hax/log
-   "looking at: %s:%s..%s = [%s%s] in %s"
-   (line-number-at-pos)
-   (line-beginning-position)
-   (line-end-position)
-   (propertize
-    (buffer-substring-no-properties (line-beginning-position) (point))
-    'face 'font-lock-variable-name-face)
-   (propertize
-    (buffer-substring-no-properties (point) (line-end-position))
-    'face 'font-lock-warning-face)
-   (current-buffer)))
-
-
-(defun hax/dbg/point (p)
-  (save-excursion
-    (goto-char p)
-    (hax/dbg/looking-at)))
 
 (defun org-get-logbook-extent ()
   "Get start and end position of the `:LOGBOOK:' drawer for current
@@ -2754,33 +1545,6 @@ subtree."
     (insert str)
     (org-element-parse-buffer)))
 
-(defun hax/org-get-active-clock-timestamp-position ()
-  "Get position of the active clock in current logbook, if any.
-Create new `:LOGBOOK:' if one"
-  (save-excursion
-    (cl-block main
-      (org-back-to-heading)
-      (forward-line)
-      (let ((pair (org-get-logbook-extent))
-            (ind (current-indentation)))
-        (goto-char (car pair))
-        (while (< (point) (cdr pair))
-          (when (org-at-clock-log-p)
-            (forward-char
-             (+
-              ;; indentation
-              ind
-              ;; `CLOCK:' and space
-              7
-              ;; Bug in the `org-at-date-range' that prevents proper
-              ;; checking if the cursor is placed on the starting `['
-              ;; requires extra positioning
-              1
-              ))
-            (unless (org-at-date-range-p t)
-              (backward-char 1)
-              (cl-return-from main (point))))
-          (forward-line))))))
 
 (defun hax/org-finish-timestamp ()
   (when (and (re-search-forward (rx "]") nil t)
@@ -2882,17 +1646,6 @@ itself once again')"
   (when hax/+roam (org-roam-db))
   (find-file hax/notes.org))
 
-(defun hax/org-element-get-logbook ()
-  "Get org-element of the `:LOGBOOK:' entry for a current tree if
-any."
-  (save-excursion
-    (org-back-to-heading)
-    (when (re-search-forward ":LOGBOOK:" nil t)
-      (let* ((elem (org-element-at-point))
-             (min-pos (org-element-property :contents-begin elem))
-             (max-pos (org-element-property :contents-end elem)))
-        (org-element-parse-string
-         (buffer-substring-no-properties min-pos max-pos))))))
 
 (defun hax/org-get-logbook-ranges ()
   (org-element-map
@@ -3155,163 +1908,10 @@ holding contextual information."
     (goto-char marker)
     (remove-string-properties (org-get-heading t t t t))))
 
-(defun hax/org-refile-marker-position (target at-start)
-  (save-window-excursion
-    (save-excursion
-      ;; (hax/log "Marker target is %s" target)
-      ;; (marker-position target)
-      ;; (hax/log "Target original target buffer and position is %s:%s"
-      ;;          (marker-buffer target) (marker-position target))
-      (with-current-buffer (marker-buffer target)
-        (goto-char (marker-position target))
-        (hax/dbg/looking-around)
-        (point)
-        ;; (let* ((subtree (org-element-at-point))
-        ;;        (final-position (org-element-property :contents-begin subtree)))
-        ;;   (save-excursion
-        ;;     (goto-char final-position)
-        ;;     (hax/dbg/looking-around)
-        ;;     final-position))
-        ))))
-
-(defun hax/org-refile-under-marker (target at-start)
-  (let ((refile-list (list
-                      (get-headline-from-marker target)
-                      (buffer-file-name (marker-buffer target))
-                      nil
-                      (hax/org-refile-marker-position target at-start))))
-    (hax/log "Reile list target %s" refile-list)
-    (org-refile nil nil refile-list nil)))
 
 
-(defun hax/org-refile-to-staging ()
-  (interactive)
-  (hax/org-refile-under-marker
-   (get-capture-target-marker '(file hax/staging.org)) t))
+(load! "lang-org.d/hax-org-general-edit.el")
 
-(defun hax/org-refile-to-daily ()
-  (interactive)
-  (hax/org-refile-under-marker
-   (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
-
-(defun hax/org-prevent-same-state-change (func arg &optional _start)
-  "Prevent state changes that don't actually change the state.
-This function is meant to be used as advice before `org-todo'.
-If the state to change to (ARG) is the same as the current state,
-use `:override' advice to do nothing and prevent `org-todo' from
-being called."
-
-  (let ((current-state (remove-string-properties (org-get-todo-state))))
-    (if (string-equal current-state arg)
-        (hax/log "State is already \"%s\"" current-state)
-      ;; (hax/log "Override transitioning states %s -> %s" current-state arg)
-      (cl-return-from org-todo))))
-
-;; (advice-add 'org-todo :around #'hax/org-prevent-same-state-change)
-
-(setq hax/org-priority-list '(?X ?S ?A ?B ?C ?D ?E ?F))
-
-(defun hax/org-priority-set-p ()
-  (interactive)
-  (let* ((element (org-element-context))
-         (type (org-element-type element)))
-    (if (eq type 'headline) (org-element-property :priority element)
-      nil)))
-
-
-(defun hax/org-change-priority (direction)
-  (interactive)
-  (let* ((cur-str (org-entry-get (point) "PRIORITY"))
-         (cur (string-to-char cur-str))
-         (new (char-to-string
-               (if (eq direction 'up)
-                   (or (nth 1 (member cur (reverse hax/org-priority-list)))
-                       org-priority-lowest)
-                 (or (nth 1 (member cur hax/org-priority-list))
-                     org-priority-highest)))))
-    (if (hax/org-priority-set-p)
-        (if (or (and (eq direction 'down) (equal cur ?F))
-                (and (eq direction 'up) (equal cur ?X)))
-            (progn
-              (hax/org-remove-priority-at-point)
-              (org-add-log-entry
-               (format "- Priority \"%s\" Removed at %s"
-                       cur-str (hax/current-timestamp))))
-          (progn
-            (org-entry-put (point) "PRIORITY" new)
-            (org-add-log-entry
-             (format "- Priority \"%s\" Changed From \"%s\" at %s"
-                     new cur-str (hax/current-timestamp)))))
-      (progn
-        (org-entry-put (point) "PRIORITY" cur-str)
-        (org-add-log-entry
-         (format "- Priority \"%s\" Added at %s" cur-str (hax/current-timestamp)))))))
-
-(defun hax/org-remove-priority-at-point ()
-  (interactive)
-  (let* ((element (org-element-at-point))
-         (priority (org-element-property :priority element)))
-    (when priority  ;; Only operate on headlines with a priority
-      (save-excursion
-        (goto-char (org-element-property :begin element))
-        (re-search-forward "\\[#.\\]\s?" (org-element-property :end element))
-        (replace-match "")))))
-
-(defun hax/org-shiftup (&optional arg)
-  "Act on current element according to context.
-Call `org-timestamp-up' or `org-priority-up', or
-`org-previous-item', or `org-table-move-cell-up'.  See the
-individual commands for more information."
-  (interactive "P")
-  (cond
-   ((run-hook-with-args-until-success 'org-shiftup-hook))
-   ((and org-support-shift-select (org-region-active-p))
-    (org-call-for-shift-select 'previous-line))
-   ((org-at-timestamp-p 'lax)
-    (call-interactively (if org-edit-timestamp-down-means-later
-			    'org-timestamp-down 'org-timestamp-up)))
-   ((and (not (eq org-support-shift-select 'always))
-	 org-priority-enable-commands
-	 (org-at-heading-p))
-    (hax/org-change-priority 'up))
-   ((and (not org-support-shift-select) (org-at-item-p))
-    (call-interactively 'org-previous-item))
-   ((org-clocktable-try-shift 'up arg))
-   ((and (not (eq org-support-shift-select 'always))
-	 (org-at-table-p))
-    (org-table-move-cell-up))
-   ((run-hook-with-args-until-success 'org-shiftup-final-hook))
-   (org-support-shift-select
-    (org-call-for-shift-select 'previous-line))
-   (t (org-shiftselect-error))))
-
-(defun hax/org-shiftdown (&optional arg)
-  "Act on current element according to context.
-Call `org-timestamp-down' or `org-priority-down', or
-`org-next-item', or `org-table-move-cell-down'.  See the
-individual commands for more information."
-  (interactive "P")
-  (cond
-   ((run-hook-with-args-until-success 'org-shiftdown-hook))
-   ((and org-support-shift-select (org-region-active-p))
-    (org-call-for-shift-select 'next-line))
-   ((org-at-timestamp-p 'lax)
-    (call-interactively (if org-edit-timestamp-down-means-later
-			    'org-timestamp-up 'org-timestamp-down)))
-   ((and (not (eq org-support-shift-select 'always))
-	 org-priority-enable-commands
-	 (org-at-heading-p))
-    (hax/org-change-priority 'down))
-   ((and (not org-support-shift-select) (org-at-item-p))
-    (call-interactively 'org-next-item))
-   ((org-clocktable-try-shift 'down arg))
-   ((and (not (eq org-support-shift-select 'always))
-	 (org-at-table-p))
-    (org-table-move-cell-down))
-   ((run-hook-with-args-until-success 'org-shiftdown-final-hook))
-   (org-support-shift-select
-    (org-call-for-shift-select 'next-line))
-   (t (org-shiftselect-error))))
 
 (defun hax/org-subtree-has-children (&optional invisible)
   ;; Return non-nil if entry at point has child headings.
@@ -3495,89 +2095,3 @@ until \\[keyboard-quit] is pressed."
 
 
 
-(defun hax/--get-language ()
-  "Extract the language name from the current `major-mode'.
-Strips standard modes (-mode) and Doom's Tree-sitter modes (-ts-mode)."
-  (let* ((mode-str (symbol-name major-mode))
-         (lang (replace-regexp-in-string "-ts-mode$" "" mode-str))
-         (lang (replace-regexp-in-string "-mode$" "" lang)))
-    lang))
-
-(defun hax/goto-end-of-last-non-empty-line ()
-  "Move point to the end of the last non-empty line in the buffer.
-A non-empty line is defined as a line containing at least one non-whitespace character."
-  (interactive)
-  (goto-char (point-max))
-  (when (re-search-backward "\\S-" nil t) (end-of-line)))
-
-(defun hax/log-context-to-scratch ()
-  "Capture current context and append it to the *scratch* buffer.
-
-If nothing is selected, use the full current line.
-If a single-line range is selected, use the selected text inline.
-If a multi-line range is selected, insert it as an Org source block."
-  (interactive)
-  (let* ((has-selection (use-region-p))
-         (region-beg (when has-selection (region-beginning)))
-         (region-end (when has-selection (region-end)))
-         (selected-text
-          (when has-selection
-            (buffer-substring-no-properties region-beg region-end)))
-         (multiline-selection
-          (and selected-text (string-match-p "\n" selected-text)))
-         (line-text
-          (string-trim-left
-           (buffer-substring-no-properties
-            (line-beginning-position) (line-end-position))))
-         (context-text
-          (cond
-           ((not has-selection) line-text)
-           (multiline-selection selected-text)
-           (t selected-text)))
-         (lang (hax/--get-language))
-         (fname (let* ((full-path (or (buffer-file-name) "unnamed-buffer"))
-                       (dir (file-name-nondirectory
-                             (directory-file-name (file-name-directory full-path))))
-                       (file (file-name-nondirectory full-path)))
-                  (concat dir "/" file)))
-         (fline (if has-selection
-                    (line-number-at-pos region-beg)
-                  (line-number-at-pos)))
-         (full-sha (condition-case nil
-                       (if (fboundp 'magit-rev-parse)
-                           (magit-rev-parse "HEAD")
-                         (vc-git-working-revision (buffer-file-name)))
-                     (error nil)))
-         (sha (if full-sha (substring full-sha 0 8) "N/A"))
-         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M]"))
-         (state-dir (expand-file-name "~/.local/state/hax/"))
-         (org-file (expand-file-name "scratch.org" state-dir))
-         (org-buffer (progn
-                       (make-directory state-dir t)
-                       (find-file-noselect org-file))))
-
-    (with-current-buffer org-buffer
-      (goto-char (point-max))
-      (if multiline-selection
-          (progn
-            (insert (format "- %s\n" timestamp))
-            (insert (format "  #+caption: =%s:%s= at ~%s~\n" fname fline sha))
-            (insert (format "  #+begin_src %s\n" lang))
-            (insert context-text)
-            (unless (string-suffix-p "\n" context-text)
-              (insert "\n"))
-            (insert "  #+end_src\n"))
-        (insert
-         (format "- %s src_%s{%s} in =%s:%s= at ~%s~\n"
-                 timestamp lang context-text fname fline sha)))
-      (goto-char (point-max))
-      (let ((line (buffer-substring-no-properties
-                   (line-beginning-position) (line-end-position))))
-        (unless (string= line "  - ")
-          (delete-region (line-beginning-position) (line-end-position))
-          (insert "  - ")))
-      (evil-insert 0)
-      (hax/goto-end-of-last-non-empty-line)
-      (save-buffer))
-
-    (pop-to-buffer org-buffer)))

@@ -44,6 +44,10 @@
                                            "Apple Symbols"
                                            "Noto"))
 
+(load! "utils.d/logging.el")
+
+(hax/log "startup %s" "message" :print-stdout)
+
 (defun hax/counsel-fonts ()
   "Show a list of all supported font families for a particular frame.
 
@@ -496,32 +500,65 @@ more nitpickery about stuff I write in my configuration files."
 
 (defface-derive hl-todo-ASSUME warning "ASSUME" :underline t :slant italic)
 
-(defvar hax/hl-todo--keywords nil)
+(defvar-local hax/hl-todo--jit-cookie nil)
+(defvar-local hax/hl-todo--keywords nil)
 
-(defun hax/hl-todo--build-keywords ()
+(defun hax/hl-todo--refresh-keywords ()
   (setq hax/hl-todo--keywords
-        (mapcar
-         (lambda (entry)
-           (let ((keyword (car entry))
-                 (face (cdr entry)))
-             `(,(concat "\\(?:^\\|[^[:alnum:]_]\\)\\(" (regexp-quote keyword) "\\)\\(?:[^[:alnum:]_]\\|$\\)")
-               (1 ',face t))))
-         hl-todo-keyword-faces)))
+        (sort (mapcar #'car hl-todo-keyword-faces)
+              (lambda (a b) (> (length a) (length b))))))
+
+(defun hax/hl-todo--word-constituent-p (char)
+  (and char (or (eq (char-syntax char) ?w)
+                (eq (char-syntax char) ?_))))
+
+(defun hax/hl-todo--bounded-p (beg end)
+  (and (not (hax/hl-todo--word-constituent-p (char-before beg)))
+       (not (hax/hl-todo--word-constituent-p (char-after end)))))
+
+(defun hax/hl-todo--face-at (word)
+  (cdr (assoc word hl-todo-keyword-faces)))
+
+(defun hax/hl-todo--unfontify (beg end)
+  (remove-overlays beg end 'hax/hl-todo t))
+
+(defun hax/hl-todo--fontify (beg end)
+  (save-excursion
+    (save-match-data
+      (hax/hl-todo--unfontify beg end)
+      (goto-char beg)
+      (while (< (point) end)
+        (skip-syntax-forward "^w_" end)
+        (let ((wbeg (point)))
+          (skip-syntax-forward "w_" end)
+          (let ((wend (point)))
+            (when (> wend wbeg)
+              (let* ((word (buffer-substring-no-properties wbeg wend))
+                     (face (hax/hl-todo--face-at word)))
+                (when (and face (hax/hl-todo--bounded-p wbeg wend))
+                  (let ((ov (make-overlay wbeg wend nil t nil)))
+                    (overlay-put ov 'hax/hl-todo t)
+                    (overlay-put ov 'evaporate t)
+                    (overlay-put ov 'priority 10000)
+                    (overlay-put ov 'face face)))))))))))
+
+(defun hax/hl-todo--jit (beg end)
+  (hax/hl-todo--fontify beg end))
 
 (define-minor-mode hax/hl-todo-mode
-  "Highlight hl-todo keywords in markup buffers."
+  "Force TODO keyword highlighting with jit-lock overlays."
   :lighter " hax-todo"
   (if hax/hl-todo-mode
       (progn
-        (unless hax/hl-todo--keywords
-          (hax/hl-todo--build-keywords))
-        (font-lock-add-keywords nil hax/hl-todo--keywords 'append)
-        (font-lock-flush)
-        (font-lock-ensure))
-    (when hax/hl-todo--keywords
-      (font-lock-remove-keywords nil hax/hl-todo--keywords)
-      (font-lock-flush)
-      (font-lock-ensure))))
+        (hax/hl-todo--refresh-keywords)
+        (setq hax/hl-todo--jit-cookie #'hax/hl-todo--jit)
+        (jit-lock-register #'hax/hl-todo--jit)
+        (jit-lock-refontify))
+    (jit-lock-unregister #'hax/hl-todo--jit)
+    (setq hax/hl-todo--jit-cookie nil)
+    (hax/hl-todo--unfontify (point-min) (point-max))
+    (jit-lock-refontify)))
+
 
 (after! hl-todo
   (setq hl-todo-keyword-faces
@@ -547,8 +584,12 @@ more nitpickery about stuff I write in my configuration files."
           ("WARNING" . hl-todo-WARNING)
           ("ERROR" . hl-todo-ERROR)
           ("TEMP" . hl-todo-TEMP)))
-  (hax/hl-todo--build-keywords))
 
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (when hax/hl-todo-mode
+        (hax/hl-todo--refresh-keywords)
+        (jit-lock-refontify)))))
 
 ;; '(("TODO" . "#dc752f")
 ;;   ("NEXT" . "#dc752f")

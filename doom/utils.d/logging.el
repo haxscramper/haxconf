@@ -42,7 +42,8 @@
       (write-region text nil "/dev/stdout" t 'silent)))
   (when print-stderr
     (let ((coding-system-for-write 'utf-8))
-      (write-region text nil "/dev/stderr" t 'silent))))
+      (write-region text nil "/dev/stderr" t 'silent)))
+  text)
 
 (defun hax/log--parse-options (args)
   (let ((message nil)
@@ -119,3 +120,39 @@
                (when (memq (car-safe form) '(defun cl-defun defmacro cl-defmacro))
                  (nth 1 form)))))))
     `(hax/log--call ,file ,line ',function ,@args)))
+
+
+
+(defun hax/dbg/point (p)
+  (save-excursion
+    (goto-char p)
+    (hax/dbg/looking-at)))
+
+
+(defun hax/dbg/looking-at ()
+  (interactive)
+  (hax/log
+   "looking at: %s:%s..%s = [%s] in %s"
+   (line-number-at-pos)
+   (point)
+   (line-end-position)
+   (propertize
+    (buffer-substring-no-properties (point) (line-end-position))
+    'face 'font-lock-warning-face)
+   (current-buffer)))
+
+
+(defun hax/dbg/looking-around ()
+  (interactive)
+  (hax/log
+   "looking at: %s:%s..%s = [%s%s] in %s"
+   (line-number-at-pos)
+   (line-beginning-position)
+   (line-end-position)
+   (propertize
+    (buffer-substring-no-properties (line-beginning-position) (point))
+    'face 'font-lock-variable-name-face)
+   (propertize
+    (buffer-substring-no-properties (point) (line-end-position))
+    'face 'font-lock-warning-face)
+   (current-buffer)))

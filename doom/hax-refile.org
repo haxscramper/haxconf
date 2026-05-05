@@ -1,4 +1,0 @@
-(defvar hax/org-refile-refiled-from-id nil)
-(defvar hax/org-refile-refiled-from-header nil)
-(defvar hax/org-refile-refiled-from-mark nil)
-(defvar hax/org-refile-refiled-from-file nil)

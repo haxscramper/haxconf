@@ -125,3 +125,175 @@
           (:header "Repeated todos"
            :files (,(expand-file-name hax/repeated.org))
            :query (todo "TODO")))))
+
+
+
+
+
+(defun hax/org-agenda-clocked-time ()
+  "Safely calculate the clocked time for the current agenda item."
+  (require 'org-clock)
+  (condition-case nil
+      (save-excursion
+        (format "[%s]"
+                (s-pad-left 5 "0" (org-duration-from-minutes (org-clock-sum-current-item)))))
+    (error "")))
+
+
+(defun hax/org-agenda-last-clocked-in-time ()
+  "Get formatting string showing how much time has passed since subtree was clocked in last time."
+  (condition-case nil
+      (save-excursion
+        (let* ((last-time (if (org-clock-get-last-clock-out-time)
+                              (org-clock-get-last-clock-out-time)
+                            (org-time-string-to-time (org-entry-get (point) "CREATED"))))
+               (now (current-time))
+               (diff-time (time-subtract now last-time))
+               (minutes (/ (float-time diff-time) 60)))
+          ;; (hax/log "LT: %s" last-time)
+          (let* ((raw-time (seconds-to-time (* minutes 60)))
+                 (years (/ minutes (* 60 24 365)))
+                 (months (/ minutes (* 60 24 30)))
+                 (weeks (/ minutes (* 60 24 7)))
+                 (days (/ minutes (* 60 24)))
+                 (hours (/ minutes 60))
+                 (mins (mod minutes 60)))
+            (format "[%6s]" (cond
+                             ((>= years 1)
+                              (format "%2dy%2dm" years (mod months 12)))
+                             ((>= months 1)
+                              (format "%2dm%2dw" months (/ (mod days 30) 7)))
+                             ((>= weeks 1)
+                              (format "%2dw%2dd" weeks (mod days 7)))
+                             ((>= days 1)
+                              (format "%2dd%2dh" days (mod hours 24)))
+                             ((>= hours 1)
+                              (format "%2dh%2dm" hours mins))
+                             (t
+                              (format "%2dm" minutes))))))
+        )
+    (error
+     (format "[%6s]" "ERR"))))
+
+(setq
+ org-agenda-prefix-format
+ '(;; For regular agenda items, show (?whatever?)
+   ;; first, then align time to five characters,
+   ;; then 12 for scheduled information. Title and
+   ;; all the other data will be placed afterwards.
+   ;;
+   ;; 'e' is for time estimates.
+   (agenda . "%(hax/maybe-relative-time) %-5(hax/org-agenda-clocked-time) %-12t ")
+   ;; Indentation to align effort time
+   (todo . "%-5(hax/org-agenda-last-clocked-in-time) %-5(hax/org-agenda-clocked-time) ")
+   (tags . "%-5(hax/org-agenda-clocked-time) ")
+   (search . "%-5(hax/org-agenda-clocked-time) "))
+ org-agenda-start-on-weekday nil
+ org-agenda-ndays 14
+ org-agenda-show-all-dates t
+ org-agenda-skip-deadline-if-done t
+ org-agenda-skip-scheduled-if-done t
+ org-agenda-hide-tags-regexp ".*"
+ org-agenda-block-separator (s-repeat 45 "-")
+ org-agenda-repeating-timestamp-show-all nil
+ org-deadline-warning-days 14
+ org-agenda-time-grid '(;; Unconditionally show time grid for today
+                        (daily today)
+                        ;; Show data for 8, 10, 12 hours etc.
+                        (800 1000 1200 1400 1600 1800 2000)
+                        ;; No trailing dots after hour
+                        ""
+                        ;; Unconditionally show time grid for today
+                        "")
+ org-agenda-start-day "-0d")
+
+
+(defun hax/org-agenda-skip-recurring ()
+  (let* ((org-repeater-regexp
+          (rx
+           (group
+            "<"  ; Opening angle bracket
+            (seq (repeat 4 digit)
+                 "-"
+                 (repeat 2 digit)
+                 "-"
+                 (repeat 2 digit)  ; Date: YYYY-MM-DD
+                 (seq " "
+                      (repeat 3 alpha))  ; Optional day of week: %a
+                 (seq " "
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)
+                      ":"
+                      (repeat 2 digit)  ; Optional time: HH:MM:SS
+                      (optional ; Optional timezone: %Z
+                       " +"
+                       (repeat 2 digit)))
+                 (seq " "
+                      (one-or-more (any ".+-"))  ; Repeater prefix
+                      (one-or-more digit)
+                      (any "dwmy")  ; Repeater
+                      (optional "/" (one-or-more digit) (any "dwmy")))
+                                        ; Secondary spacing
+                 ">"))  ; Closing angle bracket
+
+           ))
+         (subtree-end (save-excursion (org-end-of-subtree t))))
+    (if (re-search-forward org-repeater-regexp subtree-end t)
+        (progn subtree-end)
+      nil)))
+
+(defun hax/org-has-tag (tag)
+  "Skip all entries that correspond to TAG.
+
+If OTHERS is true, skip all entries that do not correspond to TAG."
+
+  (let* ((subtree-point (or (and (org-at-heading-p) (point))
+                            (save-excursion (org-back-to-heading) (point))))
+         (current-subtree (org-get-tags-at subtree-point)))
+    ;; (hax/log "%s %s %s" subtree-point current-subtree (hax/dbg/looking-at))
+    (if (member tag current-subtree)
+        (goto-char (org-end-of-subtree current-subtree))
+      nil)))
+
+
+(defun hax/org-agenda-delete-empty-blocks ()
+  "Remove empty agenda blocks.
+An empty block is a header line followed immediately by another header
+line or end of buffer, with only blank lines in between."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (let (block-start block-header-end has-content)
+        (while (not (eobp))
+          (cond
+           ;; Separator line marks the end of a block
+           ((looking-at "^-\\{10,\\}")
+            (when (and block-start (not has-content))
+              ;; Delete from block start to end of separator line
+              (delete-region block-start (line-beginning-position))
+              ;; Also remove the now-orphaned separator if it's at point
+              (when (looking-at "^-\\{10,\\}")
+                (delete-region (line-beginning-position)
+                               (min (1+ (line-end-position)) (point-max)))))
+            (setq block-start nil
+                  block-header-end nil
+                  has-content nil)
+            (unless (eobp) (forward-line 1)))
+           ;; Overriding header line (starts at column 0, non-blank, non-separator)
+           ((and (not block-start)
+                 (looking-at "^[^ \t\n-]"))
+            (setq block-start (line-beginning-position)
+                  has-content nil)
+            (forward-line 1)
+            (setq block-header-end (point)))
+           ;; Blank line — doesn't count as content
+           ((looking-at "^\\s-*$")
+            (forward-line 1))
+           ;; Anything else is content
+           (t
+            (setq has-content t)
+            (forward-line 1))))
+        ;; Handle last block if empty (no trailing separator)
+        (when (and block-start (not has-content))
+          (delete-region block-start (point-max)))))))

@@ -78,3 +78,72 @@
       (insert (format "\n[fn:%s] " footnote))
       (hax/org-insert-clipboard-link)
       (insert "\n\n"))))
+
+(cl-defun hax/org-insert-footnote (footnote &optional (goto-created t))
+  (interactive "sfootnote name: ")
+  (insert (format "[fn:%s]" footnote))
+  (let* ((real-start (point)))
+    (goto-char (hax/org-before-logical-end))
+    (insert (format "[fn:%s] " footnote))
+    (evil-insert-state)
+    (save-excursion (insert "\n\n"))
+    (when (not goto-created) (goto-char real-start))))
+
+(defun hax/org-insert-link (type with-description)
+  (let* ((target-base (pcase type
+                        ('file (counsel-find-file))
+                        ('attachment (counsel-find-file))
+                        ('id (hax/org-select-subtree))
+                        ('tag (hax/select-tag nil))
+                        ('person (hax/select-from-list-or-add "person"))
+                        ('organization (hax/select-from-list-or-add "organization"))
+                        (_ (error (format "Unexpected type %s" type)))))
+
+         (target (pcase type
+                   ('id (hax/get-subtree-id-for-marker (cdr target-base)))
+                   (_ target-base)))
+
+         (default-desc (pcase type
+                         ('id (save-window-excursion
+                                (save-excursion
+                                  (org-goto-marker-or-bmk (cdr target-base))
+                                  (substring-no-properties (org-get-heading t t t t)))))
+                         ('person "")
+                         ('tag "")
+                         (_ (file-name-nondirectory target))))
+
+         (description (if with-description
+                          (read-string "Description: "
+                                       default-desc)
+                        "")))
+
+    (pcase type
+      ('tag (insert target))
+      (_ (if (string-empty-p description)
+             (insert (format "[[%s:%s]]" (symbol-name type) target))
+           (insert (format "[[%s:%s][%s]]" (symbol-name type) target description)))))))
+
+
+(defhydra hydra-insert-link (:color blue :hint nil)
+  "
+  Insert Link:
+  _f_: file         _F_: file
+  _a_: attachment   _A_: attachment
+  _i_: ID           _I_: ID
+  _t_: Tag          _T_: Tag
+  _p_: Person       _P_: Person
+  _o_: Organization _O_: Organization
+  "
+  ("f" (hax/org-insert-link 'file nil))
+  ("F" (hax/org-insert-link 'file t))
+  ("a" (hax/org-insert-link 'attachment nil))
+  ("A" (hax/org-insert-link 'attachment t))
+  ("i" (hax/org-insert-link 'id nil))
+  ("I" (hax/org-insert-link 'id t))
+  ("t" (hax/org-insert-link 'tag nil))
+  ("T" (hax/org-insert-link 'tag t))
+  ("p" (hax/org-insert-link 'person nil))
+  ("P" (hax/org-insert-link 'person t))
+  ("o" (hax/org-insert-link 'organization nil))
+  ("O" (hax/org-insert-link 'organization t))
+  ("q" nil "cancel"))
