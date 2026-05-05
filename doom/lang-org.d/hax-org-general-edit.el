@@ -55,3 +55,61 @@ individual commands for more information."
    (org-support-shift-select
     (org-call-for-shift-select 'next-line))
    (t (org-shiftselect-error))))
+
+
+
+(defun hax/fill-paragraph (&optional arg)
+  (interactive "P")
+  (let ((fill-column (if (and arg (numberp (prefix-numeric-value arg)))
+                         (prefix-numeric-value arg)
+                       999999)))
+    (funcall-interactively 'fill-paragraph 'full)))
+
+(defun hax/org-insert-uuid-anchor ()
+  (interactive)
+  (insert "<<")
+  (kill-ring-save
+   (point)
+   (progn (uuidgen t) (point)))
+  (insert ">>"))
+
+
+(defun ensure-text-around (expr)
+  (if (= (- (line-end-position) 1) (point))
+      (progn
+        (goto-char (+ 1 (point)))
+        (when (not (or (= (char-after) ?\s)
+                       (= (char-before) ?\s)))
+          (insert " "))
+        (funcall expr))
+    (progn
+      (when (or (not (char-after))
+                (not (= (char-after) ?\s)) ) (insert " "))
+      (when (not (= (char-before) ?\s)) (insert " "))
+      (funcall expr)
+      (when (not (= (char-before ?\s))) (insert " "))
+      (when (or (not (char-after))
+                (not (= (char-after) ?\s))) (insert " ")))))
+
+(defun hax/org-insert-text-tag ()
+  "Insert org-mode hashtag under corrent cursor position, adding
+necessary whitespace around it if he cursor wasn't positioned at
+the empty area."
+  (interactive)
+  (ensure-text-around (lambda () (insert (concat "#" (hax/select-tag nil))))))
+
+(defun hax/org-insert-timestamp ()
+  "Insert org-mode hashtag under corrent cursor position, adding
+necessary whitespace around it if he cursor wasn't positioned at
+the empty area."
+  (interactive)
+  (ensure-text-around (lambda () (org-insert-time-stamp (current-time) t t))))
+
+(defun hax/org-insert-timestamped-parens ()
+  (interactive)
+  (ensure-text-around
+   (lambda ()
+     (insert "((")
+     (org-insert-time-stamp (current-time) t t)
+     (insert "))"))))
+

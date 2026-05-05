@@ -173,3 +173,116 @@ being called."
         (re-search-forward "\\[#.\\]\s?" (org-element-property :end element))
         (replace-match "")))))
 
+
+(defun org-count-subheadings ()
+  "Count the number of direct and recursive subheadings below the current heading. Return cons with `(CHILDREN . DESCENDANTS)'"
+  (interactive)
+  (let ((descendants 0)
+        (children 0)
+        (heading-level (1+ (org-outline-level)))
+        (end (save-excursion
+               (ignore-errors
+                 (outline-end-of-subtree)
+                 (point)))))
+    (when end
+      (save-excursion
+        (while (and (outline-next-heading)
+                    (< (point) end))
+          (progn
+            (setf descendants (1+ descendants))
+            (when (= heading-level (org-outline-level))
+              (setf children (1+ children)))))))
+    (cons children descendants)))
+
+(defun hax/org-has-subtree () (< 0 (car (org-count-subheadings))))
+
+(defun hax/compare-subtrees (t1 t2)
+  (let* ((todo1 (car t1))
+         (todo2 (car t2))
+         (head1 (cdr t1))
+         (head2 (cdr t2))
+         (names (hax/org-todo-only-names))
+         (res (if (and todo1 todo2) (> (-elem-index todo1 names)
+                                       (-elem-index todo2 names))
+                (if todo1 t
+                  (if todo2 t
+                    (string< head1 head2))))))
+    ;; (hax/log ">> %s ? %s = %s" t1 t2 res)
+    res))
+
+(defun hax/getkey-title ()
+  (cons (org-get-todo-state) (org-get-heading)))
+
+(defun hax/sort-subtree-contextually ()
+  (interactive)
+  (if (hax/org-has-subtree)
+      (progn
+        (org-sort-entries nil ?F #'hax/getkey-title #'hax/compare-subtrees)
+        (save-excursion
+          (org-back-to-heading)
+          (org-cycle-internal-local)
+          (org-cycle-internal-local)))
+    (save-excursion
+      (outline-up-heading 1)
+      (org-sort-entries nil ?f #'hax/getkey-title #'hax/compare-subtrees)
+      (org-back-to-heading)
+      (org-cycle-internal-local)
+      (org-cycle-internal-local))))
+
+
+(defun hax/org-insert-subtree-comment ()
+  (interactive)
+  (insert (format "%s COMMENT" (s-repeat (+ 1 (org-current-level)) "*")))
+  (org-expiry-insert-created))
+
+
+(defun hax/org-insert-subtree-offset (title level-offset)
+  (interactive "sTitle: ")
+  (insert
+   (format
+    "%s %s"
+    (s-repeat (hax/clamp (+ level-offset (org-current-level)) 1 nil)
+              "*")
+    title))
+  (org-id-get-create)
+  (org-expiry-insert-created))
+
+(defun hax/org-insert-subtree-same (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title 0))
+
+(defun hax/org-insert-subtree-below (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title 1))
+
+(defun hax/org-insert-subtree-above (title)
+  (interactive "sTitle: ")
+  (hax/org-insert-subtree-offset title -1))
+
+(cl-defun hax/org-insert-subtree-old-archive (&optional only-archives)
+  (interactive)
+  (hax/org-select-subtree-callback
+   "Target subtree: "
+   (lambda (x) (org-entry-put
+                (point)
+                "ARCHIVE_OLPATH_PARENT_ID"
+                (hax/get-subtree-id-for-marker (cdr x))))
+   'hax/org-insert-link-to-heading
+   (org-collect-known-entries (org-get-known-file-buffers-archival only-archives))))
+
+(defun hax/org-insert-todo-entry ()
+  "Insert new TODO entry with creation date filled in. Simplified
+down version of the `+org/insert-item-below' that does not do
+anything context-aware. It simply inserts new 'TODO' entry after
+the current one."
+  (interactive)
+  (org-end-of-subtree)
+  (setq org-adapt-indentation t)
+  (insert "\n\n" (make-string (or (org-current-level) 1) ?*) " TODO ")
+  (setq org-expiry-inactive-timestamps t)
+  (org-expiry-insert-created)
+  (evil-insert-state)
+  (hax/org-update-all-cookies)
+  (hax/ensure-todo "TODO"))
+
+

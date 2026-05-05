@@ -31,6 +31,34 @@
    'hax/org-insert-link-to-heading
    entries))
 
+(cl-defun www-get-page-title (url &optional (timeout 15))
+  "Return title of the URL page, or if not found the page's
+  filename (as an approximation)"
+  (hax/log "%s" timeout)
+  (let ((title)
+        (content (url-retrieve-synchronously url nil nil timeout)))
+    (if (not content)
+        (error "Failed to retrieve URL content")
+      (with-current-buffer content
+        (goto-char (point-min))
+        (re-search-forward "<title>\\([^<]*\\)</title>" nil t 1)
+        (setq title (match-string 1))
+        (goto-char (point-min))
+        (re-search-forward "charset=\\([-0-9a-zA-Z]*\\)" nil t 1)
+        (if title
+            (decode-coding-string
+             title
+             'utf-8
+             ;; (pcase (match-string 1)
+             ;;   ;; Safeguard against CAPS in names, maybe other weird coding
+             ;;   ;; schemes.
+             ;;   ("UTF-8" 'utf-8)
+             ;;   (_ (intern (match-string 1))))
+             )
+          (url-filename (url-generic-parse-url url)))))))
+
+
+
 (defun hax/org-insert-clipboard-link (&optional description)
   ;; FIXME https://astralcodexten.substack.com/p/heuristics-that-almost-always-work?s=r
   (interactive)

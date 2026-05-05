@@ -156,3 +156,18 @@
     (buffer-substring-no-properties (point) (line-end-position))
     'face 'font-lock-warning-face)
    (current-buffer)))
+
+
+;; Scroll to the last position of the message buffer after something has
+;; been printed.
+(defadvice message (after message-tail activate)
+  "goto point max after a message"
+  (with-current-buffer "*Messages*"
+    (goto-char (point-max))
+    (walk-windows
+     (lambda (window)
+       (if (string-equal (buffer-name (window-buffer window)) "*Messages*")
+           (set-window-point window (point-max))))
+     nil
+     t)))
+

@@ -128,3 +128,28 @@ Create new `:LOGBOOK:' if one"
               (backward-char 1)
               (cl-return-from main (point))))
           (forward-line))))))
+
+(defun org-get-logbook-extent ()
+  "Get start and end position of the `:LOGBOOK:' drawer for current
+subtree."
+  (save-excursion
+    (unless (org-at-heading-p) (outline-previous-heading))
+    (goto-char (- (org-log-beginning t) 2))
+    ;; For unknown reasons `org-log-BEGINNING' puts cursor on the END of
+    ;; the logbook. Super intuitive, I know.
+    (search-backward ":LOGBOOK:")
+    (let* ((elt (org-element-property-drawer-parser nil))
+           (beg (org-element-property :contents-begin elt))
+           (end (org-element-property :contents-end elt)))
+      (cons beg end))))
+
+(defun org-get-logbook-notes ()
+  "Get text of the org-mode logbook drawer notes"
+  (let ((range (org-get-logbook-extent)))
+    (buffer-substring-no-properties (car range) (cdr range))))
+
+(defun hax/tmp ()
+  (interactive)
+  (let ((con (org-get-logbook-extent)))
+    (hax/org-last-active-clock (car con) (cdr con))))
+

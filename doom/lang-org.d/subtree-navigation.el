@@ -138,3 +138,56 @@
   "Interactively select subtree and return position of the marker for it"
   (interactive)
   (goto-marker (cdr (hax/org-select-subtree entries))))
+
+
+(defun hax/org-collect-repeated-entries ()
+  (save-window-excursion
+    (save-excursion
+      (--map
+       (car it)
+       (--filter
+        (and (cdr it) (s-contains? "+" (cdr it)))
+        (-map (lambda (tree)
+                (goto-marker (cdr tree))
+                (cons
+                 tree
+                 (and
+                  (org-get-todo-state)
+                  (-contains? '("TODO" "WIP" "POSTPONED" "NEXT")
+                              (remove-string-properties (org-get-todo-state)))
+                  (or (org-entry-get (point) "DEADLINE")
+                      (org-entry-get (point) "SCHEDULED")))))
+              (org-collect-known-entries)))))))
+
+(defun hax/org-action-interactively (action &optional target)
+  "Execution ACTION (function with no arguments) on the selected subtree position"
+  (save-excursion
+    (goto-marker (cdr (hax/org-select-subtree
+                       (pcase target
+                         ('repeated (hax/org-collect-repeated-entries))
+                         ('active (hax/org-collect-active-entries t))
+                         (_ (org-collect-known-entries))))))
+    (funcall action)))
+
+(defun hax/ensure-todo (state)
+  (unless (s-equals? (substring-no-properties (org-get-todo-state)) state) (org-todo state)))
+
+(defun hax/org-clock-in-interactively (&optional target)
+  "Interactively select target to clock in using
+`hax/org-collect-active-entries'"
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (hax/org-action-interactively
+       (lambda () (org-clock-in) (hax/ensure-todo "WIP"))
+       target))))
+
+(cl-defun hax/org-complete-interactively (&optional (state "COMPLETED") target)
+  "Interactively select target to complete using
+`hax/org-collect-active-entries'"
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (hax/org-action-interactively
+       (lambda () (hax/ensure-todo state))
+       target))))

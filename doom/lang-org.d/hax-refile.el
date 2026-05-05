@@ -110,3 +110,14 @@
   (hax/org-refile-under-marker
    (get-capture-target-marker '(file+olp+datetree hax/notes.org)) t))
 
+
+
+(defun org-refile-targets-all-files ()
+  "Use all currently opened Org buffer files as org-refile targets."
+  (mapcar 'buffer-file-name
+          (seq-filter ; filter Org buffers
+           (lambda (buffer)
+             (if-let (file (buffer-file-name buffer))
+                 (string-equal (file-name-extension file) "org")))
+           (buffer-list))))
+

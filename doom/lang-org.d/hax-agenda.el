@@ -297,3 +297,134 @@ line or end of buffer, with only blank lines in between."
         ;; Handle last block if empty (no trailing separator)
         (when (and block-start (not has-content))
           (delete-region block-start (point-max)))))))
+
+
+(defun hax/org-get-entry-activations ()
+  "Return (TODO, now prints) full list of the activation ranges for
+all known agenda entries."
+  (let* ((now (ts-now))
+         (year (ts-year now))
+         (month (ts-month now))
+         (day (ts-day now)))
+    (--each (org-map-entries
+             (lambda ()
+               (let* ((ranges (hax/org-get-logbook-ranges))
+                      (filtered
+                       (when ranges
+                         (--filter
+                          (and
+                           (eq (org-element-property :year-end it) year)
+                           (eq (org-element-property :month-end it) month)
+                           (eq (org-element-property :day-end it) day))
+                          ranges))))
+                 (when (and ranges (< 0 (length filtered)))
+                   (cons (org-get-outline-path t) ranges))))
+             nil
+             `(,hax/main.org))
+      (when it
+        (hax/log "%s" (org-format-outline-path (-slice (car it) -2) 256))
+        (dolist (time (cdr it))
+          (hax/log "  %s" (org-element-property :raw-value time)))))))
+
+(defun hax/closest-unicode-fraction (value)
+  (let* ((values '((1 . "⅟")
+                   (0 . "⁰")
+                   (0.25 . "¼")
+                   (0.5 . "½")
+                   (0.75 . "¾")
+                   (0.33 . "⅓")
+                   (0.66 . "⅔")
+                   (0.2 . "⅕")
+                   (0.4 . "⅖")
+                   (0.6 . "⅗")
+                   (0.8 . "⅘")
+                   (0.16 . "⅙")
+                   (0.83 . "⅚"))))
+    (cdr (first (sort (--map (cons (abs (- (abs value) (car it))) (cdr it)) values)
+                      (lambda (lhs rhs) (< (car lhs) (car rhs))))))))
+
+;; (hax/closest-unicode-fraction 0.5)
+
+(defun hax/relative-hour-fraction (tdiff)
+  (/ (if (< 0 tdiff)
+         (mod (/ tdiff 60) 60)
+       (- 60 (mod (/ tdiff 60) 60))) 60))
+
+(defun hax/org-agenda-format-date (date)
+  "Format a DATE string for display in the daily/weekly agenda.
+This function makes sure that dates are aligned for easy reading.
+Mostly reimplements `org-agenda-format-date-aligned', but also
+displays relative (from the current time) hour and minute range."
+  (require 'cal-iso)
+  (let* ((day (cadr date))
+         (month (car date))
+         (year (nth 2 date))
+         ;; Immediately convert to the `ts` time format, because regular
+         ;; emacs time formatting is an absolutely nauseating trash.
+         (ts (ts-apply :year year
+                       :month month
+                       :day day
+                       :hour 0
+                       :minute 0 (ts-now)))
+         (tdiff (ts-difference ts (ts-now))))
+    (format
+     "%03d%s %s"
+     (/ tdiff 3600)
+     (hax/closest-unicode-fraction (hax/relative-hour-fraction tdiff))
+     (ts-format "%m-%d %a" ts))))
+
+
+(defface hax/org-agenda-header
+  '((t :inherit org-agenda-structure
+     :extend t))
+  "Face for custom agenda section headers.")
+
+(set-face-attribute 'hax/org-agenda-header nil
+                    :background (doom-darken (doom-color 'red) 0.5))
+
+(defun hax/org-agenda-style-headers ()
+  "Add empty line after headers and style them with red background."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (when (get-text-property (point) 'org-agenda-structural-header)
+          (let ((end (line-end-position)))
+            (add-text-properties (line-beginning-position) end
+                                 '(face hax/org-agenda-header))
+            ;; Extend face to full width
+            (goto-char end)
+            (unless (and (not (eobp))
+                         (save-excursion (forward-line 1)
+                                         (looking-at "^\\s-*$")))
+              (insert "\n"))))
+        (forward-line 1)))))
+
+
+
+(setq org-duration-format '((special . h:mm)))
+
+(defun hax/org-agenda-hook ()
+  (display-line-numbers-mode 1)
+  (hax/org-agenda-style-headers)
+  (hax/org-agenda-delete-empty-blocks)
+  )
+
+(add-hook 'org-agenda-finalize-hook #'hax/org-agenda-hook)
+
+
+
+
+
+(setq org-startup-indented t)
+
+(defun hax/org-agenda-skip ()
+  (or (hax/org-has-tag "no_agenda")
+      (hax/org-agenda-skip-recurring)))
+
+(defun hax/org-agenda-skip-low-priority ()
+  (save-excursion
+    (org-back-to-heading t)
+    (unless (or (re-search-forward ":bug:" (line-end-position) t)
+                (re-search-forward "#[XAS]" (line-end-position) t))
+      (or (outline-next-heading) (point-max)))))
