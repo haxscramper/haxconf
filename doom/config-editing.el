@@ -588,3 +588,17 @@ ARCHIVE_OLPATH_PARENT_ID."
     (org-fold-reveal)
     (if (looking-at "^[ \t]*$")
         (outline-next-visible-heading 1))))
+
+(defun +default/yank-buffer-path (&optional root)
+  "Copy the current buffer's path to the kill ring."
+  (interactive)
+  (if-let (filename (or (buffer-file-name (buffer-base-buffer))
+                        (bound-and-true-p list-buffers-directory)))
+      (let ((path (if root
+                      (file-relative-name filename root)
+                    filename)))
+        (kill-new path)
+        (if (string= path (car kill-ring))
+            (hax/log "Copied path: %s" path)
+          (user-error "Couldn't copy filename in current buffer")))
+    (error "Couldn't find filename in current buffer")))

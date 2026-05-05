@@ -285,4 +285,43 @@ the current one."
   (hax/org-update-all-cookies)
   (hax/ensure-todo "TODO"))
 
+(defun hax/org-sort-entries-recursive-multi (&optional keys)
+  "Call `hax/org-sort-entries-recursive'.
+If KEYS, call it for each of them; otherwise call interactively
+until \\[keyboard-quit] is pressed."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (org-at-heading-p)) (outline-next-heading))
+    (while (org-at-heading-p)
+      (hax/dbg/looking-around)
+      (when (hax/org-subtree-has-children) (org-sort-entries nil ?o))
+      (outline-next-heading))))
+
+(defun hax/org-add-id-to-all-subtrees ()
+  "Ensure all subtrees have IDs"
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (when (not (org-at-heading-p)) (outline-next-heading))
+    (while (org-at-heading-p)
+      (org-id-get-create)
+      (outline-next-heading))))
+
+(defun hax/org-edit-id ()
+  (interactive)
+  (let* ((used (org-entry-get nil "ID"))
+         (original (if used used "")))
+    (org-entry-put nil "ID" (read-from-minibuffer ":ID:> " original))))
+
+(defun hax/org-todo-only-names ()
+  (--map (substring it 0 (s-index-of "(" it)) (car org-todo-keywords)))
+
+(defun hax/insert-created-timestamp()
+  "Insert a CREATED property using org-expiry.el for TODO entries"
+  (interactive)
+  (org-expiry-insert-created)
+  (org-back-to-heading)
+  (org-end-of-line)
+  (insert " "))
 

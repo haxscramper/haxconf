@@ -117,6 +117,44 @@
     (save-excursion (insert "\n\n"))
     (when (not goto-created) (goto-char real-start))))
 
+(defun hax/org-capture-vc-root-dir ()
+  (if (bound-and-true-p org-capture-mode)
+      (let ((buffer (org-capture-get :original-buffer)))
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (vc-root-dir))))
+    (vc-root-dir)))
+
+(defun hax/select-from-list-or-add (list-name)
+  "Select an item from a list of alternatives stored in ~/.config/targets/list-name.txt.
+If the user inputs a new value, update the file and return it."
+  (let* ((git-root (hax/org-capture-vc-root-dir))
+         (filename (expand-file-name (f-join git-root (concat list-name ".txt"))))
+         (existing-items
+          (if (file-exists-p filename)
+              (with-temp-buffer
+                (insert-file-contents filename)
+                (split-string (buffer-string) "\n" t))
+            nil))
+         (choice
+          (completing-read
+           (concat "Select " list-name ": ")
+           existing-items
+           nil
+           nil
+           nil
+           'hax/select-from-list-or-add-history)))
+    (if (member choice existing-items)
+        (hax/log "%s selected from existing items" choice)
+      (with-temp-buffer
+        (when existing-items
+          (insert (string-join existing-items "\n"))
+          (insert "\n"))
+        (insert choice)
+        (write-file filename)
+        (hax/log "%s added to the list and selected" choice)))
+    choice))
+
 (defun hax/org-insert-link (type with-description)
   (let* ((target-base (pcase type
                         ('file (counsel-find-file))
@@ -175,3 +213,5 @@
   ("o" (hax/org-insert-link 'organization nil))
   ("O" (hax/org-insert-link 'organization t))
   ("q" nil "cancel"))
+
+

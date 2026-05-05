@@ -252,3 +252,20 @@
   (local-set-key (kbd "<f5>") 'winum-select-window-5)
   (local-set-key (kbd "<f6>") 'winum-select-window-6)
   (local-set-key (kbd "<M-f7>") 'org-agenda-quit))
+
+
+(map!
+ ;; https://github.com/hlissner/doom-emacs/issues/3978#issuecomment-699004440
+ ;; `:leader' key mapping is global, and I want to use `SPC-SPC' only for
+ ;; org-mode. But local leader (`:localleader') is configured to be
+ ;; `SPC-m', and I don't wnat to use this combinations (or change mnemnics
+ ;; for every single other combination), so keybindings here are global,
+ ;; with hack for specific goto configurations.
+ ;;
+ ;; Not specifying `:map' as `:leader' takes priority anyway.
+ :leader
+ :n "SPC" #'hax/replace-next-placeholder
+ :nv "si" (cmd! (call-interactively
+                 (cond
+                  ((eq major-mode 'org-mode) 'counsel-org-goto)
+                  (t 'counsel-imenu)))) )

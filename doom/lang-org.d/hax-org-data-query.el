@@ -153,3 +153,43 @@ subtree."
   (let ((con (org-get-logbook-extent)))
     (hax/org-last-active-clock (car con) (cdr con))))
 
+
+(defun hax/org-subtree-has-children (&optional invisible)
+  ;; Return non-nil if entry at point has child headings.
+  ;; Only children are considered, not other descendants.
+  ;; Code from `org-cycle-internal-local'.
+  (save-excursion
+    (let ((level (funcall outline-level)))
+      (outline-next-heading)
+      (and (org-at-heading-p t)
+           (> (funcall outline-level) level)))))
+
+
+(defun get-headline-from-marker (marker)
+  "Return the headline of the org subtree pointed to by MARKER."
+  (with-current-buffer (marker-buffer marker)
+    (goto-char marker)
+    (remove-string-properties (org-get-heading t t t t))))
+
+
+(defun org-element-subtree-by-id (id)
+  "Get parsed org-element for entry with `id', or `nil' if no such
+subtree can be found."
+  (with-temp-buffer
+    (org-id-open id nil)
+    (org-element-at-point)))
+
+
+(defun org-element-parse-string (str)
+  "Parse input string as org-mode buffer and return result"
+  (with-temp-buffer
+    (insert str)
+    (org-element-parse-buffer)))
+
+
+(defun hax/current-timestamp ()
+  (with-temp-buffer
+    (org-insert-time-stamp (org-current-time) 'with-hm 'inactive)
+    (buffer-substring (point-min) (point-max))))
+
+

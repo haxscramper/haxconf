@@ -1,5 +1,13 @@
 ;;; -*- lexical-binding: t; -*-
 
+(defun org-get-known-file-buffers ()
+  (save-excursion
+    (let (entries)
+      (dolist (b (buffer-list))
+        (with-current-buffer b
+          (when (derived-mode-p 'org-mode)
+            (setq entries (nconc entries (list b))))))
+      entries)))
 
 (defun org-collect-known-entries (&optional sources)
   (let* ((buffers

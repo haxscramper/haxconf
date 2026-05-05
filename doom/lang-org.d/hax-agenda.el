@@ -428,3 +428,67 @@ displays relative (from the current time) hour and minute range."
     (unless (or (re-search-forward ":bug:" (line-end-position) t)
                 (re-search-forward "#[XAS]" (line-end-position) t))
       (or (outline-next-heading) (point-max)))))
+
+
+(when t
+  (defun hax/tag-to-state (tags)
+    "Convert tags to a state string."
+    (mapconcat
+     'identity
+     (delq nil
+           (mapcar
+            (lambda (tag)
+              (pcase tag
+                ("status##pending_clarification" "QUESTION")
+                ("status##not_reproducible" "*NO REPRO*")
+                ("status##waiting_review" "*ON REVIEW*")
+                ("status##need_help" "*NEED HELP*")
+                ("status##blocking_dependency" "*DEPENDENCY*")
+                ;; Use status block reason
+                ("BLOCKED" nil)
+                ((or "COMPLETED" "WIP") (concat "*" tag "*"))
+                ;; Add more tag-to-state mappings here
+                ))
+            tags))
+     ", "))
+
+  (defun hax/process-subtree ()
+    "Process the current subtree and generate a checklist item."
+    (let ((title (org-get-heading t t))
+          (tags (org-get-tags))
+          (todo-keyword (org-get-todo-state)))
+      (let* ((state (hax/tag-to-state (append tags (list todo-keyword))))
+             (id (org-id-get-create))
+             (formatted-title (if (string-match "=\\(\\w+-\\w+\\)=" title)
+                                  (match-string 1 title)
+                                ""))
+             (remainder-title (replace-regexp-in-string "=.*?=" "" title))
+             (prefix (concat "- "
+                             (if (> (length state) 0) (concat state " "))
+                             "[[" id "][" formatted-title "]] "))
+             (prefix-len (- 88 (- (length prefix) (+ 2 (length id)))))
+             (truncated-title (if (> (length remainder-title) prefix-len)
+                                  (substring remainder-title 0 prefix-len)
+                                remainder-title)))
+        (concat prefix "_" (s-trim truncated-title) "_"))))
+
+  (defun hax/generate-todo-checklist ()
+    "Generate a todo checklist from all matching subtrees."
+    (interactive)
+    (let ((checklist '()))
+      (org-map-entries
+       (lambda ()
+         (when (string-match "=.*?-.*?=" (org-get-heading t t))
+           (push (hax/process-subtree) checklist))))
+      (substring-no-properties (mapconcat 'identity (nreverse checklist) "\n"))))
+
+  (defun hax/generate-todo-checklist-file (filename)
+    "Generate a todo checklist from all matching subtrees in the file specified by FILENAME."
+    (with-current-buffer (find-file-noselect filename)
+      (hax/generate-todo-checklist)))
+
+  (defun hax/insert-todo-checklist-staging ()
+    (interactive)
+    (insert (hax/generate-todo-checklist-file hax/staging.org))))
+
+(add-hook! 'org-agenda-mode-hook 'hax/agenda-mode-hook)

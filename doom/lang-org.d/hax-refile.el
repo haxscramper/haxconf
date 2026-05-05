@@ -121,3 +121,11 @@
                  (string-equal (file-name-extension file) "org")))
            (buffer-list))))
 
+(defun get-capture-target-marker (location)
+  "Return a marker to the target location of an org-capture template."
+  (save-window-excursion
+    (save-excursion
+      ;; (org-capture-set-target-location location)
+      (pop-to-buffer-same-window (org-capture-get :buffer))
+      (goto-char (org-capture-get :pos))
+      (point-marker))))

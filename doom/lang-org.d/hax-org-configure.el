@@ -30,9 +30,6 @@
 
   (global-company-mode -1)
   (org-link-set-parameters "coords" :follow #'org-coords-open)
-  (require 'ts)
-  (require 'org-expiry)
-  (require 'org-clock)
   (define-abbrev-table 'org-mode-abbrev-table
     '(("anon" "anonymous")
       ("inf" "infinite")
@@ -353,3 +350,82 @@
             `(,(substring it 1 (length it)) . ??)
             (--filter (< 0 (length it)) tag-list))
            :test #'equal))))
+
+
+(defun hax/org-mode-hook ()
+  (interactive)
+  ;; https://aliquote.org/post/enliven-your-emacs/ font-lock `prepend/append'
+  ;; pair here is copied from this blog post, since I can't really figure out
+  ;; what exactly is going on with ordering. But that implementation allows
+  ;; me to override the default checkbox highlighting for checkboxes.
+
+  (require 'evil-surround)
+  (require 'counsel)
+  (hax/log "Org-mode hook executed")
+  (setq hl-todo-exclude-modes '(asdf-whatever-mode))
+  (hl-todo-mode 1)
+  ;; hl-todo-mode works randomly, most of the time it does not work after
+  ;; the latest update, so I had to come up with my own mode here. 
+  (hax/hl-todo-mode)
+
+  (push '(?$ . ("\\(" . "\\)")) evil-surround-pairs-alist)
+  (setq olivetti-body-width (+ 75 7))
+
+  (org-link-set-parameters "calibre" :follow 'hax/calibre-follow)
+
+  (setq flyspell-generic-check-word-predicate 'hax/flyspell-org-mode-verify)
+  (abbrev-mode 1)
+  (flyspell-mode 1)
+  (org-indent-mode t)
+  (hax/org-mode-flyspell)
+  ;; Indentation guides slow down org-mode when there are multiple folds
+  ;; (at least I was able to identifiy the implementation ot that point)
+  ;; (highlight-indent-guides-mode -1)
+
+  (hax/detail/configure-keybinds)
+  (setq-local company-backends
+              '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
+
+
+(setq
+ org-expiry-created-property-name "CREATED"
+ org-expiry-inactive-timestamps   t
+ )
+
+
+
+(setq
+ org-highlight-latex-and-related '(latex script entities)
+ ;; Main notes directory
+ org-directory "~/defaultdirs/notes/personal"
+ ;; Do not fontify super/sub-scripts differently from the rest of the text.
+ tex-fontify-script nil
+ ;; File with locations of the org-id entries
+ org-id-locations-file (f-join org-directory ".org-id-locations")
+ ;; Directory for todo management and other indexed entries
+ hax/indexed.d (f-join org-directory "indexed")
+ ;; Main GTD organizer
+ hax/main.org (f-join hax/indexed.d "main.org")
+ ;; Hot cache of immediately targeted tasks
+ hax/staging.org (f-join hax/indexed.d "staging.org")
+ ;; Random junk notes that I generate, copy from other places etc.
+ hax/notes.org (f-join hax/indexed.d "notes.org")
+ hax/repeated.org (f-join hax/indexed.d "repeated.org")
+ hax/fic.org (f-join hax/indexed.d "fic.org")
+ ;; Project configuration
+ hax/projects.org (f-join hax/indexed.d "projects.org")
+ hax/projects_cold.org (f-join hax/indexed.d "projects_cold.org")
+ org-structure-template-alist '(;; ("f" . "formula\n")
+                                ;; ("a" . "export ascii\n")
+                                ;; ("d" . "definition\n")
+                                ;; ("c" . "center\n")
+                                ;; ("C" . "comment\n")
+                                ;; ("e" . "example\n")
+                                ;; ("E" . "export\n")
+                                ;; ("h" . "export html\n")
+                                ;; ("l" . "export latex\n")
+                                ;; ("q" . "quote\n")
+                                ;; ("s" . "src\n")
+                                ;; ("v" . "verse\n")
+                                ))
+
