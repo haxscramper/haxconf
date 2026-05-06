@@ -610,4 +610,3 @@ ARCHIVE_OLPATH_PARENT_ID."
     (apply 'delete-region args)))
 
 (advice-add 'kill-region :around #'hax/delete-region)
-(advice-add 'org-capture :before #'hax/org-pre-capture-hook)

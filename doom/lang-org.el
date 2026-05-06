@@ -10,6 +10,7 @@
 (require 'uuidgen)
 
 (load! "lang-org.d/hax-agenda.el")
+(load! "lang-org.d/hax-agenda-structured.el")
 (load! "lang-org.d/hax-link-insertion.el")
 (load! "lang-org.d/hax-link-insertion-code.el")
 (load! "lang-org.d/hax-org-utils.el")

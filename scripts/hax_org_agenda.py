@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape
 from typing import Any
+from pathlib import Path
 
 ROFI_THEME: str = """
 * {
@@ -15,7 +16,7 @@ ROFI_THEME: str = """
 }
 window {
   width: 50%;
-  height: 80%;
+  height: 95%;
 }
 listview {
   lines: 20;
@@ -54,6 +55,7 @@ MUTED_COLOR: str = "#9399b2"
 
 @dataclass(frozen=True)
 class ColumnWidths:
+    file: int
     age: int
     last_clocked: int
     overall_time: int
@@ -148,7 +150,11 @@ def format_relative_time(timestamp: str | None, now: datetime) -> str:
 def format_overall_time(minutes_total: int | None) -> str:
     total: int = minutes_total or 0
     hours, minutes = divmod(total, 60)
-    return f"{hours:02}:{minutes:02}"
+    if hours == 0 and minutes == 0:
+        return ""
+
+    else:
+        return f"{hours:02}:{minutes:02}"
 
 
 def normalize_tags(entry: dict[str, Any]) -> str:
@@ -168,6 +174,10 @@ def normalize_title(entry: dict[str, Any]) -> str:
     return entry.get("title") or ""
 
 
+def normalize_path(entry: dict[str, Any]) -> str:
+    return Path(entry.get("file", "")).name
+
+
 def normalize_created_age(entry: dict[str, Any], now: datetime) -> str:
     created: dict[str, Any] | None = entry.get("created")
     if not created:
@@ -184,6 +194,7 @@ def normalize_overall_time(entry: dict[str, Any]) -> str:
 
 
 class Columns(str, enum.Enum):
+    FILE = "path"
     CREATED = "CREATED"
     LAST_CLOCKED = "L-CLOCKED"
     OVERALL_CLOCKED = "TIME"
@@ -198,46 +209,38 @@ def infer_widths(groups: list[dict[str, Any]], now: datetime) -> ColumnWidths:
     for group in groups:
         entries.extend(group.get("entries") or [])
 
-    age_width: int = max(
-        [len(Columns.CREATED.value)] +
-        [len(normalize_created_age(entry, now)) for entry in entries])
-    last_clocked_width: int = max(
-        [len(Columns.LAST_CLOCKED.value)] +
-        [len(normalize_last_clocked(entry, now)) for entry in entries])
-    overall_time_width: int = max(
-        [len(Columns.OVERALL_CLOCKED.value)] +
-        [len(normalize_overall_time(entry)) for entry in entries])
-    todo_width: int = max([len(Columns.TODO_STATE.value)] +
-                          [len(normalize_todo(entry)) for entry in entries])
-    priority_width: int = max(
-        [len(Columns.PRIORITY.value)] +
-        [len(normalize_priority(entry)) for entry in entries])
-
     return ColumnWidths(
-        age=age_width,
-        last_clocked=last_clocked_width,
-        overall_time=overall_time_width,
-        todo=todo_width,
-        priority=priority_width,
+        file=max([len(Columns.FILE.value)] +
+                 [len(normalize_path(entry)) for entry in entries]),
+        age=max([len(Columns.CREATED.value)] +
+                [len(normalize_created_age(entry, now)) for entry in entries]),
+        last_clocked=max(
+            [len(Columns.LAST_CLOCKED.value)] +
+            [len(normalize_last_clocked(entry, now)) for entry in entries]),
+        overall_time=max(
+            [len(Columns.OVERALL_CLOCKED.value)] +
+            [len(normalize_overall_time(entry)) for entry in entries]),
+        todo=max([len(Columns.TODO_STATE.value)] +
+                 [len(normalize_todo(entry)) for entry in entries]),
+        priority=max([len(Columns.PRIORITY.value)] +
+                     [len(normalize_priority(entry)) for entry in entries]),
     )
 
 
 def format_header(widths: ColumnWidths) -> str:
-    age_cell: str = make_cell(Columns.CREATED.value, widths.age, "right",
-                              HEADER_COLOR, True)
-    last_clocked_cell: str = make_cell(Columns.LAST_CLOCKED.value,
-                                       widths.last_clocked, "right",
-                                       HEADER_COLOR, True)
-    overall_time_cell: str = make_cell(Columns.OVERALL_CLOCKED.value,
-                                       widths.overall_time, "right",
-                                       HEADER_COLOR, True)
-    todo_cell: str = make_cell(Columns.TODO_STATE.value, widths.todo, "center",
-                               HEADER_COLOR, True)
-    priority_cell: str = make_cell(Columns.PRIORITY.value, widths.priority,
-                                   "center", HEADER_COLOR, True)
-
-    return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
-            f"{todo_cell} {priority_cell}")
+    return " ".join([
+        make_cell(Columns.FILE.value, widths.file, "right", HEADER_COLOR, True),
+        make_cell(Columns.CREATED.value, widths.age, "right", HEADER_COLOR,
+                  True),
+        make_cell(Columns.LAST_CLOCKED.value, widths.last_clocked, "right",
+                  HEADER_COLOR, True),
+        make_cell(Columns.OVERALL_CLOCKED.value, widths.overall_time, "right",
+                  HEADER_COLOR, True),
+        make_cell(Columns.TODO_STATE.value, widths.todo, "center",
+                  HEADER_COLOR, True),
+        make_cell(Columns.PRIORITY.value, widths.priority, "center",
+                  HEADER_COLOR, True),
+    ])
 
 
 def format_group_header(header: str, widths: ColumnWidths) -> str:
@@ -246,56 +249,57 @@ def format_group_header(header: str, widths: ColumnWidths) -> str:
 
 def format_entry(entry: dict[str, Any], widths: ColumnWidths,
                  now: datetime) -> str:
-    age: str = normalize_created_age(entry, now)
-    last_clocked: str = normalize_last_clocked(entry, now)
-    overall_time: str = normalize_overall_time(entry)
-    todo: str = normalize_todo(entry)
-    priority: str = normalize_priority(entry)
     title: str = normalize_title(entry)
     tags: str = normalize_tags(entry)
-
-    age_cell: str = make_cell(
-        text=age,
-        width=widths.age,
-        align="right",
-        color=MUTED_COLOR,
-        bold=False,
-    )
-    last_clocked_cell: str = make_cell(
-        text=last_clocked,
-        width=widths.last_clocked,
-        align="right",
-        color=MUTED_COLOR,
-        bold=False,
-    )
-    overall_time_cell: str = make_cell(
-        text=overall_time,
-        width=widths.overall_time,
-        align="right",
-        color=MUTED_COLOR,
-        bold=False,
-    )
-    todo_cell: str = make_cell(
-        text=todo,
-        width=widths.todo,
-        align="center",
-        color=color_for_todo(todo),
-        bold=True,
-    )
-    priority_cell: str = make_cell(
-        text=priority,
-        width=widths.priority,
-        align="center",
-        color=color_for_priority(priority),
-        bold=True,
-    )
 
     title_and_tags_cell: str = f"<span>{escape(title)}</span>"
     if tags:
         title_and_tags_cell += f' <span foreground="{TAG_COLOR}">{escape(tags)}</span>'
 
-    return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
-            f"{todo_cell} {priority_cell} {title_and_tags_cell}")
+    return " ".join([
+        make_cell(
+            text=normalize_path(entry),
+            width=widths.file,
+            align="right",
+            color=MUTED_COLOR,
+            bold=False,
+        ),
+        make_cell(
+            text=normalize_created_age(entry, now),
+            width=widths.age,
+            align="right",
+            color=MUTED_COLOR,
+            bold=False,
+        ),
+        make_cell(
+            text=normalize_last_clocked(entry, now),
+            width=widths.last_clocked,
+            align="right",
+            color=MUTED_COLOR,
+            bold=False,
+        ),
+        make_cell(
+            text=normalize_overall_time(entry),
+            width=widths.overall_time,
+            align="right",
+            color=MUTED_COLOR,
+            bold=False,
+        ),
+        make_cell(
+            text=normalize_todo(entry),
+            width=widths.todo,
+            align="center",
+            color=color_for_todo(normalize_todo(entry)),
+            bold=True,
+        ),
+        make_cell(
+            text=normalize_priority(entry),
+            width=widths.priority,
+            align="center",
+            color=color_for_priority(normalize_priority(entry)),
+            bold=True,
+        ), title_and_tags_cell
+    ])
 
 
 def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
@@ -318,19 +322,28 @@ def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
                 selectable=False,
             ))
 
-        def last_clock(it: dict):
-            value = it.get("last-clocked-in")
+        def get_tmp_time(it: dict, field: str):
+            value = it.get(field)
+            if isinstance(value, dict) and "timestamp" in value:
+                value = value.get("timestamp")
+                
             if value:
                 dt = datetime.fromisoformat(value)
                 if dt.tzinfo is None:
                     return dt.replace(tzinfo=timezone.utc)
                 return dt.astimezone(timezone.utc)
+
+        def relevant_time(it: dict):
+            if res := get_tmp_time(it, "last-clocked-in"):
+                return res
+            if res := get_tmp_time(it, "created"):
+                return res
             else:
                 return datetime.fromtimestamp(0, tz=timezone.utc)
 
         for entry in sorted(
                 group.get("entries") or [],
-                key=last_clock,
+                key=relevant_time,
                 reverse=True,
         ):
             items.append(

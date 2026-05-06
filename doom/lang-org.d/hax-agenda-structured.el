@@ -73,37 +73,28 @@
 
 (defun hax/org-element-entry-plist (headline)
   (let* ((marker (org-element-property :org-marker headline))
-         (title (substring-no-properties
-                 (or (org-element-property :raw-value headline) "")))
-         (todo-state (when-let ((todo (org-element-property :todo-keyword headline)))
-                       (substring-no-properties todo)))
-         (tags (mapcar #'substring-no-properties
-                       (org-element-property :tags headline)))
-         (priority-value (org-element-property :priority headline))
-         (priority (when priority-value
-                     (char-to-string priority-value)))
-         (created (hax/org-entry-timestamp-plist marker "CREATED"))
-         (deadline (hax/org-entry-timestamp-plist marker "DEADLINE"))
-         (scheduled (hax/org-entry-timestamp-plist marker "SCHEDULED"))
-         (last-clocked-in (hax/org-element--latest-clock-end-value headline marker))
-         (file (substring-no-properties
-                (or (buffer-file-name (marker-buffer marker)) "")))
-         (path (hax/org-element--headline-path headline))
-         (overall-minutes
-          (org-with-point-at marker
-            (org-clock-sum-current-item))))
+         (priority-value (org-element-property :priority headline)))
     (list
-     :title title
-     :created created
-     :deadline deadline
-     :scheduled scheduled
-     :last-clocked-in (hax/org-time-to-iso-8601 last-clocked-in)
-     :overall-time overall-minutes
-     :todo-state todo-state
-     :subtree-priority priority
-     :subtree-tags tags
-     :file file
-     :subtree-path path)))
+     :title (substring-no-properties
+             (or (org-element-property :raw-value headline) ""))
+     :created (hax/org-entry-timestamp-plist marker "CREATED")
+     :deadline (hax/org-entry-timestamp-plist marker "DEADLINE")
+     :scheduled (hax/org-entry-timestamp-plist marker "SCHEDULED")
+     :last-clocked-in (hax/org-time-to-iso-8601
+                       (hax/org-element--latest-clock-end-value headline marker))
+     :overall-time (org-with-point-at marker
+                     (org-clock-sum-current-item))
+     :todo-state (when-let ((todo (org-element-property :todo-keyword headline)))
+                   (substring-no-properties todo))
+     :subtree-priority (when priority-value
+                         (char-to-string priority-value))
+     :subtree-tags (mapcar #'substring-no-properties
+                           (org-element-property :tags headline))
+     :file (substring-no-properties
+            (or (buffer-file-name (marker-buffer marker)) ""))
+     :subtree-path (hax/org-element--headline-path headline)
+     :subtree-line (org-with-point-at marker
+                     (line-number-at-pos)))))
 
 (defun hax/org-ql-collect-groups (groups)
   (mapcar
@@ -165,19 +156,26 @@
                 (or
                  (and
                   (path ,(expand-file-name hax/notes.org))
-                  (not (function hax/org-agenda-skip)))
+                  )
                  (and
                   (path ,(expand-file-name hax/projects.org))
-                  (not (function hax/org-agenda-skip-low-priority))))))
+                  (or
+                   (priority "X")
+                   (priority "A")
+                   (priority "S")
+                   )
+                  ))))
 
-       (:header "2-week preview"
-        :files ,(org-agenda-files)
-        :query (and
-                (not (function hax/org-agenda-skip))
-                (or
-                 (scheduled :from today :to 14)
-                 (deadline :from today :to 14)
-                 (ts :from today :to 14))))
+       ;; (:header "2-week preview"
+       ;;  :files ,(org-agenda-files)
+       ;;  :query (and
+       ;;          (not (todo "COMPLETED"))
+       ;;          (not (todo "DONE"))
+       ;;          (not (todo "CANCELLED"))
+       ;;          (or
+       ;;           (scheduled :from today :to 14)
+       ;;           (deadline :from today :to 14)
+       ;;           (ts :from today :to 14)) ))
 
        (:header "Repeated todos"
         :files (,(expand-file-name hax/repeated.org))
@@ -198,7 +196,18 @@
             (with-temp-buffer
               (call-process "hax_org_agenda.py" nil t nil json-file)
               (buffer-string)))))
-      (hax/log "selected %s" selected))))
+      (hax/log "selected [%s]" selected)
+      (unless (string-empty-p selected)
+        (let* ((item (json-read-from-string selected))
+               (file (alist-get "file" item nil nil #'string=))
+               (line (alist-get "subtree-line" item nil nil #'string=)))
+          (when (and file line)
+            (find-file file)
+            (goto-char (point-min))
+            (forward-line (1- line))
+            (org-show-context)
+            (org-show-entry)
+            (recenter)))))))
 
 (when nil
   (write-to-file-unquoted "/tmp/hax-emacs.log" "")
