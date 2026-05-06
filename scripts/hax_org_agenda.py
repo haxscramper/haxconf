@@ -3,7 +3,9 @@
 import json
 import subprocess
 import sys
+import enum
 from dataclasses import dataclass
+from datetime import datetime
 from html import escape
 from typing import Any
 
@@ -45,10 +47,16 @@ PRIORITY_COLORS: dict[str, str] = {
 TAG_COLOR: str = "#6c7086"
 DEFAULT_TODO_COLOR: str = "#abb2bf"
 DEFAULT_PRIORITY_COLOR: str = "#7f848e"
+HEADER_COLOR: str = "#89b4fa"
+GROUP_COLOR: str = "#cba6f7"
+MUTED_COLOR: str = "#9399b2"
 
 
 @dataclass(frozen=True)
 class ColumnWidths:
+    age: int
+    last_clocked: int
+    overall_time: int
     todo: int
     priority: int
     title: int
@@ -58,7 +66,8 @@ class ColumnWidths:
 @dataclass(frozen=True)
 class DisplayItem:
     display: str
-    entry: dict[str, Any]
+    entry: dict[str, Any] | None
+    selectable: bool
 
 
 def color_for_todo(state: str | None) -> str:
@@ -98,6 +107,52 @@ def make_cell(
     return f"<span{attr_text}>{escape(padded)}</span>"
 
 
+def parse_timestamp(timestamp: str | None) -> datetime | None:
+    if not timestamp:
+        return None
+    return datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S%z")
+
+
+def format_relative_time(timestamp: str | None, now: datetime) -> str:
+    dt: datetime | None = parse_timestamp(timestamp)
+    if dt is None:
+        return ""
+
+    total_seconds: int = max(0, int((now - dt).total_seconds()))
+    minutes_total, _ = divmod(total_seconds, 60)
+    hours_total, minutes = divmod(minutes_total, 60)
+    days_total, hours = divmod(hours_total, 24)
+
+    years, rem_days = divmod(days_total, 365)
+    months, days = divmod(rem_days, 30)
+
+    parts: list[str] = []
+    units: list[tuple[int, str]] = [
+        (years, "y"),
+        (months, "m"),
+        (days, "d"),
+        (hours, "h"),
+        (minutes, "m"),
+    ]
+
+    for value, suffix in units:
+        if value != 0:
+            parts.append(f"{value}{suffix}")
+        if len(parts) == 2:
+            break
+
+    if not parts:
+        return "0m"
+
+    return " ".join(parts)
+
+
+def format_overall_time(minutes_total: int | None) -> str:
+    total: int = minutes_total or 0
+    hours, minutes = divmod(total, 60)
+    return f"{hours:02}:{minutes:02}"
+
+
 def normalize_tags(entry: dict[str, Any]) -> str:
     tags: list[str] = entry.get("subtree-tags") or []
     return " ".join(tags)
@@ -115,14 +170,59 @@ def normalize_title(entry: dict[str, Any]) -> str:
     return entry.get("title") or ""
 
 
-def infer_widths(entries: list[dict[str, Any]]) -> ColumnWidths:
-    todo_width: int = max(len(normalize_todo(entry)) for entry in entries)
+def normalize_created_age(entry: dict[str, Any], now: datetime) -> str:
+    created: dict[str, Any] | None = entry.get("created")
+    if not created:
+        return ""
+    return format_relative_time(created.get("timestamp"), now)
+
+
+def normalize_last_clocked(entry: dict[str, Any], now: datetime) -> str:
+    return format_relative_time(entry.get("last-clocked-in"), now)
+
+
+def normalize_overall_time(entry: dict[str, Any]) -> str:
+    return format_overall_time(entry.get("overall-time"))
+
+
+class Columns(enum.Enum):
+    CREATED = "CREATED"
+    LAST_CLOCKED = "L-CLOCKED"
+    OVERALL_CLOCKED = "TIME"
+    TODO_STATE = "TODO"
+    TITLE = "Title"
+    TAGS = "TAGS"
+    PRIORITY = "[#]"
+
+
+def infer_widths(groups: list[dict[str, Any]], now: datetime) -> ColumnWidths:
+    entries: list[dict[str, Any]] = []
+    for group in groups:
+        entries.extend(group.get("entries") or [])
+
+    age_width: int = max(
+        [len(Columns.CREATED.name)] +
+        [len(normalize_created_age(entry, now)) for entry in entries])
+    last_clocked_width: int = max(
+        [len(Columns.LAST_CLOCKED.name)] +
+        [len(normalize_last_clocked(entry, now)) for entry in entries])
+    overall_time_width: int = max(
+        [len(Columns.OVERALL_CLOCKED.name)] +
+        [len(normalize_overall_time(entry)) for entry in entries])
+    todo_width: int = max([len(Columns.TODO_STATE.name)] +
+                          [len(normalize_todo(entry)) for entry in entries])
     priority_width: int = max(
-        len(normalize_priority(entry)) for entry in entries)
-    title_width: int = max(len(normalize_title(entry)) for entry in entries)
-    tags_width: int = max(len(normalize_tags(entry)) for entry in entries)
+        [len(Columns.PRIORITY.name)] +
+        [len(normalize_priority(entry)) for entry in entries])
+    title_width: int = max([len(Columns.TITLE.name)] +
+                           [len(normalize_title(entry)) for entry in entries])
+    tags_width: int = max([len(Columns.TAGS.name)] +
+                          [len(normalize_tags(entry)) for entry in entries])
 
     return ColumnWidths(
+        age=age_width,
+        last_clocked=last_clocked_width,
+        overall_time=overall_time_width,
         todo=todo_width,
         priority=priority_width,
         title=title_width,
@@ -130,12 +230,66 @@ def infer_widths(entries: list[dict[str, Any]]) -> ColumnWidths:
     )
 
 
-def format_entry(entry: dict[str, Any], widths: ColumnWidths) -> str:
+def format_header(widths: ColumnWidths) -> str:
+    age_cell: str = make_cell(Columns.CREATED.name, widths.age, "right",
+                              HEADER_COLOR, True)
+    last_clocked_cell: str = make_cell(Columns.LAST_CLOCKED.name,
+                                       widths.last_clocked, "right",
+                                       HEADER_COLOR, True)
+    overall_time_cell: str = make_cell(Columns.OVERALL_CLOCKED.name,
+                                       widths.overall_time, "right",
+                                       HEADER_COLOR, True)
+    todo_cell: str = make_cell(Columns.TODO_STATE.name, widths.todo, "center",
+                               HEADER_COLOR, True)
+    priority_cell: str = make_cell(Columns.PRIORITY.name, widths.priority,
+                                   "center", HEADER_COLOR, True)
+    title_cell: str = make_cell(Columns.TITLE.name, widths.title, "left",
+                                HEADER_COLOR, True)
+    tags_cell: str = make_cell(Columns.TAGS.name, widths.tags, "right",
+                               HEADER_COLOR, True)
+
+    return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
+            f"{todo_cell} {priority_cell} {title_cell} {tags_cell}")
+
+
+def format_group_header(header: str, widths: ColumnWidths) -> str:
+    total_width: int = (widths.age + widths.last_clocked +
+                        widths.overall_time + widths.todo + widths.priority +
+                        widths.title + widths.tags + 6)
+    return make_cell(header, total_width, "left", GROUP_COLOR, True)
+
+
+def format_entry(entry: dict[str, Any], widths: ColumnWidths,
+                 now: datetime) -> str:
+    age: str = normalize_created_age(entry, now)
+    last_clocked: str = normalize_last_clocked(entry, now)
+    overall_time: str = normalize_overall_time(entry)
     todo: str = normalize_todo(entry)
     priority: str = normalize_priority(entry)
     title: str = normalize_title(entry)
     tags: str = normalize_tags(entry)
 
+    age_cell: str = make_cell(
+        text=age,
+        width=widths.age,
+        align="right",
+        color=MUTED_COLOR,
+        bold=False,
+    )
+    last_clocked_cell: str = make_cell(
+        text=last_clocked,
+        width=widths.last_clocked,
+        align="right",
+        color=MUTED_COLOR,
+        bold=False,
+    )
+    overall_time_cell: str = make_cell(
+        text=overall_time,
+        width=widths.overall_time,
+        align="right",
+        color=MUTED_COLOR,
+        bold=False,
+    )
     todo_cell: str = make_cell(
         text=todo,
         width=widths.todo,
@@ -165,27 +319,46 @@ def format_entry(entry: dict[str, Any], widths: ColumnWidths) -> str:
         bold=False,
     )
 
-    return f"{todo_cell} {priority_cell} {title_cell} {tags_cell}"
+    return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
+            f"{todo_cell} {priority_cell} {title_cell} {tags_cell}")
 
 
-def flatten_entries(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    result: list[dict[str, Any]] = []
+def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
+    now: datetime = datetime.now().astimezone()
+    widths: ColumnWidths = infer_widths(groups, now)
+
+    items: list[DisplayItem] = []
+    items.append(DisplayItem(display="", entry=None, selectable=False))
+    items.append(
+        DisplayItem(display=format_header(widths),
+                    entry=None,
+                    selectable=False))
+
     for group in groups:
-        entries: list[dict[str, Any]] = group.get("entries") or []
-        result.extend(entries)
-    return result
+        header: str = group.get("header") or ""
+        items.append(
+            DisplayItem(
+                display=format_group_header(header, widths),
+                entry=None,
+                selectable=False,
+            ))
 
+        for entry in group.get("entries") or []:
+            items.append(
+                DisplayItem(
+                    display=format_entry(entry, widths, now),
+                    entry=entry,
+                    selectable=True,
+                ))
 
-def build_display_items(entries: list[dict[str, Any]]) -> list[DisplayItem]:
-    widths: ColumnWidths = infer_widths(entries)
-    return [
-        DisplayItem(display=format_entry(entry, widths), entry=entry)
-        for entry in entries
-    ]
+    return items
 
 
 def run_rofi(items: list[DisplayItem]) -> dict[str, Any] | None:
     rofi_input: str = "\n".join(item.display for item in items)
+    nonselectable_rows: list[str] = [
+        str(index) for index, item in enumerate(items) if not item.selectable
+    ]
 
     proc: subprocess.CompletedProcess[str] = subprocess.run(
         [
@@ -197,6 +370,10 @@ def run_rofi(items: list[DisplayItem]) -> dict[str, Any] | None:
             "Agenda",
             "-theme-str",
             ROFI_THEME,
+            "-format",
+            "i",
+            "-a",
+            ",".join(nonselectable_rows),
         ],
         input=rofi_input,
         text=True,
@@ -207,15 +384,19 @@ def run_rofi(items: list[DisplayItem]) -> dict[str, Any] | None:
     if proc.returncode != 0:
         sys.exit(proc.returncode)
 
-    selected: str = proc.stdout.rstrip("\n")
-    if not selected:
+    selected_index_text: str = proc.stdout.strip()
+    if not selected_index_text:
         return None
 
-    for item in items:
-        if item.display == selected:
-            return item.entry
+    selected_index: int = int(selected_index_text)
+    if selected_index < 0 or selected_index >= len(items):
+        return None
 
-    return None
+    selected_item: DisplayItem = items[selected_index]
+    if not selected_item.selectable:
+        return None
+
+    return selected_item.entry
 
 
 def main() -> None:
@@ -227,11 +408,11 @@ def main() -> None:
     with open(input_path, "r", encoding="utf-8") as infile:
         groups: list[dict[str, Any]] = json.load(infile)
 
-    entries: list[dict[str, Any]] = flatten_entries(groups)
-    if not entries:
+    has_entries: bool = any(group.get("entries") for group in groups)
+    if not has_entries:
         raise SystemExit(0)
 
-    items: list[DisplayItem] = build_display_items(entries)
+    items: list[DisplayItem] = build_display_items(groups)
     selected: dict[str, Any] | None = run_rofi(items)
 
     if selected is None:

@@ -202,7 +202,7 @@
               (buffer-string)))))
       (hax/log "selected %s" selected))))
 
-(when t
+(when nil
   (write-to-file-unquoted "/tmp/hax-emacs.log" "")
   (let ((json-object-type 'alist)
         (json-array-type 'list)

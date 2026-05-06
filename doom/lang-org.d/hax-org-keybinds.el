@@ -227,7 +227,7 @@
    ;; Quick access to common operations. No specific meaning behind the key
    ;; specification.
    :desc "Global agenda"
-   :n [M-f7] (cmd! (org-agenda nil "*"))
+   :n [M-f7] (cmd! (hax/rofi-select-agenda-subtree))
    :desc "New note"
    :n [M-f8] (cmd! (org-capture nil "d"))
    :desc "Item under clocked"
