@@ -2,3 +2,6 @@
 
 # Create compile_commands.json for a project
 cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+# Clean conan package cache
+conan remove "*" -c ; conan cache clean "*" --source --build --download

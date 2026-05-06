@@ -7,3 +7,11 @@ $ package: pacman -Q | cut -d' ' -f1
 
 # Enable color in the configuration
 sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
+
+# Clean pacman cache
+sudo pacman -Sc
+
+# Uninstall pacman package
+sudo pacman -Rnsv <package>
+
+$ package: pacman -Qqe

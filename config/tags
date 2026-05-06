@@ -587,6 +587,7 @@
 #software##ld
 #software##libvirt
 #software##llm
+#software##llm##context_engineering
 #software##llm##llama
 #software##llm##mcp
 #software##llm##qmd
