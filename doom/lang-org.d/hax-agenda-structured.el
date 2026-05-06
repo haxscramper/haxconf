@@ -53,15 +53,12 @@
         (org-back-to-heading t)
         (let ((end (save-excursion (org-end-of-subtree t t)))
               (case-fold-search nil))
-          (hax/dbg/point (point))
           (when (re-search-forward "^[ \t]*:LOGBOOK:[ \t]*$" end t)
             (let ((logbook-begin (match-end 0))
                   (logbook-end
                    (save-excursion
                      (when (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
                        (match-beginning 0)))))
-              (when logbook-end (hax/dbg/point logbook-end))
-              (when logbook-begin (hax/dbg/point logbook-begin))
               (when logbook-end
                 (goto-char logbook-begin)
                 (while (re-search-forward
@@ -128,41 +125,7 @@
 
 (defun hax/detail/configure-org-agenda-query ()
   (setq hax/org-ql-dashboard-groups
-        `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
-           :files ,(org-agenda-files)
-           :query (todo "NEXT" "WIP" "PAUSED" "BLOCKED"))
-
-          (:header "Staging todo"
-           :files (,(expand-file-name hax/staging.org))
-           :query (and
-                   (todo "TODO")
-                   (not (function hax/org-agenda-skip))))
-
-          (:header "Notes & High priority project todos"
-           :files (,(expand-file-name hax/notes.org)
-                   ,(expand-file-name hax/projects.org))
-           :query (and
-                   (todo "TODO")
-                   (or
-                    (and
-                     (path ,(expand-file-name hax/notes.org))
-                     (not (function hax/org-agenda-skip)))
-                    (and
-                     (path ,(expand-file-name hax/projects.org))
-                     (not (function hax/org-agenda-skip-low-priority))))))
-
-          (:header "2-week preview"
-           :files ,(org-agenda-files)
-           :query (and
-                   (not (function hax/org-agenda-skip))
-                   (or
-                    (scheduled :from today :to 14)
-                    (deadline :from today :to 14)
-                    (ts :from today :to 14))))
-
-          (:header "Repeated todos"
-           :files (,(expand-file-name hax/repeated.org))
-           :query (todo "TODO")))))
+        ))
 
 (defun hax/json-normalize (value)
   (cond
@@ -182,16 +145,71 @@
    (t
     value)))
 
+(defun hax/get-agenda-json ()
+  (json-encode
+   (hax/json-normalize
+    (hax/org-ql-collect-groups
+     `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
+        :files ,(org-agenda-files)
+        :query (todo "NEXT" "WIP" "PAUSED" "BLOCKED"))
+
+       (:header "Staging todo"
+        :files (,(expand-file-name hax/staging.org))
+        :query (and
+                (todo "TODO")
+                (not (function hax/org-agenda-skip))))
+
+       (:header "Notes & High priority project todos"
+        :files (,(expand-file-name hax/notes.org)
+                ,(expand-file-name hax/projects.org))
+        :query (and
+                (todo "TODO")
+                (or
+                 (and
+                  (path ,(expand-file-name hax/notes.org))
+                  (not (function hax/org-agenda-skip)))
+                 (and
+                  (path ,(expand-file-name hax/projects.org))
+                  (not (function hax/org-agenda-skip-low-priority))))))
+
+       (:header "2-week preview"
+        :files ,(org-agenda-files)
+        :query (and
+                (not (function hax/org-agenda-skip))
+                (or
+                 (scheduled :from today :to 14)
+                 (deadline :from today :to 14)
+                 (ts :from today :to 14))))
+
+       (:header "Repeated todos"
+        :files (,(expand-file-name hax/repeated.org))
+        :query (todo "TODO")))))))
+
+(defun hax/rofi-select-agenda-subtree ()
+  (interactive)
+  (let* ((json-file "/tmp/hax-agenda-rofi.json")
+         (json-object-type 'alist)
+         (json-array-type 'list)
+         (json-key-type 'string))
+    (with-temp-buffer
+      (insert (hax/get-agenda-json))
+      (json-pretty-print-buffer)
+      (write-region nil nil json-file nil 'silent))
+    (let ((selected
+           (string-trim-right
+            (with-temp-buffer
+              (call-process "hax_org_agenda.py" nil t nil json-file)
+              (buffer-string)))))
+      (hax/log "selected %s" selected))))
+
 (when t
   (write-to-file-unquoted "/tmp/hax-emacs.log" "")
-  (hax/detail/configure-org-agenda-query)
   (let ((json-object-type 'alist)
         (json-array-type 'list)
         (json-key-type 'string))
     (with-temp-buffer
-      (insert
-       (json-encode
-        (hax/json-normalize
-         (hax/org-ql-collect-groups hax/org-ql-dashboard-groups))))
+      (insert (hax/get-agenda-json))
       (json-pretty-print-buffer)
-      (write-region nil nil "/tmp/result.json"))))
+      (write-region nil nil "/tmp/result.json")))
+  (hax/rofi-select-agenda-subtree))
+
