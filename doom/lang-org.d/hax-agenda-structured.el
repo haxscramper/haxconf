@@ -155,9 +155,7 @@
 
        (:header "Staging todo"
         :files (,(expand-file-name hax/staging.org))
-        :query (and
-                (todo "TODO")
-                (not (function hax/org-agenda-skip))))
+        :query (todo "TODO"))
 
        (:header "Notes & High priority project todos"
         :files (,(expand-file-name hax/notes.org)

@@ -5,7 +5,7 @@ import subprocess
 import sys
 import enum
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from html import escape
 from typing import Any
 
@@ -59,8 +59,6 @@ class ColumnWidths:
     overall_time: int
     todo: int
     priority: int
-    title: int
-    tags: int
 
 
 @dataclass(frozen=True)
@@ -185,7 +183,7 @@ def normalize_overall_time(entry: dict[str, Any]) -> str:
     return format_overall_time(entry.get("overall-time"))
 
 
-class Columns(enum.Enum):
+class Columns(str, enum.Enum):
     CREATED = "CREATED"
     LAST_CLOCKED = "L-CLOCKED"
     OVERALL_CLOCKED = "TIME"
@@ -201,23 +199,19 @@ def infer_widths(groups: list[dict[str, Any]], now: datetime) -> ColumnWidths:
         entries.extend(group.get("entries") or [])
 
     age_width: int = max(
-        [len(Columns.CREATED.name)] +
+        [len(Columns.CREATED.value)] +
         [len(normalize_created_age(entry, now)) for entry in entries])
     last_clocked_width: int = max(
-        [len(Columns.LAST_CLOCKED.name)] +
+        [len(Columns.LAST_CLOCKED.value)] +
         [len(normalize_last_clocked(entry, now)) for entry in entries])
     overall_time_width: int = max(
-        [len(Columns.OVERALL_CLOCKED.name)] +
+        [len(Columns.OVERALL_CLOCKED.value)] +
         [len(normalize_overall_time(entry)) for entry in entries])
-    todo_width: int = max([len(Columns.TODO_STATE.name)] +
+    todo_width: int = max([len(Columns.TODO_STATE.value)] +
                           [len(normalize_todo(entry)) for entry in entries])
     priority_width: int = max(
-        [len(Columns.PRIORITY.name)] +
+        [len(Columns.PRIORITY.value)] +
         [len(normalize_priority(entry)) for entry in entries])
-    title_width: int = max([len(Columns.TITLE.name)] +
-                           [len(normalize_title(entry)) for entry in entries])
-    tags_width: int = max([len(Columns.TAGS.name)] +
-                          [len(normalize_tags(entry)) for entry in entries])
 
     return ColumnWidths(
         age=age_width,
@@ -225,38 +219,29 @@ def infer_widths(groups: list[dict[str, Any]], now: datetime) -> ColumnWidths:
         overall_time=overall_time_width,
         todo=todo_width,
         priority=priority_width,
-        title=title_width,
-        tags=tags_width,
     )
 
 
 def format_header(widths: ColumnWidths) -> str:
-    age_cell: str = make_cell(Columns.CREATED.name, widths.age, "right",
+    age_cell: str = make_cell(Columns.CREATED.value, widths.age, "right",
                               HEADER_COLOR, True)
-    last_clocked_cell: str = make_cell(Columns.LAST_CLOCKED.name,
+    last_clocked_cell: str = make_cell(Columns.LAST_CLOCKED.value,
                                        widths.last_clocked, "right",
                                        HEADER_COLOR, True)
-    overall_time_cell: str = make_cell(Columns.OVERALL_CLOCKED.name,
+    overall_time_cell: str = make_cell(Columns.OVERALL_CLOCKED.value,
                                        widths.overall_time, "right",
                                        HEADER_COLOR, True)
-    todo_cell: str = make_cell(Columns.TODO_STATE.name, widths.todo, "center",
+    todo_cell: str = make_cell(Columns.TODO_STATE.value, widths.todo, "center",
                                HEADER_COLOR, True)
-    priority_cell: str = make_cell(Columns.PRIORITY.name, widths.priority,
+    priority_cell: str = make_cell(Columns.PRIORITY.value, widths.priority,
                                    "center", HEADER_COLOR, True)
-    title_cell: str = make_cell(Columns.TITLE.name, widths.title, "left",
-                                HEADER_COLOR, True)
-    tags_cell: str = make_cell(Columns.TAGS.name, widths.tags, "right",
-                               HEADER_COLOR, True)
 
     return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
-            f"{todo_cell} {priority_cell} {title_cell} {tags_cell}")
+            f"{todo_cell} {priority_cell}")
 
 
 def format_group_header(header: str, widths: ColumnWidths) -> str:
-    total_width: int = (widths.age + widths.last_clocked +
-                        widths.overall_time + widths.todo + widths.priority +
-                        widths.title + widths.tags + 6)
-    return make_cell(header, total_width, "left", GROUP_COLOR, True)
+    return f'<span foreground="{GROUP_COLOR}" weight="bold">{escape(header)}</span>'
 
 
 def format_entry(entry: dict[str, Any], widths: ColumnWidths,
@@ -304,23 +289,13 @@ def format_entry(entry: dict[str, Any], widths: ColumnWidths,
         color=color_for_priority(priority),
         bold=True,
     )
-    title_cell: str = make_cell(
-        text=title,
-        width=widths.title,
-        align="left",
-        color=None,
-        bold=False,
-    )
-    tags_cell: str = make_cell(
-        text=tags,
-        width=widths.tags,
-        align="right",
-        color=TAG_COLOR,
-        bold=False,
-    )
+
+    title_and_tags_cell: str = f"<span>{escape(title)}</span>"
+    if tags:
+        title_and_tags_cell += f' <span foreground="{TAG_COLOR}">{escape(tags)}</span>'
 
     return (f"{age_cell} {last_clocked_cell} {overall_time_cell} "
-            f"{todo_cell} {priority_cell} {title_cell} {tags_cell}")
+            f"{todo_cell} {priority_cell} {title_and_tags_cell}")
 
 
 def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
@@ -343,7 +318,21 @@ def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
                 selectable=False,
             ))
 
-        for entry in group.get("entries") or []:
+        def last_clock(it: dict):
+            value = it.get("last-clocked-in")
+            if value:
+                dt = datetime.fromisoformat(value)
+                if dt.tzinfo is None:
+                    return dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc)
+            else:
+                return datetime.fromtimestamp(0, tz=timezone.utc)
+
+        for entry in sorted(
+                group.get("entries") or [],
+                key=last_clock,
+                reverse=True,
+        ):
             items.append(
                 DisplayItem(
                     display=format_entry(entry, widths, now),
