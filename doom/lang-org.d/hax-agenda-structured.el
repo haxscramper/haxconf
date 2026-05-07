@@ -51,24 +51,26 @@
     (org-with-point-at marker
       (save-excursion
         (org-back-to-heading t)
-        (let ((end (save-excursion (org-end-of-subtree t t)))
-              (case-fold-search nil))
-          (when (re-search-forward "^[ \t]*:LOGBOOK:[ \t]*$" end t)
-            (let ((logbook-begin (match-end 0))
-                  (logbook-end
-                   (save-excursion
-                     (when (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
-                       (match-beginning 0)))))
-              (when logbook-end
-                (goto-char logbook-begin)
-                (while (re-search-forward
-                        "^[ \t]*CLOCK:.*?--\\(\\[[^]\n]+\\]\\)[ \t]*=>"
-                        logbook-end
-                        t)
-                  (let* ((end-string (match-string-no-properties 1))
-                         (end-time (org-time-string-to-time end-string)))
-                    (when (or (null latest) (time-less-p latest end-time))
-                      (setq latest end-time))))))))))
+        (setq latest (org-clock-get-last-clock-out-time))
+        ;; (let ((end (save-excursion (org-end-of-subtree t t)))
+        ;;       (case-fold-search nil))
+        ;;   (when (re-search-forward "^[ \t]*:LOGBOOK:[ \t]*$" end t)
+        ;;     (let ((logbook-begin (match-end 0))
+        ;;           (logbook-end
+        ;;            (save-excursion
+        ;;              (when (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
+        ;;                (match-beginning 0)))))
+        ;;       (when logbook-end
+        ;;         (goto-char logbook-begin)
+        ;;         (while (re-search-forward
+        ;;                 "^[ \t]*CLOCK:.*?--\\(\\[[^]\n]+\\]\\)[ \t]*=>"
+        ;;                 logbook-end
+        ;;                 t)
+        ;;           (let* ((end-string (match-string-no-properties 1))
+        ;;                  (end-time (org-time-string-to-time end-string)))
+        ;;             (when (or (null latest) (time-less-p latest end-time))
+        ;;               (setq latest end-time))))))))
+        ))
     latest))
 
 (defun hax/org-element-entry-plist (headline)

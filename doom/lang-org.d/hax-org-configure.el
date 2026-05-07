@@ -238,47 +238,6 @@
    ;; filter out outliers manually
    org-clock-out-remove-zero-time-clocks nil)
 
-  (setq
-   org-agenda-custom-commands
-   `(("l" "Long"
-      ((agenda
-        ""
-        ((org-agenda-span 30)
-         (org-agenda-start-day "-0d")
-         (org-deadline-warning-days 35)))))
-     ("*" "All"
-      ((todo
-        "NEXT|WIP|PAUSED|BLOCKED"
-        ((org-agenda-overriding-header "In progress (NEXT/WIP/PAUSED/BLOCKED)")))
-       (todo
-        "TODO"
-        ((org-agenda-overriding-header "Staging todo")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-agenda-files '(,hax/staging.org))))
-       (todo
-        "TODO"
-        ((org-agenda-overriding-header "Notes & High priority project todos")
-         (org-agenda-skip-function
-          (lambda ()
-            (cond
-             ((string= (buffer-file-name) (expand-file-name hax/notes.org))
-              (hax/org-agenda-skip))
-             ((string= (buffer-file-name) (expand-file-name hax/projects.org))
-              (hax/org-agenda-skip-low-priority))
-             (t (point-max)))))
-         (org-agenda-files (list hax/notes.org hax/projects.org))))
-       (agenda
-        ""
-        ((org-agenda-overriding-header "2-week preview")
-         (org-agenda-span 14)
-         (org-agenda-start-day "-0d")
-         (org-agenda-skip-function #'hax/org-agenda-skip)
-         (org-deadline-warning-days 0)))
-       (todo
-        "TODO"
-        ((org-agenda-overriding-header "Repeated todos")
-         (org-agenda-files '(,hax/repeated.org))))))))
-
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((C . t)

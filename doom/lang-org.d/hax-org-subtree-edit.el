@@ -84,6 +84,11 @@ Adds a LOGBOOK entry:
      new-title)))
 
 
+(defun hax/relative-hour-fraction (tdiff)
+  (/ (if (< 0 tdiff)
+         (mod (/ tdiff 60) 60)
+       (- 60 (mod (/ tdiff 60) 60))) 60))
+
 (defun hax/maybe-relative-time ()
   "Insert relative time (in hours) between current time and target
   subtree deadline/sheduled/timestamp if any."
