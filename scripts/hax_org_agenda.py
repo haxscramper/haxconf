@@ -229,7 +229,8 @@ def infer_widths(groups: list[dict[str, Any]], now: datetime) -> ColumnWidths:
 
 def format_header(widths: ColumnWidths) -> str:
     return " ".join([
-        make_cell(Columns.FILE.value, widths.file, "right", HEADER_COLOR, True),
+        make_cell(Columns.FILE.value, widths.file, "right", HEADER_COLOR,
+                  True),
         make_cell(Columns.CREATED.value, widths.age, "right", HEADER_COLOR,
                   True),
         make_cell(Columns.LAST_CLOCKED.value, widths.last_clocked, "right",
@@ -326,7 +327,7 @@ def build_display_items(groups: list[dict[str, Any]]) -> list[DisplayItem]:
             value = it.get(field)
             if isinstance(value, dict) and "timestamp" in value:
                 value = value.get("timestamp")
-                
+
             if value:
                 dt = datetime.fromisoformat(value)
                 if dt.tzinfo is None:
