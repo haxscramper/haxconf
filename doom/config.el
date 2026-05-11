@@ -168,6 +168,11 @@ You can insert or kill the name of the selected font."
 (load! "lang-plantuml.el")
 (load! "lang-latex.el")
 
+(setq major-mode-remap-alist
+      '((c-mode . c-ts-mode)
+        (c++-mode . c++-ts-mode)
+        (c-or-c++-mode . c-or-c++-ts-mode)))
+
 (load! "config-editing.el")
 (load! "temp-settings.el")
 
@@ -745,3 +750,4 @@ function for cleaning up in case the 'smart' advice system shits
 itself once again')"
   (interactive "aFunction symbol: ")
   (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
+

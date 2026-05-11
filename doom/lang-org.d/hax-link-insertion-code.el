@@ -212,7 +212,7 @@ If a multi-line range is selected, insert it as an Org source block."
                          (vc-git-working-revision (buffer-file-name)))
                      (error nil)))
          (sha (if full-sha (substring full-sha 0 8) "N/A"))
-         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M]"))
+         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M:%S %Z]"))
          (state-dir (expand-file-name "~/.local/state/hax/"))
          (org-file (expand-file-name "scratch.org" state-dir))
          (org-buffer (progn

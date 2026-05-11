@@ -36,7 +36,7 @@
        :tools (eval +overlay) gist (lookup +dictionary +offline) magit pdf lsp llm
        :os tty
        :lang
-       cc sh
+       (cc +tree-sitter) sh
        emacs-lisp
        ;; Configuration, serialization
        json yaml
