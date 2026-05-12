@@ -60,6 +60,7 @@
 #code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
+#code##cpp##lib##ranges
 #code##cpp##lib##tbb
 #code##cpp##lib##tracy
 #code##cpp##lib##yoga
@@ -482,6 +483,7 @@
 #project##qdelib
 #project##rewrite##graph_easy
 #project##shell
+#project##subproject
 #project##target
 #project##translations
 #project##tree_diff
@@ -567,6 +569,7 @@
 #software##emacs
 #software##emacs##gptel
 #software##emacs##org
+#software##emacs##org##agenda
 #software##emcc
 #software##filezilla
 #software##firefox

@@ -1353,3 +1353,6 @@ runnable
 NPU
 supercarrier
 fontification
+charset
+PySide
+selectable

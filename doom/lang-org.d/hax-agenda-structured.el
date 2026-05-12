@@ -46,30 +46,34 @@
     (when (string-match "--\\(\\[[^]]+\\]\\|<[^>]+>\\)" clock-text)
       (org-time-string-to-time (match-string 1 clock-text)))))
 
+(defun hax/org-subtree-print-timestamps-iso8601 ()
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (save-restriction
+      (org-narrow-to-subtree)
+      (goto-char (point-min))
+      (let ((ts-re (concat
+                    org-ts-regexp-both
+                    "\\|"
+                    org-element--timestamp-regexp))
+            times)
+        (while (re-search-forward ts-re nil t)
+          (let* ((raw (match-string-no-properties 0))
+                 (time (org-time-string-to-time raw)))
+            (push time times)))
+        (when times
+          (let* ((sorted (sort times #'time-less-p))
+                 (last-time (car (last sorted))))
+            last-time))))))
+
+
 (defun hax/org-element--latest-clock-end-value (_headline marker)
   (let ((latest nil))
     (org-with-point-at marker
       (save-excursion
         (org-back-to-heading t)
-        (setq latest (org-clock-get-last-clock-out-time))
-        ;; (let ((end (save-excursion (org-end-of-subtree t t)))
-        ;;       (case-fold-search nil))
-        ;;   (when (re-search-forward "^[ \t]*:LOGBOOK:[ \t]*$" end t)
-        ;;     (let ((logbook-begin (match-end 0))
-        ;;           (logbook-end
-        ;;            (save-excursion
-        ;;              (when (re-search-forward "^[ \t]*:END:[ \t]*$" end t)
-        ;;                (match-beginning 0)))))
-        ;;       (when logbook-end
-        ;;         (goto-char logbook-begin)
-        ;;         (while (re-search-forward
-        ;;                 "^[ \t]*CLOCK:.*?--\\(\\[[^]\n]+\\]\\)[ \t]*=>"
-        ;;                 logbook-end
-        ;;                 t)
-        ;;           (let* ((end-string (match-string-no-properties 1))
-        ;;                  (end-time (org-time-string-to-time end-string)))
-        ;;             (when (or (null latest) (time-less-p latest end-time))
-        ;;               (setq latest end-time))))))))
+        (setq latest (hax/org-subtree-print-timestamps-iso8601))
         ))
     latest))
 
@@ -82,6 +86,7 @@
      :created (hax/org-entry-timestamp-plist marker "CREATED")
      :deadline (hax/org-entry-timestamp-plist marker "DEADLINE")
      :scheduled (hax/org-entry-timestamp-plist marker "SCHEDULED")
+     :last-repeat (hax/org-entry-timestamp-plist marker "LAST_REPEAT")
      :last-clocked-in (hax/org-time-to-iso-8601
                        (hax/org-element--latest-clock-end-value headline marker))
      :overall-time (org-with-point-at marker
@@ -144,7 +149,9 @@
     (hax/org-ql-collect-groups
      `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
         :files ,(org-agenda-files)
-        :query (todo "NEXT" "WIP" "PAUSED" "BLOCKED"))
+        :query (or
+                (tags "project##subproject")
+                (todo "NEXT" "WIP" "PAUSED" "BLOCKED")))
 
        (:header "Staging todo"
         :files (,(expand-file-name hax/staging.org))

@@ -41,8 +41,9 @@
        ;; Configuration, serialization
        json yaml
        ;; Markup languages
-       latex markdown rst (org +dragndrop)
-       python
+       latex markdown rst
+       (org +dragndrop)
+       (python +tree-sitter)
 
        :config (default +bindings +smartparens))
 
