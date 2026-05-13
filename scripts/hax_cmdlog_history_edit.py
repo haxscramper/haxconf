@@ -117,12 +117,13 @@ def write_fish_history_from_archive(archive_path: Path, history_path: Path):
             obj = json.loads(line)
             command = obj["command"]
             count = int(obj.get("count", 1))
-            for _ in range(count):
-                entries.append((command, when))
-                when += 1
+            entries.append((command, when, count))
+            when += 1
+
+    entries = sorted(entries, key=lambda it: it[2])
 
     with history_path.open("w") as out:
-        for command, when in entries:
+        for command, when, _ in entries:
             out.write(f"- cmd: {fish_escape_multiline(command)}\n")
             out.write(f"  when: {when}\n")
 
