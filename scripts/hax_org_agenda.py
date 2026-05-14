@@ -218,6 +218,7 @@ class AgendaEntry(BaseModel):
     created: TimestampWithRepeat | None = None
     deadline: TimestampWithRepeat | None = None
     scheduled: TimestampWithRepeat | None = None
+    effort: int | None = None
     last_repeat: TimestampWithRepeat | None = Field(default=None,
                                                     alias="last-repeat")
     last_clocked_in: datetime | None = Field(default=None,
@@ -237,6 +238,16 @@ class AgendaEntry(BaseModel):
                             value: str | datetime | None) -> datetime | None:
         return parse_timestamp(value)
 
+    @field_validator("effort", mode="before")
+    @classmethod
+    def _parse_effort(cls, value: str | None) -> datetime | None:
+        if value:
+            hours, minutes = value.split(":")
+            return int(hours) * 60 + int(minutes)
+
+        else:
+            return None
+
     def normalized_tags(self) -> str:
         return " ".join(self.subtree_tags or [])
 
@@ -245,6 +256,16 @@ class AgendaEntry(BaseModel):
 
     def normalized_priority(self) -> str:
         return self.subtree_priority or ""
+
+    def normalized_effort_int(self) -> int:
+        return self.effort or 0
+
+    def normalized_effort(self) -> str:
+        if self.effort:
+            return f"{self.effort // 60}:{self.effort % 60}"
+
+        else:
+            return ""
 
     def normalized_title(self) -> str:
         return self.title or ""
@@ -319,6 +340,7 @@ class ColumnWidths:
     overall_time: int
     todo: int
     priority: int
+    effort: int
 
 
 @dataclass(frozen=True)
@@ -336,6 +358,7 @@ class Columns(str, enum.Enum):
     OVERALL_CLOCKED = "TIME"
     TODO_STATE = "TODO"
     PRIORITY = "[#]"
+    EFFORT = "EEE"
 
 
 def now_utc() -> datetime:
@@ -402,6 +425,8 @@ def infer_widths(groups: list[AgendaGroup], now: datetime) -> ColumnWidths:
                  [len(entry.normalized_todo()) for entry in entries]),
         priority=max([len(Columns.PRIORITY.value)] +
                      [len(entry.normalized_priority()) for entry in entries]),
+        effort=max([len(Columns.EFFORT.value)] +
+                   [len(entry.normalized_effort()) for entry in entries]),
     )
 
 
@@ -421,6 +446,8 @@ def format_header(widths: ColumnWidths) -> str:
                   HEADER_COLOR, True),
         make_cell(Columns.PRIORITY.value, widths.priority, "center",
                   HEADER_COLOR, True),
+        make_cell(Columns.EFFORT.value, widths.effort, "center", HEADER_COLOR,
+                  True),
     ])
 
 
@@ -488,6 +515,13 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             color=color_for_priority(entry.normalized_priority()),
             bold=True,
         ),
+        make_cell(
+            text=entry.normalized_effort(),
+            width=widths.effort,
+            align="center",
+            color=MUTED_COLOR,
+            bold=True,
+        ),
         title_and_tags_cell,
     ])
 
@@ -517,7 +551,7 @@ def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
                 selectable=False,
             ))
 
-        def sort_key(entry: AgendaEntry) -> tuple[int, int, float, float]:
+        def sort_key(entry: AgendaEntry) -> tuple[int, int, int, int, float]:
             match entry.subtree_priority:
                 case "X":
                     priority_rank = 0
@@ -526,15 +560,27 @@ def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
                 case _:
                     priority_rank = 2
 
+            match entry.todo_state:
+                case "WIP":
+                    todo_rank = 0
+                case "TODO":
+                    todo_rank = 1
+                case "NEXT":
+                    todo_rank = 2
+                case "PAUSED":
+                    todo_rank = 4
+                case _:
+                    todo_rank = 3
+
             due = entry.effective_scheduled()
             if due is not None:
                 due_ts = due.astimezone(now.tzinfo).timestamp()
                 if entry.is_due_today_or_overdue(now):
-                    return (priority_rank, 0, due_ts, 0.0)
+                    return (priority_rank, todo_rank, 0, entry.normalized_effort_int(), due_ts)
 
             reference_ts = entry.sort_reference_time().astimezone(
                 now.tzinfo).timestamp()
-            return (priority_rank, 1, float("inf"), -reference_ts)
+            return (priority_rank, todo_rank, 1, entry.normalized_effort_int(), -reference_ts)
 
         sorted_entries = sorted(group.entries, key=sort_key)
 

@@ -83,6 +83,7 @@
     (list
      :title (substring-no-properties
              (or (org-element-property :raw-value headline) ""))
+     :effort (org-with-point-at marker (org-entry-get nil "EFFORT"))
      :created (hax/org-entry-timestamp-plist marker "CREATED")
      :deadline (hax/org-entry-timestamp-plist marker "DEADLINE")
      :scheduled (hax/org-entry-timestamp-plist marker "SCHEDULED")
