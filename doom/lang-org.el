@@ -154,6 +154,15 @@ mode"
 
 (add-hook! 'org-mode-hook 'hax/org-mode-hook)
 
+(defun hax/org-log-property-change (property value)
+  "Log property changes to the LOGBOOK drawer."
+  (hax/org-add-log-entry (format "- Property \"%s\" set to \"%s\" at"
+                                 property
+                                 value
+                                 (hax/current-timestamp))))
+
+(add-hook 'org-property-changed-functions #'hax/org-log-property-change)
+
 (setq hax/fullscreen-capture nil)
 (setq hax/fullscreen-client-name nil)
 

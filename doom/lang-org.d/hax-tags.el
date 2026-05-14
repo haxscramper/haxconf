@@ -71,8 +71,7 @@
      (format "- Tag \"%s\" %s on %s"
              (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
              (if (eq action 'added) "Added" "Removed")
-             current-time) 
-     "LOGBOOK")))
+             current-time))))
 
 (defun hax/org-assign-tag ()
   "Add or remove tags in `org-mode'. If new tag is added, store

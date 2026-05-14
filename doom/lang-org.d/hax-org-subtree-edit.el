@@ -17,18 +17,6 @@
 (add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
 
 
-;; IDEA add more complex log entries too: make this function accept
-;; org-mode subtree in elisp form (parsed from org-elements)
-(defun org-add-log-entry (text)
-  "Add log entry for current subtree"
-  (save-excursion
-    (goto-char (- (org-log-beginning t) 1))
-    (let ((ind (current-indentation)))
-      (dolist (line (s-lines text))
-        (insert "\n")
-        (indent-line-to ind)
-        (insert line)))))
-
 (defun hax/org-add-log-entry (text &optional drawer)
   "Insert TEXT as a log entry for the current Org heading, respecting indentation.
 
@@ -56,7 +44,8 @@ contents (drawer indentation + 2 spaces)."
          (hax/log "DRAWER-INDENT: %s" drawer-indent)
          (unless (bolp) (insert "\n"))
          (dolist (line (split-string text "\n"))
-           (insert prefix line "\n")))))))
+           (insert prefix line "\n"))))))
+  )
 
 (defun hax/org-rename-subtree (new-title)
   "Rename current Org subtree heading to NEW-TITLE and log the rename.
@@ -155,17 +144,17 @@ being called."
                 (and (eq direction 'up) (equal cur ?X)))
             (progn
               (hax/org-remove-priority-at-point)
-              (org-add-log-entry
+              (hax/org-add-log-entry
                (format "- Priority \"%s\" Removed at %s"
                        cur-str (hax/current-timestamp))))
           (progn
             (org-entry-put (point) "PRIORITY" new)
-            (org-add-log-entry
+            (hax/org-add-log-entry
              (format "- Priority \"%s\" Changed From \"%s\" at %s"
                      new cur-str (hax/current-timestamp)))))
       (progn
         (org-entry-put (point) "PRIORITY" cur-str)
-        (org-add-log-entry
+        (hax/org-add-log-entry
          (format "- Priority \"%s\" Added at %s" cur-str (hax/current-timestamp)))))))
 
 (defun hax/org-remove-priority-at-point ()
