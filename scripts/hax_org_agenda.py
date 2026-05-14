@@ -264,7 +264,11 @@ class AgendaEntry(BaseModel):
 
     def effective_scheduled(self) -> datetime | None:
         if self.scheduled is None or self.scheduled.timestamp is None:
-            return None
+            if self.deadline and self.deadline.timestamp:
+                return self.deadline.timestamp
+
+            else:
+                return None
 
         if not self.scheduled.repeat:
             return self.scheduled.timestamp
