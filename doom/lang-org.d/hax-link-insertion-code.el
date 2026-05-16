@@ -76,12 +76,94 @@
             resolved)
         (quit nil)))))
 
+(defun hax/code-link--find-index-in-known-projects ()
+  (let* ((current-root (hax/code-link--project-root))
+         (projects
+          (delete-dups
+           (delq nil
+                 (append
+                  (when (boundp 'projectile-known-projects)
+                    projectile-known-projects)
+                  (when (fboundp 'project-known-project-roots)
+                    (project-known-project-roots)))))))
+    (delq
+     nil
+     (mapcar
+      (lambda (root)
+        (let ((root (expand-file-name root)))
+          (unless (and current-root
+                       (equal (file-name-as-directory root)
+                              (file-name-as-directory current-root)))
+            (let ((matches
+                   (sort
+                    (directory-files-recursively
+                     root
+                     "\\(?:\\.haxscramper-code-index\\.sqlite\\|\\.haxscramper-code-index.*\\.sqlite\\)\\'")
+                    #'string<)))
+              (when matches
+                (cons root matches))))))
+      projects))))
+
+(defun hax/code-link-select-index-from-known-projects ()
+  (interactive)
+  (let ((projects (hax/code-link--find-index-in-known-projects)))
+    (when projects
+      (condition-case nil
+          (if (= (length projects) 1)
+              (let ((files (cdar projects)))
+                (setq hax/code-link-active-index-file
+                      (if (= (length files) 1)
+                          (car files)
+                        (let* ((root (caar projects))
+                               (choices (mapcar (lambda (f) (file-relative-name f root)) files))
+                               (picked (completing-read
+                                        (format "Code index from %s: "
+                                                (file-name-nondirectory
+                                                 (directory-file-name root)))
+                                        choices nil t)))
+                          (expand-file-name picked root)))))
+            (let* ((choices
+                    (mapcar
+                     (lambda (entry)
+                       (let* ((root (car entry))
+                              (files (cdr entry))
+                              (label (file-name-nondirectory
+                                      (directory-file-name root))))
+                         (cons
+                          (if (= (length files) 1)
+                              (format "%s: %s"
+                                      label
+                                      (file-relative-name (car files) root))
+                            (format "%s (%d indexes)" label (length files)))
+                          entry)))
+                     projects))
+                   (picked-project
+                    (cdr (assoc (completing-read "Project code index: "
+                                                 choices nil t)
+                                choices)))
+                   (root (car picked-project))
+                   (files (cdr picked-project)))
+              (setq hax/code-link-active-index-file
+                    (if (= (length files) 1)
+                        (car files)
+                      (let* ((file-choices
+                              (mapcar (lambda (f) (file-relative-name f root)) files))
+                             (picked-file
+                              (completing-read
+                               (format "Index from %s: "
+                                       (file-name-nondirectory
+                                        (directory-file-name root)))
+                               file-choices nil t)))
+                        (expand-file-name picked-file root)))))
+        (quit nil))))))
+
 (defun hax/code-link-resolve-active-index ()
   (interactive)
   (let ((upward (hax/code-link--find-index-upward)))
     (setq hax/code-link-active-index-file
           (or upward
               (hax/code-link-select-index-from-project)
+              (hax/code-link-select-index-from-known-projects)
               (hax/code-link-select-index-file)))))
 
 (defun hax/code-link--read-sqlite-rows (sqlite-file)
