@@ -174,6 +174,7 @@ If the user inputs a new value, update the file and return it."
                         ('tag (hax/select-tag nil))
                         ('person (hax/select-from-list-or-add "person"))
                         ('organization (hax/select-from-list-or-add "organization"))
+                        ('code (hax/code-link-get-org-link))
                         (_ (error (format "Unexpected type %s" type)))))
 
          (target (pcase type
@@ -187,6 +188,7 @@ If the user inputs a new value, update the file and return it."
                                   (substring-no-properties (org-get-heading t t t t)))))
                          ('person "")
                          ('tag "")
+                         ('code "")
                          (_ (file-name-nondirectory target))))
 
          (description (if with-description
@@ -223,6 +225,8 @@ If the user inputs a new value, update the file and return it."
   ("P" (hax/org-insert-link 'person t))
   ("o" (hax/org-insert-link 'organization nil))
   ("O" (hax/org-insert-link 'organization t))
+  ("c" (hax/org-insert-link 'code nil))
+  ("C" (hax/org-insert-link 'code t))
   ("q" nil "cancel"))
 
 

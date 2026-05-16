@@ -116,7 +116,7 @@
                    row))
         (let* ((line-str (if start-line (number-to-string start-line) ""))
                (display (format "%s:%s :: %s" path line-str flat-representation))
-               (target (format "code:%s:%s:%s" path line-str flat-representation)))
+               (target (format "%s:%s:%s" path line-str flat-representation)))
           (push (list :entry-id entry-id
                       :kind kind
                       :language language
@@ -126,9 +126,9 @@
                       :doc-brief (or doc-brief ""))
                 result))))))
 
-(defun hax/code-link-insert-org-link (&optional sqlite-file)
+(defun hax/code-link-get-org-link (&optional sqlite-file)
   (interactive)
-  (let* ((index-file (or sqlite-file (hax/code-link-resolve-active-index)))
+  (let* ((index-file (or hax/code-link-active-index-file (hax/code-link-resolve-active-index)))
          (candidates (hax/code-link--all-candidates index-file))
          (doc-by-display (make-hash-table :test #'equal))
          (target-by-display (make-hash-table :test #'equal))
@@ -153,7 +153,7 @@
                               120 nil nil t)))))))
            (choice (completing-read "Code target: " display-values nil t))
            (target (gethash choice target-by-display)))
-      (insert (format "[[%s]]" target)))))
+      target)))
 
 
 
