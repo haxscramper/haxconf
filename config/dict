@@ -1356,3 +1356,5 @@ fontification
 charset
 PySide
 selectable
+hyperedges
+hyperedge

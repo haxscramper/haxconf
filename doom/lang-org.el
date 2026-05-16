@@ -234,3 +234,15 @@ skips capitalized and upperacsed words (names and abbreviations)"
 (load! "lang-org.d/hax-org-general-edit.el")
 (load! "lang-org.d/hax-org-export.el")
 (load! "lang-org.d/hax-org-keybinds.el")
+
+(with-eval-after-load 'org
+  (defun hax/org-cycle-custom-bullets (orig-fun &rest args)
+    "Restrict org list bullet cycling to just '-' and '1)'."
+    (let* ((current-bullet (org-list-get-bullet (line-beginning-position) (org-list-struct)))
+           ;; Determine the next bullet style based only on your two choices
+           (new-bullet (if (string-match-p "[0-9]+)" current-bullet) "-" "1)")))
+      ;; Force org-cycle-list-bullet to use our selected bullet type
+      (funcall orig-fun new-bullet)))
+
+  ;; Apply the advice to intercept the default cycling command
+  (advice-add 'org-cycle-list-bullet :around #'hax/org-cycle-custom-bullets))

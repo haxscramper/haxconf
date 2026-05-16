@@ -16,7 +16,7 @@
        ;; Main editor/window UI look
        doom doom-dashboard modeline
        hl-todo
-       ophints
+       ;; ophints ;; -- TMP disable
        ;; More manageable popup windows
        (popup
         ;; Make org-node notes, code editing buffers also respect the popup

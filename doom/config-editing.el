@@ -1,6 +1,6 @@
 ;;; -*- lexical-binding: t; -*-
 
-(setq scroll-margin 2)
+;; (setq scroll-margin 2)
 (setq whitespace-line-column 75)
 (setq-default fill-column 75)
 (global-visual-line-mode t)
