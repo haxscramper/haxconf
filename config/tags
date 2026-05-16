@@ -57,6 +57,7 @@
 #code##cpp##lib##gteste
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
+#code##cpp##lib##kiwi
 #code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto

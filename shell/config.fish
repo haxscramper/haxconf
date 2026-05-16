@@ -35,7 +35,7 @@ alias lsta="exa --tree --long --header --sort type --git --all"
 alias lstl="exa --tree --sort type --git --all"
 
 alias :q="clear"
-alias rm="mv --backup-numbered -vt /tmp/hax-trash"
+alias rm="mv --backup=numbered -vt /tmp/hax-trash"
 alias cp="cp -r"
 
 alias ncdu="ncdu --color dark -x --exclude .git --exclude node_modules"
@@ -78,8 +78,7 @@ abbr yaoi yay  --noconfirm
 
 ##= Abbriveations
 ##== Git
-abbr gis git status -s \&\& echo \&\& git branch -v \&\& echo \&\& git stash list
-abbr gisn git status -s . \&\& echo \&\& git branch -v \&\& echo \&\& git stash list
+abbr gis git status -s 
 abbr gicm git commit -m \"\[ # Complete comment
 abbr gil git log --graph --oneline --decorate -n20
 abbr gia git add
@@ -133,6 +132,8 @@ abbr p3i pip3 install --user
 
 abbr icat kitty +kitten icat
 
+set -gx FZF_CTRL_R_OPTS "--with-nth=3.."
+
 function my_bindings
     fish_vi_key_bindings
     fzf_key_bindings
@@ -177,13 +178,12 @@ function __cmdlog_export_history
     echo 0 > $__cmdlog_counter_file
 end
 
-function __cmdlog_restore_history
-         # --on-event fish_prompt
+function __cmdlog_restore_history --on-event fish_prompt
     functions -e __cmdlog_restore_history
 
     test -f $__cmdlog_file; or return
 
-    ~/.local/bin/cmdlog_history.py read-fish-history-archive \
+    hax_cmdlog_history_edit.py read-fish-history-archive \
         $__cmdlog_file \
         ~/.local/share/fish/fish_history
 end

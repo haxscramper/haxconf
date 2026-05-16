@@ -10,6 +10,9 @@ release+Mod2+Mod4+Control + c
 "xkb-switch -s us && rofi -show drun -theme $HOME/.config/rofi-launchers/type-5/style-4.rasi"
 release+Mod2+Mod4 + r
 
+"xkb-switch -s us && uv run /home/haxscramper/defaultdirs/input/grabber/template_pick.py /home/haxscramper/defaultdirs/input/grabber/config.yaml"
+release+Mod2+Mod4 + t
+
 "xkb-switch -s us && rofi -show window -matching prefix"
 release+Mod2+Mod4 + q
 

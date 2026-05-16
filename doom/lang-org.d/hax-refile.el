@@ -40,7 +40,7 @@
              (kind (car hax/org-refile-refiled-from-id))
              (src (cdr hax/org-refile-refiled-from-id))
              (time-stamp (format-time-string time-format (current-time))))
-        (org-add-log-entry
+        (hax/org-add-log-entry
          (format
           "- Refiled on [%s] from [[%s][%s:%s]]"
           time-stamp

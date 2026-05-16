@@ -156,7 +156,7 @@ mode"
 
 (defun hax/org-log-property-change (property value)
   "Log property changes to the LOGBOOK drawer."
-  (hax/org-add-log-entry (format "- Property \"%s\" set to \"%s\" at"
+  (hax/org-add-log-entry (format "- Property \"%s\" set to \"%s\" at %s"
                                  property
                                  value
                                  (hax/current-timestamp))))
