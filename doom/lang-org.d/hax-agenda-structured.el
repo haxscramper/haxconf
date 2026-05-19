@@ -156,7 +156,7 @@
 
        (:header "Staging todo"
         :files (,(expand-file-name hax/staging.org))
-        :query (todo "TODO"))
+        :query (and (level 1) (todo "TODO")))
 
        (:header "Notes & High priority project todos"
         :files (,(expand-file-name hax/notes.org)

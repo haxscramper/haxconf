@@ -5,6 +5,7 @@ xset s off
 xset -dpms
 xset s noblank
 
+export XDG_MENU_PREFIX=plasma-
 xbindkeys # Shortcuts
 copyq &   # Clibpard manager
 flameshot &
