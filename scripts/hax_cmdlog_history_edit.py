@@ -98,12 +98,14 @@ def write_archive_from_fish_history(history_path: Path, archive_path: Path):
 
 
 def fish_escape_multiline(command: str) -> str:
-    lines = command.split("\n")
+    lines = command.splitlines()
+    if not lines:
+        return ""
     first = lines[0]
-    rest = lines[1:]
+    rest = [line.lstrip() for line in lines[1:]]
     if not rest:
         return first
-    return first + "\n" + "\n".join("  " + line for line in rest)
+    return first + "\n" + "\n".join("    " + line for line in rest)
 
 
 def write_fish_history_from_archive(archive_path: Path, history_path: Path):

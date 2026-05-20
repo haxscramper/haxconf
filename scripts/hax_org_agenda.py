@@ -551,6 +551,27 @@ def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
                 selectable=False,
             ))
 
+        def is_ok(it: AgendaEntry) -> bool:
+            es = it.effective_scheduled()
+            if not es:
+                return True
+
+            elif it.scheduled and it.scheduled.repeat and 4 < (es -
+                                                               now_utc()).days:
+                # Ignore repated tasks until 4 days in advance
+                return False
+
+            elif ((it.scheduled and not it.scheduled.repeat) or
+                  (it.deadline
+                   and not it.deadline.repeat)) and 14 < (es - now_utc()).days:
+                # Ignore other tasks until 2 weeks in advance unless it is a priority
+                return it.subtree_priority in ["A", "X", "S"]
+
+            else:
+                return True
+
+        filter_list = [it for it in group.entries if is_ok(it)]
+
         def sort_key(entry: AgendaEntry) -> tuple[int, int, int, int, float]:
             match entry.subtree_priority:
                 case "X":
@@ -576,13 +597,15 @@ def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
             if due is not None:
                 due_ts = due.astimezone(now.tzinfo).timestamp()
                 if entry.is_due_today_or_overdue(now):
-                    return (priority_rank, todo_rank, 0, entry.normalized_effort_int(), due_ts)
+                    return (priority_rank, todo_rank, 0,
+                            entry.normalized_effort_int(), due_ts)
 
             reference_ts = entry.sort_reference_time().astimezone(
                 now.tzinfo).timestamp()
-            return (priority_rank, todo_rank, 1, entry.normalized_effort_int(), -reference_ts)
+            return (priority_rank, todo_rank, 1, entry.normalized_effort_int(),
+                    -reference_ts)
 
-        sorted_entries = sorted(group.entries, key=sort_key)
+        sorted_entries = sorted(filter_list, key=sort_key)
 
         for entry in sorted_entries:
             items.append(

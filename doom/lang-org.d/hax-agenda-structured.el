@@ -151,7 +151,7 @@
      `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
         :files ,(org-agenda-files)
         :query (or
-                (tags "project##subproject")
+                (tags-local "project##subproject")
                 (todo "NEXT" "WIP" "PAUSED" "BLOCKED")))
 
        (:header "Staging todo"

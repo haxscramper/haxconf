@@ -343,5 +343,6 @@
     ],
     "clangd.detectExtensionConflicts": false,
     "editor.accessibilitySupport": "off",
+    "kilo-code.new.autocomplete.enableAutoTrigger": false,
 
 }
