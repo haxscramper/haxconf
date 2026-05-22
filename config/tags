@@ -57,9 +57,11 @@
 #code##cpp##lib##gteste
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
+#code##cpp##lib##kiwi
 #code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
+#code##cpp##lib##ranges
 #code##cpp##lib##tbb
 #code##cpp##lib##tracy
 #code##cpp##lib##yoga
@@ -482,6 +484,7 @@
 #project##qdelib
 #project##rewrite##graph_easy
 #project##shell
+#project##subproject
 #project##target
 #project##translations
 #project##tree_diff
@@ -567,6 +570,7 @@
 #software##emacs
 #software##emacs##gptel
 #software##emacs##org
+#software##emacs##org##agenda
 #software##emcc
 #software##filezilla
 #software##firefox
@@ -587,6 +591,8 @@
 #software##ld
 #software##libvirt
 #software##llm
+#software##llm##context_engineering
+#software##llm##internals
 #software##llm##llama
 #software##llm##mcp
 #software##llm##qmd
@@ -671,6 +677,7 @@
 #story##plan##brainstorm
 #story##scene
 #story##sequence
+#subproec
 #summary
 #tag##subtag##subsubtag
 #tenative

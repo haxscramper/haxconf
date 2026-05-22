@@ -16,7 +16,7 @@
        ;; Main editor/window UI look
        doom doom-dashboard modeline
        hl-todo
-       ophints
+       ;; ophints ;; -- TMP disable
        ;; More manageable popup windows
        (popup
         ;; Make org-node notes, code editing buffers also respect the popup
@@ -36,13 +36,14 @@
        :tools (eval +overlay) gist (lookup +dictionary +offline) magit pdf lsp llm
        :os tty
        :lang
-       cc sh
+       (cc +tree-sitter) sh
        emacs-lisp
        ;; Configuration, serialization
        json yaml
        ;; Markup languages
-       latex markdown rst (org +dragndrop)
-       python
+       latex markdown rst
+       (org +dragndrop)
+       (python +tree-sitter)
 
        :config (default +bindings +smartparens))
 

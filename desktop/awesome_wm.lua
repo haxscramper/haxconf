@@ -888,6 +888,68 @@ client.connect_signal(
     "unmanage",
     function(c)
         update_client_numeration()
+
+        -- It is either a bug in the awesome WM, or just a problem in
+        -- my own configuration. When I close the floating window over
+        -- a fullscreen one, sometimes the fullscreen one jumps forward,
+        -- even if there are other floating windows in view. This hack 
+        -- fixes that, by refocusing on the windows.
+
+        -- I DO want auto-focus as well, but fullscreen windows jumping 
+        -- in foreground are annoying if I have some ones floating around. 
+
+        -- Run after autofocus' own unmanage processing.
+        gears.timer.delayed_call(function()
+            gears.timer.delayed_call(function()
+                local s = c.screen
+                if not s then
+                    return
+                end
+
+                local target = nil
+
+                -- Prefer client under mouse if it's a normal visible candidate.
+                local under_mouse = mouse.current_client
+                if under_mouse
+                    and under_mouse.valid
+                    and under_mouse ~= c
+                    and under_mouse.screen == s
+                    and under_mouse:isvisible()
+                    and not under_mouse.minimized
+                    and not under_mouse.fullscreen
+                then
+                    target = under_mouse
+                end
+
+                -- Otherwise use focus history, skipping fullscreen clients.
+                if not target then
+                    local idx = 0
+                    while true do
+                        local h = awful.client.focus.history.get(s, idx)
+                        if not h then
+                            break
+                        end
+
+                        if h.valid
+                            and h ~= c
+                            and h:isvisible()
+                            and not h.minimized
+                            and not h.fullscreen
+                        then
+                            target = h
+                            break
+                        end
+
+                        idx = idx + 1
+                    end
+                end
+
+                -- Only override when we found a non-fullscreen candidate.
+                if target then
+                    target:emit_signal("request::activate", "unmanage_refocus_fix", { raise = false })
+                end
+            end)
+        end)
     end
 )
 

@@ -113,7 +113,7 @@
 
 (package! mpv)
 
-(package! org-appear)
+;; (package! org-appear)
 (package! dogears)
 (package! mermaid-mode)
 (package! ivy)

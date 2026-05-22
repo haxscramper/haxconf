@@ -1,6 +1,65 @@
 decks:
   - device_type: "Stream Deck Neo"
     pages:
+      - name: "Page 5"
+        buttons:
+          0:
+            title_text:
+              text: "-120"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox rel-position -120"
+          1:
+            title_text:
+              text: "+120"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox rel-position +120"
+          2:
+            title_text:
+              text: "-300"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox rel-position -300"
+          3:
+            title_text:
+              text: "+300"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox rel-position +300"
+          4:
+            title_text:
+              text: "=/>>"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox play-pause"
+          5:
+            title_text:
+              text: "<"
+              font_size: 48
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox previous"
+          6:
+            title_text:
+              text: ">"
+              font_size: 48
+            action:
+              type: "execute_script"
+              script: "playerctl_wrap.py --window firefox next"
+          9:
+             action:
+              type: "change_page"
+              direction: "forward"
+          8:
+             action:
+              type: "change_page"
+              direction: "backward"
       - name: "Page 2"
         buttons:
           0:
@@ -59,6 +118,15 @@ decks:
             action:
               type: "emulate_shortcut"
               shortcut: "enter"
+          8:
+             action:
+              type: "change_page"
+              direction: "backward"
+          9:
+             action:
+              type: "change_page"
+              direction: "forward"
+
       - name: "Page 3"
         buttons:
           0:
@@ -117,65 +185,7 @@ decks:
              action:
               type: "change_page"
               direction: "backward"
-      - name: "Page 5"
-        buttons:
-          0:
-            title_text:
-              text: "-120"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl_wrap.py rel-position -120"
-          1:
-            title_text:
-              text: "+120"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl_wrap.py rel-position +120"
-          2:
-            title_text:
-              text: "-300"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl_wrap.py rel-position -300"
-          3:
-            title_text:
-              text: "+300"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl_wrap.py rel-position +300"
-          4:
-            title_text:
-              text: "=/>>"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl play-pause"
-          5:
-            title_text:
-              text: "<"
-              font_size: 48
-            action:
-              type: "execute_script"
-              script: "playerctl previous"
-          6:
-            title_text:
-              text: ">"
-              font_size: 48
-            action:
-              type: "execute_script"
-              script: "playerctl next"
-          9:
-             action:
-              type: "change_page"
-              direction: "forward"
-          8:
-             action:
-              type: "change_page"
-              direction: "backward"
+
 
   - device_type: "Stream Deck Original"
     pages:
