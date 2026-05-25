@@ -379,6 +379,7 @@ def make_cell(
     align: str,
     color: str | None,
     bold: bool,
+    plaintext: bool,
 ) -> str:
     content_text: str = "" if text is None else str(text)
 
@@ -399,7 +400,11 @@ def make_cell(
     if attrs:
         attr_text = " " + " ".join(attrs)
 
-    return f"<span{attr_text}>{escape(padded)}</span>"
+    if plaintext:
+        return padded
+
+    else:
+        return f"<span{attr_text}>{escape(padded)}</span>"
 
 
 def infer_widths(groups: list[AgendaGroup], now: datetime) -> ColumnWidths:
@@ -430,40 +435,50 @@ def infer_widths(groups: list[AgendaGroup], now: datetime) -> ColumnWidths:
     )
 
 
-def format_header(widths: ColumnWidths) -> str:
+def format_header(widths: ColumnWidths, plaintext: bool) -> str:
     return " ".join([
         make_cell(Columns.CREATED.value, widths.created, "right", HEADER_COLOR,
-                  True),
+                  True, plaintext),
         make_cell(Columns.FILE.value, widths.file, "right", HEADER_COLOR,
-                  True),
+                  True, plaintext),
         make_cell(Columns.OFFSET.value, widths.offset, "right", HEADER_COLOR,
-                  True),
+                  True, plaintext),
         make_cell(Columns.LAST_CLOCKED.value, widths.last_clocked, "right",
-                  HEADER_COLOR, True),
+                  HEADER_COLOR, True, plaintext),
         make_cell(Columns.OVERALL_CLOCKED.value, widths.overall_time, "right",
-                  HEADER_COLOR, True),
+                  HEADER_COLOR, True, plaintext),
         make_cell(Columns.TODO_STATE.value, widths.todo, "center",
-                  HEADER_COLOR, True),
+                  HEADER_COLOR, True, plaintext),
         make_cell(Columns.PRIORITY.value, widths.priority, "center",
-                  HEADER_COLOR, True),
+                  HEADER_COLOR, True, plaintext),
         make_cell(Columns.EFFORT.value, widths.effort, "center", HEADER_COLOR,
-                  True),
+                  True, plaintext),
     ])
 
 
-def format_group_header(header: str) -> str:
-    return f'<span foreground="{GROUP_COLOR}" weight="bold">{escape(header)}</span>'
+def format_group_header(header: str, plaintext: bool) -> str:
+    if plaintext:
+        return header
+
+    else:
+        return f'<span foreground="{GROUP_COLOR}" weight="bold">{escape(header)}</span>'
 
 
 def format_entry(entry: AgendaEntry, widths: ColumnWidths,
-                 now: datetime) -> str:
+                 now: datetime, plaintext: bool) -> str:
     title = entry.normalized_title()
     tags = entry.normalized_tags()
     due = entry.effective_scheduled()
 
-    title_and_tags_cell: str = f"<span>{escape(title)}</span>"
-    if tags:
-        title_and_tags_cell += f' <span foreground="{TAG_COLOR}">{escape(tags)}</span>'
+    if plaintext:
+        title_and_tags_cell: str = title
+        if tags:
+            title_and_tags_cell += f" {tags}"
+
+    else:
+        title_and_tags_cell: str = f"<span>{escape(title)}</span>"
+        if tags:
+            title_and_tags_cell += f' <span foreground="{TAG_COLOR}">{escape(tags)}</span>'
 
     result = " ".join([
         make_cell(
@@ -472,6 +487,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="right",
             color=MUTED_COLOR,
             bold=False,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_path(),
@@ -479,6 +495,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="right",
             color=MUTED_COLOR,
             bold=False,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_offset(now),
@@ -486,6 +503,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="right",
             color=color_for_offset(due, now),
             bold=True,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_last_clocked(now),
@@ -493,6 +511,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="right",
             color=MUTED_COLOR,
             bold=False,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_overall_time(),
@@ -500,6 +519,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="right",
             color=MUTED_COLOR,
             bold=False,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_todo(),
@@ -507,6 +527,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="center",
             color=color_for_todo(entry.normalized_todo()),
             bold=True,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_priority(),
@@ -514,6 +535,7 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="center",
             color=color_for_priority(entry.normalized_priority()),
             bold=True,
+            plaintext=plaintext,
         ),
         make_cell(
             text=entry.normalized_effort(),
@@ -521,32 +543,34 @@ def format_entry(entry: AgendaEntry, widths: ColumnWidths,
             align="center",
             color=MUTED_COLOR,
             bold=True,
+            plaintext=plaintext,
         ),
         title_and_tags_cell,
     ])
 
-    match entry.normalized_priority():
-        case "X" | "S":
-            result = f'<span background="{PRIORITY_COLORS[entry.normalized_priority()]}66">{result}</span>'
+    if not plaintext:
+        match entry.normalized_priority():
+            case "X" | "S":
+                result = f'<span background="{PRIORITY_COLORS[entry.normalized_priority()]}66">{result}</span>'
 
     return result
 
 
-def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
+def build_display_items(groups: list[AgendaGroup], plaintext: bool) -> list[DisplayItem]:
     now = datetime.now().astimezone()
     widths = infer_widths(groups, now)
 
     items: list[DisplayItem] = []
     items.append(DisplayItem(display="", entry=None, selectable=False))
     items.append(
-        DisplayItem(display=format_header(widths),
+        DisplayItem(display=format_header(widths, plaintext=plaintext),
                     entry=None,
                     selectable=False))
 
     for group in groups:
         items.append(
             DisplayItem(
-                display=format_group_header(group.header or ""),
+                display=format_group_header(group.header or "", plaintext),
                 entry=None,
                 selectable=False,
             ))
@@ -610,7 +634,7 @@ def build_display_items(groups: list[AgendaGroup]) -> list[DisplayItem]:
         for entry in sorted_entries:
             items.append(
                 DisplayItem(
-                    display=format_entry(entry, widths, now),
+                    display=format_entry(entry, widths, now, plaintext=plaintext),
                     entry=entry,
                     selectable=True,
                 ))
@@ -681,8 +705,12 @@ def main() -> None:
     if not has_entries:
         raise SystemExit(0)
 
-    items = build_display_items(groups)
+    plaintext = "\n".join(it.display for it in build_display_items(groups, True))
+    Path("/tmp/hax-agenda-rofi.txt").write_text(plaintext)
+
+    items = build_display_items(groups, False)
     selected = run_rofi(items)
+
 
     if selected is None:
         return
