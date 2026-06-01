@@ -1,6 +1,6 @@
 ##= Fish
 set fish_greeting
-
+mkdir -p /tmp/hax-trash
 alias reload="source ~/.config/fish/config.fish"
 set -U fish_cursor_default line
 
@@ -29,7 +29,7 @@ alias naviadd="nvim (find $HAX_CONFIG_DIR/navi | fzf)"
 ##= Common utilities
 alias ls="exa --sort type"
 alias lsl="exa --long --header --git --sort type"
-alias lsa="exa --all --long --header --git --sort type ^ /dev/null || exa --long --header --sort type"
+alias lsa="exa --all --long --header --git --sort type|| exa --long --header --sort type"
 alias lst="exa --tree"
 alias lsta="exa --tree --long --header --sort type --git --all"
 alias lstl="exa --tree --sort type --git --all"

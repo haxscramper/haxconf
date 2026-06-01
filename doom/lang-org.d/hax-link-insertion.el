@@ -212,6 +212,7 @@ If the user inputs a new value, update the file and return it."
   _t_: Tag          _T_: Tag
   _p_: Person       _P_: Person
   _o_: Organization _O_: Organization
+  _c_: Code         _C_: Code
   "
   ("f" (hax/org-insert-link 'file nil))
   ("F" (hax/org-insert-link 'file t))

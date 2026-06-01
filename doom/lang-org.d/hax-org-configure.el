@@ -215,6 +215,7 @@
    ;; together.
    org-blank-before-new-entry '((heading . t) (plain-list-item . nil))
    org-hierarchical-todo-statistics t
+   org-duration-format 'h:mm
    ;; Override of the default agenda date formatting with customized
    ;; function
    org-agenda-format-date 'hax/org-agenda-format-date

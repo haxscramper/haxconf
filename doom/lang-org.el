@@ -198,6 +198,7 @@ mode"
   "Open org-mode link with coordinates"
   (browse-url (format "https://www.openstreetmap.org/#map=16/%s" path)))
 
+(load! "lang-org.d/hax-org-list.el")
 (load! "lang-org.d/hax-org-configure.el")
 
 (defun hax/open-org ()
