@@ -547,6 +547,7 @@
 #software##airdroid
 #software##alxreader
 #software##antlr4
+#software##arangodb
 #software##archivebox
 #software##asciidoctor
 #software##ast_grep
@@ -559,6 +560,7 @@
 #software##chatgpt
 #software##clang
 #software##cmake
+#software##comfyui
 #software##conan
 #software##cpack
 #software##ctags
