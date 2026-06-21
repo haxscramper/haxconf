@@ -19,18 +19,18 @@ decks:
               script: "playerctl_wrap.py --window firefox rel-position +120"
           2:
             title_text:
-              text: "-300"
-              font_size: 36
-            action:
-              type: "execute_script"
-              script: "playerctl_wrap.py --window firefox rel-position -300"
-          3:
-            title_text:
               text: "+300"
               font_size: 36
             action:
               type: "execute_script"
               script: "playerctl_wrap.py --window firefox rel-position +300"
+          3:
+            title_text:
+              text: "X clang++"
+              font_size: 36
+            action:
+              type: "execute_script"
+              script: "killall clang"
           4:
             title_text:
               text: "=/>>"
@@ -234,8 +234,8 @@ decks:
           8:
             action:
               type: "focus_window"
-              text: "cursor"
-            image_path: "~/defaultdirs/images/streamdeck/cursor_logo.jpg"
+              text: "zed"
+            image_path: "~/defaultdirs/images/streamdeck/zed_logo.png"
           9:
             action:
               type: "focus_window"

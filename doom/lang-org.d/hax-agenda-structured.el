@@ -150,31 +150,27 @@
     (hax/org-ql-collect-groups
      `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
         :files ,(org-agenda-files)
-        :query (or
-                (tags-local "project##subproject")
-                (todo "NEXT" "WIP" "PAUSED" "BLOCKED")))
+        :query (and
+                (not (tags-local "no_agenda"))
+                (or
+                 (tags-local "project##subproject")
+                 (todo "NEXT" "WIP" "PAUSED" "BLOCKED"))))
 
        (:header "Staging todo"
         :files (,(expand-file-name hax/staging.org))
-        :query (and (level 1) (todo "TODO")))
+        :query (and (level 1) (todo "TODO")) (not (tags-local "no_agenda")))
 
        (:header "Notes & High priority project todos"
         :files (,(expand-file-name hax/notes.org)
                 ,(expand-file-name hax/projects.org))
         :query (and
                 (todo "TODO")
+                (not (tags-local "no_agenda"))
                 (or
-                 (and
-                  (path ,(expand-file-name hax/notes.org))
-                  )
+                 (and (path ,(expand-file-name hax/notes.org)))
                  (and
                   (path ,(expand-file-name hax/projects.org))
-                  (or
-                   (priority "X")
-                   (priority "A")
-                   (priority "S")
-                   )
-                  ))))
+                  (or (priority "X") (priority "A") (priority "S"))))))
 
        ;; (:header "2-week preview"
        ;;  :files ,(org-agenda-files)

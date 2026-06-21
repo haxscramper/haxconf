@@ -1,0 +1,9 @@
+steps:
+  - |-
+    This message is used to clarify the expectations going forward. It should take precedence over similar messages earlier in the discussion, if any. Take this into account in the future, do not generate a new response right now.
+
+    - ALWAYS use fully qualified enum name rather than the alias on the qt namespace. NEVER use the "runtime-equivalent" shorter enum accessors -- they are not handled by the static analysis tools, resulting in code that is giving false positives. 
+      - BAD: `QHeaderView.Stretch`
+        GOOD: `QHeaderView.ResizeMode.Stretch`
+      - BAD: `Qt.NoItemFlags`
+        GOOD: `Qt.ItemFlag.NoItemFlags`

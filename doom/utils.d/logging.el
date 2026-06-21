@@ -54,10 +54,13 @@
     (hax/log--write-string text hax/log-file t)))
   (when print-stdout
     (let ((coding-system-for-write 'utf-8))
-      (write-region text nil "/dev/stdout" t 'silent)))
+      (ignore-errors
+        (write-region text nil "/dev/stdout" t 'silent))))
+
   (when print-stderr
     (let ((coding-system-for-write 'utf-8))
-      (write-region text nil "/dev/stderr" t 'silent)))
+      (ignore-errors
+        (write-region text nil "/dev/stderr" t 'silent))))
   text)
 
 (defun hax/log--parse-options (args)

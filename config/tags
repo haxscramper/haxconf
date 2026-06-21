@@ -58,6 +58,7 @@
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
 #code##cpp##lib##kiwi
+#code##cpp##lib##msgpack
 #code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
@@ -165,6 +166,7 @@
 #complexity##torturous_34
 #complexity##trivial_1
 #complexity##unknown
+#configuration
 #configuration##font
 #configuration##kitty
 #configuration##qutebrowser
@@ -546,6 +548,7 @@
 #software##airdroid
 #software##alxreader
 #software##antlr4
+#software##arangodb
 #software##archivebox
 #software##asciidoctor
 #software##ast_grep
@@ -558,6 +561,7 @@
 #software##chatgpt
 #software##clang
 #software##cmake
+#software##comfyui
 #software##conan
 #software##cpack
 #software##ctags
