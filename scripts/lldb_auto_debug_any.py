@@ -10,12 +10,31 @@ import lldb
 # ---------------------------------------------------------------------------
 
 FRAME_START: int = 0
-FRAME_END: int = 12
+FRAME_END: int = 40
 AUTO_CONTINUE: bool = True
 
 BREAKPOINT_FUNCTIONS: list[str] = [
     "tt::assert::detail::tt_throw",
 ]
+
+# Fatal signals on which we print a C++ backtrace before letting the signal pass
+# through to the inferior. An unhandled C++ exception turns into SIGABRT
+# (std::terminate -> abort), so handling these signals also covers unhandled
+# exceptions. The signal is always re-delivered afterwards, so pytest's
+# faulthandler still prints the Python traceback (original behavior preserved).
+FATAL_SIGNALS: list[str] = [
+    "SIGSEGV",
+    "SIGABRT",
+    "SIGBUS",
+    "SIGFPE",
+    "SIGILL",
+    "SIGSYS",
+]
+
+# Set to True once a fatal C++ backtrace has been printed for this run. This
+# avoids duplicate backtraces when faulthandler restores the default handler and
+# re-raises the signal (causing LLDB to stop a second time).
+_fatal_reported: bool = False
 
 _TYPE_JUNK: list[str] = [
     ", __gnu_cxx::_S_atomic",
@@ -52,6 +71,7 @@ class ValueNode:
 class FrameInfo:
     index: int
     function_name: str
+    bare_function_name: str
     file_path: str
     line: int
     arguments: list[ValueNode] = field(default_factory=list)
@@ -61,6 +81,9 @@ class FrameInfo:
 class BreakpointReport:
     pid: int
     tid: int
+    exception_what: Optional[str] = None
+    header: str = "Breakpoint hit"
+    signal_name: Optional[str] = None
     frames: list[FrameInfo] = field(default_factory=list)
 
 
@@ -339,6 +362,21 @@ def _try_optional_extraction(
 # Frame / report extraction
 # ---------------------------------------------------------------------------
 
+def get_bare_function_name(frame: lldb.SBFrame) -> str | None:
+    fn = frame.GetFunction()
+    if not fn or not fn.IsValid():
+        return None
+
+    # Demangled, source-level function name
+    name = fn.GetDisplayName()
+
+    # Optional: remove argument list if present
+    if name:
+        paren = name.find('(')
+        if paren != -1:
+            name = name[:paren]
+
+    return name
 
 def _extract_frame(frame: lldb.SBFrame, index: int) -> FrameInfo:
     fn_name: str = frame.GetDisplayFunctionName() or frame.GetFunctionName() or "<unknown>"
@@ -351,20 +389,21 @@ def _extract_frame(frame: lldb.SBFrame, index: int) -> FrameInfo:
         file_path = "<no line info>"
         line = 0
 
-    info = FrameInfo(index=index, function_name=fn_name, file_path=file_path, line=line)
+    info = FrameInfo(index=index, function_name=fn_name, file_path=file_path, line=line, bare_function_name=get_bare_function_name(frame))
 
     vars_: lldb.SBValueList = frame.GetVariables(True, False, False, True)
-    for i in range(vars_.GetSize()):
-        arg: lldb.SBValue = vars_.GetValueAtIndex(i)
-        node: ValueNode = _extract_value_via_eval(frame, arg)
+    if False: 
+        for i in range(vars_.GetSize()):
+            arg: lldb.SBValue = vars_.GetValueAtIndex(i)
+            node: ValueNode = _extract_value_via_eval(frame, arg)
 
-        arg_name: str = arg.GetName() or ""
+            arg_name: str = arg.GetName() or ""
 
-        _try_optional_extraction(frame, arg_name, node)
-        _enrich_children(frame, arg_name, node)
-        _try_shape_extraction(frame, arg_name, node)
+            _try_optional_extraction(frame, arg_name, node)
+            _enrich_children(frame, arg_name, node)
+            _try_shape_extraction(frame, arg_name, node)
 
-        info.arguments.append(node)
+            info.arguments.append(node)
 
     return info
 
@@ -382,12 +421,48 @@ def _enrich_children(
         _enrich_children(frame, child_expr, child, depth + 1)
 
 
-def _extract_report(frame: lldb.SBFrame) -> BreakpointReport:
+def _extract_exception_what(frame: lldb.SBFrame) -> Optional[str]:
+    # function args only
+    args: lldb.SBValueList = frame.GetVariables(True, False, False, False)
+
+    for i in range(args.GetSize()):
+        arg = args.GetValueAtIndex(i)
+        if not arg or not arg.IsValid():
+            continue
+
+        name = arg.GetName() or ""
+        if not name:
+            continue
+
+        tname = (arg.GetTypeName() or "").lower()
+
+        # Heuristic: only try "exception-like" arguments
+        if "exception" not in tname and "error" not in tname:
+            continue
+
+        # Try common forms: object, pointer, pointer-like
+        for expr in (f"({name}).what()", f"({name})->what()", f"(*({name})).what()"):
+            v = _eval(frame, expr)
+            if v.IsValid() and v.GetError().Success():
+                text = v.GetSummary() or v.GetValue()
+                if text:
+                    return text.strip('"')
+
+    return None
+
+def _extract_report(
+    frame: lldb.SBFrame,
+    header: str = "Breakpoint hit",
+    signal_name: Optional[str] = None,
+) -> BreakpointReport:
     thread: lldb.SBThread = frame.GetThread()
     process: lldb.SBProcess = thread.GetProcess()
     report = BreakpointReport(
         pid=process.GetProcessID(),
         tid=thread.GetThreadID(),
+        exception_what=_extract_exception_what(frame),  # <- add this
+        header=header,
+        signal_name=signal_name,
     )
 
     end: int = min(FRAME_END, thread.GetNumFrames())
@@ -396,7 +471,6 @@ def _extract_report(frame: lldb.SBFrame) -> BreakpointReport:
         report.frames.append(_extract_frame(f, i))
 
     return report
-
 
 # ---------------------------------------------------------------------------
 # Formatting (ValueNode → str)
@@ -440,18 +514,20 @@ def _format_value_tree(node: ValueNode, base_indent: str = "    ") -> str:
 def _format_report(report: BreakpointReport) -> str:
     lines: list[str] = [
         "",
-        "=== Breakpoint hit ===",
+        f"=== {report.header} ===",
         f"pid={report.pid} tid={report.tid}",
     ]
 
+    if report.signal_name:
+        lines.append(f"signal: {report.signal_name}")
+
+    if report.exception_what:
+        lines.append(f"exception: {report.exception_what}")  # <- top of trace
+
     for fi in report.frames:
-        lines.append("")
-        lines.append(f"frame #{fi.index}: {fi.function_name} @ {fi.file_path}:{fi.line}")
-        if not fi.arguments:
-            lines.append("    <no arguments>")
-        else:
-            for arg_node in fi.arguments:
-                lines.append(_format_value_tree(arg_node))
+        if fi.bare_function_name or (fi.file_path != "<no line info>") or fi.line:
+            lines.append("")
+            lines.append(f"frame #{fi.index}: {fi.bare_function_name} @ {fi.file_path}:{fi.line}")
 
     lines.append("")
     lines.append("=== end ===")
@@ -471,10 +547,77 @@ def _bp_callback(frame: lldb.SBFrame, bp_loc: lldb.SBBreakpointLocation, _dict: 
     except Exception as exc:
         print(f"\n[lldb-script ERROR] {exc}\n")
 
-    if AUTO_CONTINUE:
-        frame.GetThread().GetProcess().Continue()
-        return True
-    return False
+    # Returning False auto-continues the inferior (don't stop); True stops it.
+    # We avoid an explicit process.Continue() here so that this callback does not
+    # produce a public stop that would re-enter the stop-hook machinery.
+    return not AUTO_CONTINUE
+
+
+# ---------------------------------------------------------------------------
+# Fatal-signal stop hook
+# ---------------------------------------------------------------------------
+
+
+def _signal_name(process: lldb.SBProcess, signo: int) -> str:
+    if signo is None or signo < 0:
+        return "<unknown>"
+    try:
+        signals: lldb.SBUnixSignals = process.GetUnixSignals()
+        name: Optional[str] = signals.GetSignalAsCString(signo)
+        if name:
+            return f"{name} ({signo})"
+    except Exception:
+        pass
+    return str(signo)
+
+
+class FatalSignalStopHook:
+    """Scripted stop hook that prints a C++ backtrace whenever the inferior stops
+    on a fatal signal, then auto-continues.
+
+    Fatal signals are configured (see ``FATAL_SIGNALS``) with stop=true and
+    pass=true. When such a signal fires LLDB stops at the original fault site
+    (giving us a clean C++ backtrace). We print it and then auto-continue, which
+    re-delivers the signal to the inferior so pytest's faulthandler still emits
+    the Python traceback. Unhandled C++ exceptions reach here too, because they
+    become SIGABRT via std::terminate -> abort.
+    """
+
+    def __init__(
+        self,
+        target: lldb.SBTarget,
+        extra_args: "lldb.SBStructuredData",
+        internal_dict: dict,
+    ) -> None:
+        pass
+
+    def handle_stop(self, exe_ctx: lldb.SBExecutionContext, stream: lldb.SBStream) -> bool:
+        global _fatal_reported
+        try:
+            process: lldb.SBProcess = exe_ctx.GetProcess()
+            if process and process.IsValid():
+                crashing: Optional[lldb.SBThread] = None
+                signo: int = -1
+                for thread in process:
+                    if thread.GetStopReason() == lldb.eStopReasonSignal:
+                        crashing = thread
+                        signo = thread.GetStopReasonDataAtIndex(0)
+                        break
+
+                if crashing is not None and not _fatal_reported:
+                    _fatal_reported = True
+                    sig_name: str = _signal_name(process, signo)
+                    frame: lldb.SBFrame = crashing.GetFrameAtIndex(0)
+                    report: BreakpointReport = _extract_report(
+                        frame, header="Fatal signal", signal_name=sig_name
+                    )
+                    print(_format_report(report))
+        except Exception as exc:
+            print(f"\n[lldb-script ERROR in stop hook] {exc}\n")
+
+        # Always auto-continue so the run stays fully automatic and the signal is
+        # passed through to the inferior (keeping pytest's Python traceback).
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -796,9 +939,18 @@ def __lldb_init_module(debugger: lldb.SBDebugger, internal_dict: dict) -> None:
         bp.SetScriptCallbackFunction(f"{__name__}._bp_callback")
         print(f"[lldb-script] Breakpoint set on {func_name}")
 
+    # Stop on fatal signals (and pass them through) so we can print a C++
+    # backtrace while still letting the inferior's own handler run afterwards.
+    for sig in FATAL_SIGNALS:
+        debugger.HandleCommand(f"process handle {sig} -s true -n true -p true")
+
+    # Auto-print the C++ backtrace on any fatal-signal stop, fully unattended.
+    debugger.HandleCommand(f"target stop-hook add -P {__name__}.FatalSignalStopHook")
+    print(f"[lldb-script] Fatal-signal C++ backtrace enabled for: {', '.join(FATAL_SIGNALS)}")
+
     print(f"[lldb-script] Frame range: [{FRAME_START}, {FRAME_END})")
 
     launch_cmd: str = "process launch -- " + " ".join(
-        shlex.quote(x) for x in ["-m", "pytest", pytest_target]
+        shlex.quote(x) for x in ["-m", "pytest", "--color=no", "--log-cli-level=DEBUG", "--tb=short", pytest_target]
     )
     debugger.HandleCommand(launch_cmd)
