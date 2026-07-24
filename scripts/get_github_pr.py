@@ -232,6 +232,23 @@ def render_review(md: MarkdownBuilder, review: dict[str, Any]) -> None:
     md.paragraph(f"Source: {review['url']}")
     md.blank()
 
+def trim_diff_hunk(diff_hunk: str, context: int = 3) -> str:
+    """Keep only the last `context`+1 lines of a diffHunk.
+
+    GitHub's diffHunk ends at the commented line, so the relevant line is the
+    last one. This trims away the (potentially large) leading context while
+    preserving the hunk header for orientation.
+    """
+    lines = diff_hunk.splitlines()
+    if not lines:
+        return diff_hunk
+
+    header = lines[0] if lines[0].startswith("@@") else None
+    body = lines[1:] if header else lines
+
+    kept = body[-(context + 1):]
+    result = ([header] if header else []) + kept
+    return "\n".join(result)
 
 def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None:
     clarify = ""
@@ -275,7 +292,7 @@ def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None
         if index == 0:
             diff_hunk = text(comment.get("diffHunk"))
             if diff_hunk.strip():
-                md.fenced_code(diff_hunk, "diff")
+                md.fenced_code(trim_diff_hunk(diff_hunk), "diff")
 
         comment_body = text(comment.get("body"))
         if comment_body.strip():
@@ -286,7 +303,7 @@ def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None
         md.paragraph(f"Source: {comment['url']}")
         md.blank()
 
-def build_markdown(pr: dict[str, Any], pr_diff: str) -> str:
+def build_markdown(pr: dict[str, Any]) -> str:
     md = MarkdownBuilder()
 
     md.heading(1, f"PR #{pr['number']}: {pr['title']}")
@@ -301,10 +318,6 @@ def build_markdown(pr: dict[str, Any], pr_diff: str) -> str:
         md.markdown_block(body)
     else:
         md.paragraph("_No description_")
-    md.blank()
-
-    md.heading(2, "Diff")
-    md.fenced_code(pr_diff, "diff")
     md.blank()
 
     md.heading(2, "Changed Files")
@@ -388,13 +401,13 @@ def main() -> None:
         default=None,
         help="Output file path",
     )
+
     args = parser.parse_args()
 
     try:
         ref = parse_pr_url(args.pr_url)
         data = gh_graphql(ref.owner, ref.repo, ref.number)
         pr: dict[str, Any] = data["data"]["repository"]["pullRequest"]
-        pr_diff = gh_pr_diff(args.pr_url)
     except subprocess.CalledProcessError as exc:
         print(exc.stderr, file=sys.stderr)
         sys.exit(exc.returncode)
@@ -406,7 +419,7 @@ def main() -> None:
         f"{ref.owner}-{ref.repo}-pr-{ref.number}-discussion.md"
     )
 
-    markdown = build_markdown(pr, pr_diff)
+    markdown = build_markdown(pr)
     output_path.write_text(markdown, encoding="utf-8")
     print(f"Wrote {output_path}")
 
