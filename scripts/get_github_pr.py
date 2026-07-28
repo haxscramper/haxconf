@@ -5,7 +5,6 @@
 # ]
 # ///
 
-
 from __future__ import annotations
 
 import argparse
@@ -13,7 +12,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, Sequence
 
@@ -151,19 +150,21 @@ def parse_pr_url(url: str) -> PullRequestRef:
 
 
 def gh_graphql(owner: str, name: str, pr_number: int) -> dict[str, Any]:
-    out = run([
-        "gh",
-        "api",
-        "graphql",
-        "-F",
-        f"owner={owner}",
-        "-F",
-        f"name={name}",
-        "-F",
-        f"number={pr_number}",
-        "-f",
-        f"query={QUERY}",
-    ])
+    out = run(
+        [
+            "gh",
+            "api",
+            "graphql",
+            "-F",
+            f"owner={owner}",
+            "-F",
+            f"name={name}",
+            "-F",
+            f"number={pr_number}",
+            "-f",
+            f"query={QUERY}",
+        ]
+    )
     return json.loads(out)
 
 
@@ -218,6 +219,69 @@ def format_comment_location(comment: dict[str, Any], fallback_path: str) -> str:
     return f"`{path}`"
 
 
+def parse_bool(value: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"true", "t", "1", "yes", "y"}:
+        return True
+    if normalized in {"false", "f", "0", "no", "n"}:
+        return False
+    raise argparse.ArgumentTypeError(f"Expected true/false, got: {value}")
+
+
+def normalize_comment_headings(markdown_text: str, target_level: int = 6) -> str:
+    """Rewrite headings inside comment/review markdown to a fixed level."""
+    if not markdown_text.strip():
+        return markdown_text
+
+    atx_re = re.compile(r"^(\s{0,3})#{1,6}\s+(.*?)(\s+#+\s*)?$")
+    setext_re = re.compile(r"^\s{0,3}(=+|-+)\s*$")
+    fence_re = re.compile(r"^\s{0,3}(```+|~~~+)")
+
+    lines = markdown_text.splitlines()
+    out: list[str] = []
+    in_fence = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        if fence_re.match(line):
+            in_fence = not in_fence
+            out.append(line)
+            i += 1
+            continue
+
+        if in_fence:
+            out.append(line)
+            i += 1
+            continue
+
+        # Setext headings:
+        # Title
+        # -----
+        if i + 1 < len(lines) and lines[i].strip() and setext_re.match(lines[i + 1]):
+            out.append(f"{'#' * target_level} {lines[i].strip()}")
+            i += 2
+            continue
+
+        # ATX headings: ### title
+        m = atx_re.match(line)
+        if m:
+            indent = m.group(1)
+            title = m.group(2).strip()
+            if title:
+                out.append(f"{indent}{'#' * target_level} {title}")
+            else:
+                out.append(line)
+            i += 1
+            continue
+
+        out.append(line)
+        i += 1
+
+    return "\n".join(out)
+
+
 def render_review(md: MarkdownBuilder, review: dict[str, Any]) -> None:
     ts = node_timestamp(review)
     md.heading(
@@ -226,19 +290,15 @@ def render_review(md: MarkdownBuilder, review: dict[str, Any]) -> None:
     )
     review_body = text(review.get("body"))
     if review_body.strip():
-        md.markdown_block(review_body)
+        md.markdown_block(normalize_comment_headings(review_body, target_level=6))
     else:
         md.paragraph("_No summary body (state-only review)_")
     md.paragraph(f"Source: {review['url']}")
     md.blank()
 
-def trim_diff_hunk(diff_hunk: str, context: int = 3) -> str:
-    """Keep only the last `context`+1 lines of a diffHunk.
 
-    GitHub's diffHunk ends at the commented line, so the relevant line is the
-    last one. This trims away the (potentially large) leading context while
-    preserving the hunk header for orientation.
-    """
+def trim_diff_hunk(diff_hunk: str, context: int = 3) -> str:
+    """Keep only the last `context`+1 lines of a diffHunk."""
     lines = diff_hunk.splitlines()
     if not lines:
         return diff_hunk
@@ -246,23 +306,23 @@ def trim_diff_hunk(diff_hunk: str, context: int = 3) -> str:
     header = lines[0] if lines[0].startswith("@@") else None
     body = lines[1:] if header else lines
 
-    kept = body[-(context + 1):]
+    kept = body[-(context + 1) :]
     result = ([header] if header else []) + kept
     return "\n".join(result)
 
-def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None:
+
+def render_thread(md: MarkdownBuilder, level: int, thread: dict[str, Any]) -> None:
     clarify = ""
     if thread.get("isResolved"):
-      clarify += " resolved"
+        clarify += " resolved"
 
     if thread.get("isOutdated"):
-      clarify += " outdated"
+        clarify += " outdated"
 
     clarify = clarify.strip()
     if clarify:
-      clarify = f" ({clarify})"
+        clarify = f" ({clarify})"
 
-    resolved = "resolved" if thread.get("isResolved") else "unresolved"
     md.heading(
         level,
         f"Thread{clarify}: `{thread['path']}`{format_thread_location(thread)}",
@@ -277,8 +337,7 @@ def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None
         md.blank()
         return
 
-    # Preserve reply-chain order: comments under a thread always appear in
-    # the order they were posted, regardless of which review they belong to.
+    # Preserve reply-chain order.
     thread_comments.sort(key=lambda c: str(c.get("createdAt") or ""))
 
     for index, comment in enumerate(thread_comments):
@@ -296,14 +355,19 @@ def render_thread(md: MarkdownBuilder, level: 3, thread: dict[str, Any]) -> None
 
         comment_body = text(comment.get("body"))
         if comment_body.strip():
-            md.markdown_block(comment_body)
+            md.markdown_block(normalize_comment_headings(comment_body, target_level=6))
         else:
             md.paragraph("_Empty inline comment_")
 
         md.paragraph(f"Source: {comment['url']}")
         md.blank()
 
-def build_markdown(pr: dict[str, Any]) -> str:
+
+def build_markdown(
+    pr: dict[str, Any],
+    include_resolved: bool = True,
+    include_outdated: bool = True,
+) -> str:
     md = MarkdownBuilder()
 
     md.heading(1, f"PR #{pr['number']}: {pr['title']}")
@@ -340,7 +404,7 @@ def build_markdown(pr: dict[str, Any]) -> str:
             md.heading(3, f"{author_name(comment)} — {comment['createdAt']}")
             comment_body = text(comment.get("body"))
             if comment_body.strip():
-                md.markdown_block(comment_body)
+                md.markdown_block(normalize_comment_headings(comment_body, target_level=6))
             else:
                 md.paragraph("_Empty_")
             md.paragraph(f"Source: {comment['url']}")
@@ -349,9 +413,16 @@ def build_markdown(pr: dict[str, Any]) -> str:
     md.heading(2, "Reviews and Review Threads (chronological)")
 
     reviews: list[dict[str, Any]] = pr.get("reviews", {}).get("nodes", [])
-    threads: list[dict[str, Any]] = pr.get("reviewThreads", {}).get("nodes", [])
+    all_threads: list[dict[str, Any]] = pr.get("reviewThreads", {}).get("nodes", [])
 
-    # Map each thread to the review id of its first comment.
+    threads: list[dict[str, Any]] = []
+    for thread in all_threads:
+        if thread.get("isResolved") and not include_resolved:
+            continue
+        if thread.get("isOutdated") and not include_outdated:
+            continue
+        threads.append(thread)
+
     def thread_review_id(thread: dict[str, Any]) -> str | None:
         for c in thread.get("comments", {}).get("nodes", []):
             review = c.get("pullRequestReview")
@@ -363,7 +434,6 @@ def build_markdown(pr: dict[str, Any]) -> str:
     for thread in threads:
         threads_by_review.setdefault(thread_review_id(thread), []).append(thread)
 
-    # Order reviews chronologically; render each review then its threads.
     ordered_reviews = sorted(
         enumerate(reviews),
         key=lambda item: (node_timestamp(item[1]) or "", item[0]),
@@ -379,7 +449,6 @@ def build_markdown(pr: dict[str, Any]) -> str:
             for thread in child_threads:
                 render_thread(md, 4, thread)
 
-        # Threads with no associated review (rare) go last.
         for thread in threads_by_review.get(None, []):
             render_thread(md, 3, thread)
 
@@ -388,7 +457,7 @@ def build_markdown(pr: dict[str, Any]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Export a GitHub PR discussion and diff to Markdown.",
+        description="Export a GitHub PR discussion to Markdown.",
     )
     parser.add_argument(
         "pr_url",
@@ -400,6 +469,20 @@ def main() -> None:
         type=Path,
         default=None,
         help="Output file path",
+    )
+    parser.add_argument(
+        "--resolved",
+        type=parse_bool,
+        default=True,
+        metavar="true/false",
+        help="Include resolved review threads (default: true).",
+    )
+    parser.add_argument(
+        "--outdated",
+        type=parse_bool,
+        default=True,
+        metavar="true/false",
+        help="Include outdated review threads (default: true).",
     )
 
     args = parser.parse_args()
@@ -419,7 +502,11 @@ def main() -> None:
         f"{ref.owner}-{ref.repo}-pr-{ref.number}-discussion.md"
     )
 
-    markdown = build_markdown(pr)
+    markdown = build_markdown(
+        pr,
+        include_resolved=args.resolved,
+        include_outdated=args.outdated,
+    )
     output_path.write_text(markdown, encoding="utf-8")
     print(f"Wrote {output_path}")
 
