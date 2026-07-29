@@ -5,13 +5,14 @@
 # ///
 """Convert a Tracy profiler capture (.tracy) into a Chrome/Perfetto JSON trace.
 
-Usage: tracy_to_perfetto.py <input.tracy> <output.json>
+Usage: tracy_to_perfetto.py [--only-main-thread] <input.tracy> <output.json>
 
 The .tracy format is a custom binary dump written by tracy::Worker::Write. This
 script reimplements the reader side (tracy 0.9.0 - 0.13.3) up to the plot
 section, which covers everything the JSON trace format can represent.
 """
 
+import argparse
 import json
 import struct
 import sys
@@ -590,6 +591,19 @@ def microseconds(nanoseconds):
     return round(nanoseconds / 1000.0, 3)
 
 
+def filter_to_main_thread(capture):
+    """Discard non-main-thread data after the Tracy capture has been loaded."""
+    main_threads = [thread for thread in capture.threads if thread[0] == capture.pid]
+    if not main_threads:
+        raise SystemExit(f"main thread {capture.pid} was not found in the capture")
+
+    message_ptrs = {ptr for _, _, pointers in main_threads for ptr in pointers}
+    capture.threads = main_threads
+    capture.messages = [message for message in capture.messages if message[0] in message_ptrs]
+    capture.frame_sets = []
+    capture.gpu_contexts = []
+
+
 class ZoneDescriber:
     """Resolves a source location into a name and args, memoised per location."""
 
@@ -812,11 +826,21 @@ def convert(capture, writer):
 
 
 def main(argv):
-    if len(argv) != 3:
-        raise SystemExit("usage: tracy_to_perfetto.py <input.tracy> <output.json>")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--only-main-thread",
+        action="store_true",
+        help="keep only the process and its main thread in the output trace",
+    )
+    parser.add_argument("input", help="input Tracy capture")
+    parser.add_argument("output", help="output Chrome/Perfetto JSON trace")
+    args = parser.parse_args(argv[1:])
 
-    capture = TracyCapture(decompress(argv[1]))
-    writer = TraceWriter(argv[2])
+    capture = TracyCapture(decompress(args.input))
+    if args.only_main_thread:
+        filter_to_main_thread(capture)
+
+    writer = TraceWriter(args.output)
     try:
         convert(capture, writer)
     finally:
