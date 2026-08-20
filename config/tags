@@ -6,6 +6,7 @@
 #C##libgit
 #DO_NOT_ORG_ROAM
 #PROPERTIE
+#activity##backup
 #activity##call
 #activity##code
 #activity##meeting
@@ -127,6 +128,7 @@
 #code##python##lib##hypothesis
 #code##python##lib##igraph
 #code##python##lib##invoke
+#code##python##lib##jax
 #code##python##lib##matplotlib
 #code##python##lib##nltk
 #code##python##lib##plotly
@@ -446,6 +448,7 @@
 #project##fsm
 #project##fsm-build
 #project##haxconf
+#project##haxdex
 #project##haxdoc
 #project##haxorg
 #project##haxorg##babel
@@ -467,6 +470,7 @@
 #project##hcparse
 #project##hmisc
 #project##htsparse
+#project##index
 #project##keyboard
 #project##language
 #project##nim
@@ -577,6 +581,7 @@
 #software##emacs##org
 #software##emacs##org##agenda
 #software##emcc
+#software##fastflowlm
 #software##ffmpeg
 #software##filezilla
 #software##firefox
@@ -635,6 +640,7 @@
 #software##rofi
 #software##rr
 #software##rsync
+#software##rust##tantivy
 #software##selenium
 #software##shell
 #software##sourcetrail
@@ -664,6 +670,7 @@
 #software##xfce4
 #software##xmake
 #software##xtext
+#software##zed
 #software##zmq
 #software##zotero
 #sofware##qgis
