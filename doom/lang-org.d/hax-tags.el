@@ -64,16 +64,18 @@
   (hax/tmp/rec-build-org-tag-docs tmp)
   (gethash "programming##gui" hax/org-tags-docs))
 
-(defun hax/insert-logbook-tag-entry (tag-name action)
+(defun hax/insert-logbook-tag-entry (tag-name action &optional with-note)
   "Insert a logbook entry with TAG-NAME and ACTION ('added or 'removed) into the subtree logbook."
   (let ((current-time (format-time-string (org-time-stamp-format t t))))
     (hax/org-add-log-entry
      (format "- Tag \"%s\" %s on %s"
              (if (s-starts-with? "@" tag-name) tag-name (s-concat "#" tag-name))
              (if (eq action 'added) "Added" "Removed")
-             current-time))))
+             current-time)
+     nil
+     with-note)))
 
-(defun hax/org-assign-tag ()
+(defun hax/org-assign-tag (&optional with-note)
   "Add or remove tags in `org-mode'. If new tag is added, store
 it in the persistent list of tags, and update current list of tags"
   (interactive)
@@ -89,9 +91,11 @@ it in the persistent list of tags, and update current list of tags"
       (unless (org-at-heading-p)
         (org-back-to-heading t))
       (setq counsel-org-tags (counsel--org-get-tags)))
-    (hax/select-tag #'hax/counsel-org-tag-action)))
+    (if with-note
+        (hax/select-tag (lambda (tag) (hax/counsel-org-tag-action tag t)))
+      (hax/select-tag #'hax/counsel-org-tag-action))))
 
-(defun hax/counsel-org-tag-action (tag)
+(defun hax/counsel-org-tag-action (tag &optional with-note)
   (unless (equal tag "")
     (let* ((current-tags (counsel--org-get-tags))
            (had-tag (member tag current-tags)))
@@ -101,8 +105,8 @@ it in the persistent list of tags, and update current list of tags"
               (append current-tags (list tag))))
       (counsel-org--set-tags)
       (if had-tag
-          (hax/insert-logbook-tag-entry tag 'removed)
-        (hax/insert-logbook-tag-entry tag 'added)))))
+          (hax/insert-logbook-tag-entry tag 'removed with-note)
+        (hax/insert-logbook-tag-entry tag 'added with-note)))))
 
 
 (setq hax/immediate-note-content "")

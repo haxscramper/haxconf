@@ -75,10 +75,9 @@
                     (save-excursion
                       (goto-char (org-in-item-p))
                       (org-toggle-checkbox))))
-   :n ",ta" #'hax/org-assign-tag
-   :desc "Insert tag in text"
-   :n ",tt" #'hax/org-insert-text-tag
-   :desc "Insert timestamp in text"
+   :n ",ta" #'hax/org-assign-tag :desc "Insert tag in text"
+   :n ",tA" (cmd! (hax/org-assign-tag t)) :desc "Insert tag in text with note"
+   :n ",tt" #'hax/org-insert-text-tag :desc "Insert timestamp in text"
    :n ",ts" #'hax/org-insert-timestamp
    :n ",tS" #'hax/org-insert-timestamped-parens
    :ni "M-i M-i" #'hax/org-paste-clipboard

@@ -17,35 +17,39 @@
 (add-hook 'org-after-todo-state-change-hook #'hax/org-after-todo-change-hook)
 
 
-(defun hax/org-add-log-entry (text &optional drawer)
-  "Insert TEXT as a log entry for the current Org heading, respecting indentation.
+(defun hax/org-add-log-entry (text &optional drawer prompt-for-note)
+  "Insert TEXT as a log entry for the current Org heading.
 
-Uses `org-log-beginning' to find/create the drawer insertion point.
 If DRAWER is non-nil, log into that drawer name (default: \"LOGBOOK\").
-
-TEXT is inserted without text properties and indented like other drawer
-contents (drawer indentation + 2 spaces)."
+When PROMPT-FOR-NOTE is non-nil, prompt for a note and insert it as an
+indented continuation of the entry."
+  (unless prompt-for-note (error "???"))
+  (hax/log "Add log entry '%s' in '%s' with note '%s'" text drawer prompt-for-note)
   (let* ((org-log-into-drawer (or drawer "LOGBOOK"))
          (text (substring-no-properties (or text "")))
-         ;; Normalize to no trailing newline; we'll add newlines ourselves.
-         (text (replace-regexp-in-string "\n\\'" "" text)))
+         (text (replace-regexp-in-string "\n\\'" "" text))
+         (note
+          (when prompt-for-note
+            (substring-no-properties
+             (read-string "Note: ")))))
     (org-with-wide-buffer
      (org-back-to-heading t)
      (save-excursion
-       (let* ((pos (org-log-beginning t))      ; creates drawer if needed
+       (let* ((pos (org-log-beginning t))
               (drawer-indent
                (save-excursion
                  (goto-char pos)
-                 ;; `org-log-beginning' commonly returns BOL of the :END: line,
-                 ;; whose indentation matches the drawer's indentation.
                  (current-indentation)))
-              (prefix (make-string drawer-indent ?\s)))
+              (entry-prefix (make-string drawer-indent ?\s))
+              (note-prefix (make-string (+ drawer-indent 2) ?\s)))
          (goto-char pos)
-         (hax/log "DRAWER-INDENT: %s" drawer-indent)
-         (unless (bolp) (insert "\n"))
+         (unless (bolp)
+           (insert "\n"))
          (dolist (line (split-string text "\n"))
-           (insert prefix line "\n"))))))
-  )
+           (insert entry-prefix line "\n"))
+         (unless (string-empty-p (or note ""))
+           (dolist (line (split-string note "\n"))
+             (insert note-prefix line "\n"))))))))
 
 (defun hax/org-rename-subtree (new-title)
   "Rename current Org subtree heading to NEW-TITLE and log the rename.
