@@ -203,3 +203,6 @@ end
 
 
 set -g -x PYTHON_KEYRING_BACKEND keyring.backends.null.Keyring
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f "$HOME/google-cloud-sdk/path.fish.inc" ]; . "$HOME/google-cloud-sdk/path.fish.inc"; end
