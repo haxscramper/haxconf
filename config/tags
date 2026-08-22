@@ -3,6 +3,7 @@
 #@maintag
 #@read
 #@repeated
+#ARCHIVE
 #C##libgit
 #DO_NOT_ORG_ROAM
 #PROPERTIE
@@ -58,6 +59,7 @@
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
 #code##cpp##lib##kiwi
+#code##cpp##lib##lexy
 #code##cpp##lib##msgpack
 #code##cpp##lib##nlohmann_json
 #code##cpp##lib##ogdf
@@ -232,6 +234,10 @@
 #duration##2weeks
 #duration##moderate
 #duration##quick
+#effort##full_feature
+#effort##one_session_project
+#effort##requires_design
+#effort##unclear
 #emacs
 #emacs##general
 #emacs##highlighting
@@ -421,6 +427,7 @@
 #programming##ticket##triage
 #programming##track
 #programming##visualization
+#programming##visualization##gantt
 #programming##wrappers
 #project##anieditor
 #project##asciidraw
@@ -445,6 +452,7 @@
 #project##fsm
 #project##fsm-build
 #project##haxconf
+#project##haxdex
 #project##haxdoc
 #project##haxorg
 #project##haxorg##babel
@@ -453,6 +461,7 @@
 #project##haxorg##codegen
 #project##haxorg##cov
 #project##haxorg##editor
+#project##haxorg##export
 #project##haxorg##gui
 #project##haxorg##lang
 #project##haxorg##lang##document
@@ -581,12 +590,16 @@
 #software##gallery_dl
 #software##gcc
 #software##gdb
+#software##generative##anima
+#software##generative##krea2
+#software##generative##meshy
 #software##git
 #software##github
 #software##globalprotect
 #software##graphviz
 #software##image_ai
 #software##imgui
+#software##infinite_image_browser
 #software##inkscape
 #software##josm
 #software##kilocode
@@ -596,6 +609,7 @@
 #software##libvirt
 #software##llm
 #software##llm##context_engineering
+#software##llm##docling_ibm
 #software##llm##internals
 #software##llm##llama
 #software##llm##mcp
@@ -651,6 +665,7 @@
 #software##ubuntu
 #software##unison
 #software##valgrind
+#software##valgrind##callgrind
 #software##vscode
 #software##wasm
 #software##whisper.cpp
@@ -666,6 +681,12 @@
 #sofware##qgis
 #speech
 #sprint##review
+#state##active
+#state##can_take_next
+#state##consider_for_current
+#state##part_of_feature_work
+#state##slot_into_current
+#state##waiting_for_slot
 #status##blocking_dependency
 #status##need_help
 #status##not_reproducible

@@ -16,8 +16,8 @@ mp.add_key_binding("s", "screenshot-named", function()
     -- Sanitize filename: keep only alphanumeric, dash, underscore
     local sanitized = filename:gsub("[^%w%-_]", "_"):gsub("_+", "_"):gsub("^_", ""):gsub("_$", "")
     
-    -- Truncate to 24 characters
-    local truncated = sanitized:sub(1, 24):gsub("_$", "")
+    -- Truncate to 48 characters
+    local truncated = sanitized:sub(1, 48):gsub("_$", "")
     
     local dir = base_dir .. "/" .. truncated
     os.execute("mkdir -p '" .. dir .. "'")

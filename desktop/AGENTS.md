@@ -35,7 +35,7 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
   - Use `from beartype.typing import <Type1>, <Type2>` -- do not alias the beartype typing import
 - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
 - When printing logs from the script, use logging module instead of `print()`
-- Configure logging using `level=logging.DEBUG` `format="%(levelname)s %(name)s %(filename)s:%(lineno)d: %(message)s"`. Format log messages using f-strings, NEVER format the log messages using `%s`
+- Use `loguru` for logging Format log messages using f-strings, NEVER format the log messages using `%s`
 - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
 - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.   
 - use `match .. case` statements instead of repetitive ifs -- including dispatching on the value type. 
@@ -47,6 +47,7 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
   - If the field can contain only a fixed set of named values, don't use string for this, define an enum -- including fields used for the discriminator in the union types
   - NEVER write functions returning free-form `dict`, NEVER write functions returning typed tuples with four different elements or more. In both cases, define a dataclass with local name based on off the function `_SetupResultType` and the specific fields. Add documentation to the object fields.
 - use `plumbum` for running commands
+- If the import/runtime error is caused by the name conflict (file name is already reserved or something like that), do not attempt to write degenerate hacks around imports, tell that there is a name conflict. 
 
 # C++ code style rules
 
@@ -61,5 +62,3 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
 - ALWAYS use `{}` when writing if/else/while etc. NEVER use syntax without curly braces.
 - Let the exceptions in the code propagate. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors or log the warnings.
 - Asume C++23 and above
-
-Some additions

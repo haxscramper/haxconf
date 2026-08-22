@@ -23,7 +23,6 @@
 If DRAWER is non-nil, log into that drawer name (default: \"LOGBOOK\").
 When PROMPT-FOR-NOTE is non-nil, prompt for a note and insert it as an
 indented continuation of the entry."
-  (unless prompt-for-note (error "???"))
   (hax/log "Add log entry '%s' in '%s' with note '%s'" text drawer prompt-for-note)
   (let* ((org-log-into-drawer (or drawer "LOGBOOK"))
          (text (substring-no-properties (or text "")))
