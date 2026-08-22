@@ -330,6 +330,11 @@ class AgendaGroup(BaseModel):
     header: str | None = None
     entries: list[AgendaEntry] = Field(default_factory=list)
 
+    @field_validator("entries", mode="before")
+    @classmethod
+    def _entries_none_to_empty(cls, value):
+        return [] if value is None else value
+
 
 @dataclass(frozen=True)
 class ColumnWidths:
