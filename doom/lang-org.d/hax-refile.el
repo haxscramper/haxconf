@@ -70,6 +70,12 @@
 (advice-add 'org-refile :before #'hax/disable-adapt-indentation)
 (advice-add 'org-refile :after #'hax/enable-adapt-indentation)
 
+(defun hax/org-refile-without-clipboard (org-refile-function &rest arguments)
+  (let ((interprogram-cut-function nil))
+    (apply org-refile-function arguments)))
+
+(advice-add 'org-refile :around #'hax/org-refile-without-clipboard)
+
 
 (defun hax/org-refile-marker-position (target at-start)
   (save-window-excursion
