@@ -94,7 +94,6 @@
 (package! ace-window)
 
 (package! ox-epub)
-(package! ox-json)
 (package! org-ref)
 
 (package! mini-frame)

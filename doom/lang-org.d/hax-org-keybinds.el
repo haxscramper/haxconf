@@ -1,5 +1,36 @@
 ;;; -*- lexical-binding: t; -*-
 
+(defhydra hydra-insert-subtree (:color blue :hint nil)
+  "
+  Subtree insertion
+  _<up>_:    Insert subtree above
+  _<down>_:  Insert subtree down
+  _<right>_: Insert subtree same level
+  _c_:       Current clocked target
+  _d_:       Daily note entry
+  _s_:       Staging top-level
+  _a_:       Active subtree
+  "
+  ("<up>" hax/org-insert-subtree-above)
+  ("<down>" hax/org-insert-subtree-below)
+  ("<right>" hax/org-insert-subtree-same)
+  ("c" (org-capture nil "c"))
+  ("s" (org-capture nil "S"))
+  ("d" (org-capture nil "d"))
+  ("a" (hax/insert-capture-under-subtree :entries (hax/org-collect-active-entries)))
+  ("q" nil "cancel"))
+
+(defhydra hydra-insert-link-to-subtree (:color blue :hint nil)
+  "
+  Subtree link insertion
+  _a_: Active subtree
+  "
+  ("a" (hax/org-insert-link-to-subtree :entries (hax/org-collect-active-entries)) "Active entries")
+  ("l" (hax/org-insert-link-to-subtree :last-n 1) "Any subtree, short name")
+  ("L" (hax/org-insert-link-to-subtree) "Any subtree, full name")
+  ("q" nil "cancel")
+  )
+
 (defun hax/detail/configure-keybinds ()
   ;; https://github.com/hlissner/doom-emacs/blob/develop/docs/faq.org#my-new-keybinds-dont-work
   ;; because I override the default keybindings I had to use this
@@ -144,10 +175,6 @@
   :END:
 " (format-time-string "%Y-%m-%d %a %H:%M:%S %Z" (current-time))))))
 
-   :desc "link subtree, full name"
-   :ni "M-i M-l M-t M-f" (cmd! (hax/org-insert-link-to-subtree))
-   :desc "link subtree, short name"
-   :ni "M-i M-l M-t M-s" (cmd! (hax/org-insert-link-to-subtree :last-n 1))
    :desc "link subtree, short name"
    :v "M-i M-l M-t M-s" (cmd! (let ((text (get-selected-region-text)))
                                 (delete-region (get-selected-region-start)
@@ -167,10 +194,6 @@
                                   (x) (insert (hax/org-outline-path-at-marker
                                                (cdr x) 1)))
                                 'hax/org-insert-link-to-heading))
-
-   :desc "link active subtree, full name"
-   :ni "M-i M-l M-a" (cmd! (hax/org-insert-link-to-subtree
-                            :entries (hax/org-collect-active-entries)))
 
    :desc "Insert link"
    :ni "S-C-i" (cmd! (hydra-insert-link/body))
@@ -227,14 +250,12 @@
    ;; specification.
    :desc "Global agenda"
    :n [M-f7] (cmd! (hax/rofi-select-agenda-subtree))
-   :desc "New note"
-   :n [M-f8] (cmd! (org-capture nil "d"))
-   :desc "Item under clocked"
-   :n [M-f9] (cmd! (org-capture nil "c"))
-   :desc "New immediate todo"
-   :n [M-f10] (cmd! (org-capture nil "i"))
+   :desc "Entry under subtree"
+   :n [M-f9] (cmd! (hydra-insert-subtree/body))
+   :desc "Link to subtree"
+   :n [M-f10] (cmd! (hydra-insert-link-to-subtree/body))
    :desc "New staging item"
-   :n [M-f11] (cmd! (org-capture nil "S"))
+   :n [M-f11] (cmd! )
    :desc "New capture"
    :n [M-insert] #'org-capture)
   )

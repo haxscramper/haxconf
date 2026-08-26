@@ -35,7 +35,7 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
   - Use `from beartype.typing import <Type1>, <Type2>` -- do not alias the beartype typing import
 - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
 - When printing logs from the script, use logging module instead of `print()`
-- Use `loguru` for logging Format log messages using f-strings, NEVER format the log messages using `%s`
+- Use `loguru` for logging Format log messages using f-strings, NEVER format the log messages using `%s`. Do not add special methods or logic for configuring loguru logger. 
 - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
 - Do not implicitly ignore errors and exceptions in the code. Unless specified as an edge case to handle, do not focus on defensive coding. If the logic is broken I want to see it fail explicitly instead of silently ignore the errors.   
 - use `match .. case` statements instead of repetitive ifs -- including dispatching on the value type. 

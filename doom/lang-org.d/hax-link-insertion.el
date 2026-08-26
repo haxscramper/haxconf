@@ -14,6 +14,26 @@
          (id (hax/get-subtree-id-for-marker (cdr tree-car))))
     (insert (format "[[id:%s][%s]]" id (if description description name)))))
 
+(cl-defun hax/insert-capture-under-subtree
+    (&key (entries (org-collect-known-entries)))
+  "Select a subtree from ENTRIES and capture a TODO entry beneath it."
+  (interactive)
+  (let ((target-marker
+         (copy-marker (cdr (hax/org-select-subtree entries)))))
+    (let ((org-capture-templates
+           `(("a" "Subtask under" entry
+              (function
+               ,(lambda ()
+                  (goto-marker target-marker)))
+              "* TODO %?
+:PROPERTIES:
+:CREATED: %U
+:END:
+"
+              :empty-lines-before 1
+              :empty-lines-after 1))))
+      (org-capture nil "a"))))
+
 (cl-defun hax/org-insert-link-to-subtree
     (&key description
           last-n
