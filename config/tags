@@ -62,6 +62,7 @@
 #code##cpp##lib##lexy
 #code##cpp##lib##msgpack
 #code##cpp##lib##nlohmann_json
+#code##cpp##lib##lager
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
 #code##cpp##lib##ranges
@@ -84,6 +85,7 @@
 #code##cpp##tool##vcpkg
 #code##cpp##ub
 #code##css
+#code##dsl
 #code##elisp
 #code##emacs##org
 #code##emacs##org-mode
@@ -91,6 +93,7 @@
 #code##git
 #code##glsl
 #code##go
+#code##graphviz
 #code##gui##qt
 #code##haxe
 #code##java
@@ -309,6 +312,7 @@
 #idea##code##qdelib
 #idea##emacs
 #idea##exciting_feature
+#idea##feature
 #idea##try
 #idea##try-out
 #idea##vim
@@ -521,6 +525,7 @@
 #quote
 #rant
 #real_date
+#recollectin
 #recollection
 #recollection##day
 #recollection##event

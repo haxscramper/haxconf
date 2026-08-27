@@ -73,7 +73,7 @@ def main():
         new_img = add_borders_to_image(input_path, target_width, target_height)
         
         # Generate output filename
-        base_name = os.path.splitext(input_path)[0]
+        base_name = os.path.splitext(os.path.split(input_path)[1])[0]
         output_path = f"{base_name}_{target_width}x{target_height}.png"
         
         # Save the new image
