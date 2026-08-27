@@ -127,6 +127,7 @@
 #code##python##lib##matplotlib
 #code##python##lib##nltk
 #code##python##lib##plotly
+#code##python##lib##pydantic
 #code##python##lib##pytorch
 #code##python##lib##sqlalchemy
 #code##python##lib##streamlit
@@ -442,6 +443,7 @@
 #project##fsm
 #project##fsm-build
 #project##haxconf
+#project##haxdex
 #project##haxdoc
 #project##haxorg
 #project##haxorg##babel
@@ -463,6 +465,7 @@
 #project##hcparse
 #project##hmisc
 #project##htsparse
+#project##index
 #project##keyboard
 #project##language
 #project##nim
@@ -542,6 +545,7 @@
 #software##airdroid
 #software##alxreader
 #software##antlr4
+#software##arangodb
 #software##archivebox
 #software##asciidoctor
 #software##ast_grep
@@ -577,6 +581,7 @@
 #software##github
 #software##globalprotect
 #software##graphviz
+#software##hotspot
 #software##image_ai
 #software##imgui
 #software##inkscape
@@ -589,6 +594,7 @@
 #software##llm
 #software##llm##llama
 #software##llm##mcp
+#software##llm##models##joycaption
 #software##llm##rag
 #software##llvm
 #software##memex
