@@ -9,7 +9,7 @@
   _c_:       Current clocked target
   _d_:       Daily note entry
   _s_:       Staging top-level
-  _a_:       Active subtree
+  _a_:       Capture under active subtree
   "
   ("<up>" hax/org-insert-subtree-above)
   ("<down>" hax/org-insert-subtree-below)
@@ -18,6 +18,9 @@
   ("s" (org-capture nil "S"))
   ("d" (org-capture nil "d"))
   ("a" (hax/insert-capture-under-subtree :entries (hax/org-collect-active-entries)))
+  ("p" (hax/insert-capture-under-subtree :entries
+                                         (let ((org-agenda-files (list (expand-file-name hax/projects.org))))
+                                           (hax/org-collect-ql-entries '(heading)))))
   ("q" nil "cancel"))
 
 (defhydra hydra-insert-link-to-subtree (:color blue :hint nil)

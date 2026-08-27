@@ -73,6 +73,27 @@
      history)
     result))
 
+(defun hax/org-collect-ql-entries (query &optional with-todo)
+  "Return entries matching Org QL QUERY as (DISPLAY . MARKER) pairs.
+
+When WITH-TODO is non-nil, include the file name and TODO keyword in
+DISPLAY."
+  (--map
+   (let* ((marker (org-element-property :org-marker it))
+          (outline (hax/org-outline-path-at-marker marker)))
+     (cons
+      (if with-todo
+          (format "%s %s %s"
+                  (f-base (buffer-file-name (marker-buffer marker)))
+                  (org-element-property :todo-keyword it)
+                  outline)
+        outline)
+      marker))
+   (org-ql-select
+     (org-agenda-files)
+     query
+     :action 'element-with-markers)))
+
 (defun hax/org-collect-active-entries (&optional with-todo)
   "Get list of the 'targetable' entries, sorted by last clock-in time."
   (let ((begin-7 (ts-adjust 'day -7 (ts-now)))
