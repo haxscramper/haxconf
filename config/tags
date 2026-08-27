@@ -132,6 +132,7 @@
 #code##python##lib##matplotlib
 #code##python##lib##nltk
 #code##python##lib##plotly
+#code##python##lib##pydantic
 #code##python##lib##pytorch
 #code##python##lib##sqlalchemy
 #code##python##lib##streamlit
@@ -285,6 +286,7 @@
 #hardware##elgato
 #hardware##gtr9
 #hardware##keyboard
+#hardware##mac
 #hardware##mini_tab_c
 #hardware##monitor
 #hardware##p11
@@ -475,6 +477,7 @@
 #project##hcparse
 #project##hmisc
 #project##htsparse
+#project##index
 #project##keyboard
 #project##language
 #project##nim
@@ -597,6 +600,7 @@
 #software##github
 #software##globalprotect
 #software##graphviz
+#software##hotspot
 #software##image_ai
 #software##imgui
 #software##infinite_image_browser
@@ -613,6 +617,7 @@
 #software##llm##internals
 #software##llm##llama
 #software##llm##mcp
+#software##llm##models##joycaption
 #software##llm##qmd
 #software##llm##rag
 #software##llvm
@@ -676,6 +681,7 @@
 #software##xfce4
 #software##xmake
 #software##xtext
+#software##zed
 #software##zmq
 #software##zotero
 #sofware##qgis
