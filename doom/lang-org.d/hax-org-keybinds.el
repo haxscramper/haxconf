@@ -7,9 +7,11 @@
   _<down>_:  Insert subtree down
   _<right>_: Insert subtree same level
   _c_:       Current clocked target
-  _d_:       Daily note entry
   _s_:       Staging top-level
+  _d_:       Daily note entry
+  _i_:       Immediate todo
   _a_:       Capture under active subtree
+  _p_:       Under project subtree
   "
   ("<up>" hax/org-insert-subtree-above)
   ("<down>" hax/org-insert-subtree-below)
@@ -17,6 +19,7 @@
   ("c" (org-capture nil "c"))
   ("s" (org-capture nil "S"))
   ("d" (org-capture nil "d"))
+  ("i" (org-capture nil "i"))
   ("a" (hax/insert-capture-under-subtree :entries (hax/org-collect-active-entries)))
   ("p" (hax/insert-capture-under-subtree :entries
                                          (let ((org-agenda-files (list (expand-file-name hax/projects.org))))
@@ -26,11 +29,15 @@
 (defhydra hydra-insert-link-to-subtree (:color blue :hint nil)
   "
   Subtree link insertion
-  _a_: Active subtree
+  _a_: Active subtree, short link
+  _A_: Active subtree, full name
+  _l_: Any subtree, short name
+  _L_: Any subtree, full name
   "
-  ("a" (hax/org-insert-link-to-subtree :entries (hax/org-collect-active-entries)) "Active entries")
-  ("l" (hax/org-insert-link-to-subtree :last-n 1) "Any subtree, short name")
-  ("L" (hax/org-insert-link-to-subtree) "Any subtree, full name")
+  ("A" (hax/org-insert-link-to-subtree :entries (hax/org-collect-active-entries)))
+  ("a" (hax/org-insert-link-to-subtree :entries (hax/org-collect-active-entries) :last-n 1))
+  ("l" (hax/org-insert-link-to-subtree :last-n 1))
+  ("L" (hax/org-insert-link-to-subtree))
   ("q" nil "cancel")
   )
 
@@ -256,7 +263,7 @@
    :desc "Entry under subtree"
    :n [M-f9] (cmd! (hydra-insert-subtree/body))
    :desc "Link to subtree"
-   :n [M-f10] (cmd! (hydra-insert-link-to-subtree/body))
+   :nvi [M-f10] (cmd! (hydra-insert-link-to-subtree/body))
    :desc "New staging item"
    :n [M-f11] (cmd! )
    :desc "New capture"
