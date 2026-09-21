@@ -81,8 +81,7 @@
           (if existing
               body
             hax/inkscape--empty-document))
-         (source-file
-          (make-temp-file "org-inkscape-" nil ".svg"))
+         (source-file "/tmp/org-inkscape-edit.svg")
          edited-body)
     (unwind-protect
         (progn
