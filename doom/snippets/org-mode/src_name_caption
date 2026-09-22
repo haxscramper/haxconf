@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: #+begin_src ... block + #+name + #+caption
+# key: <snc
+# uuid: <snc
+# expand-env: ((yas-indent-line 'fixed))
+# --
+
+#+name: $1
+#+caption: $2
+#+begin_src `(hax/yas-org-src-language)`
+`%`$0
+#+end_src
