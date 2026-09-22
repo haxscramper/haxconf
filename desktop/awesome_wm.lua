@@ -467,7 +467,14 @@ globalkeys =
         {modkey},
         "Return",
         function()
-            awful.spawn(terminal)
+            awful.spawn({
+                terminal,
+                "--single-instance",
+                "--listen-on",
+                "unix:@kitty-control",
+                "-o",
+                "allow_remote_control=socket-only",
+            })
         end,
         {description = "open a terminal", group = "launcher"}
     ),

@@ -246,3 +246,5 @@ skips capitalized and upperacsed words (names and abbreviations)"
 
   ;; Apply the advice to intercept the default cycling command
   (advice-add 'org-cycle-list-bullet :around #'hax/org-cycle-custom-bullets))
+
+

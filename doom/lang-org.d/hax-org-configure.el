@@ -346,7 +346,13 @@
 
   (hax/detail/configure-keybinds)
   (setq-local company-backends
-              '(company-capf (:separate company-ispell company-dabbrev company-yasnippet))))
+              '(company-capf (:separate company-ispell company-dabbrev company-yasnippet)))
+
+  (org-babel-map-src-blocks nil
+    (let ((language (car (org-babel-get-src-block-info 'light))))
+      (when (member language '("inkscape" "drawio"))
+        (org-fold-hide-block-toggle 'on))))
+  )
 
 
 (setq

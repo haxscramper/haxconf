@@ -1,6 +1,6 @@
 General rules for any type of the code 
 
-- NEVER use `# ---` and other similar block comments, do not use any sort of delimiter comments in the generated output. 
+- NEVER use `# ---` and other similar block comments, do not use any sort of delimiter comments in the generated output. Do not generate any sort of section/segmentation/table of content comments in the code. 
 - Do not add comments. 
 - Never write more than two lines per documentable entry. Fields, methods for a class are individual entries, but the function arguments are a part of the function: so the class with 10 fields might contain 11 individual documentation sentences for every field, and then one for the overall class, but no more than that. 
 - Do not use emojis in the answer.
@@ -13,8 +13,13 @@ General rules for any type of the code
   - example: `if len(set(names)) != len(names):` -- if the names are mismatched, don't just raise "names are mismatched", *find which name is the duplicate and provide user with this information*
   - example: `if name not in some_dict:` -- if the element is missing, don't raise generic "key is missing", actually *tell which key is missing, so the user would not have to do the same manual work*
 
+# graphviz generation rules
+wh
+- Graphviz interprets `:` in the identifiers as a port IDs, the values must be sanitized to fix this. 
+
 # qt code rules
 
+- Use PyQt6 for python code
 - Use Model View Controller design in favor of the hand-rolled sorting and filtering logic. Never write the GUI that manually rebuilds the list/table widgets on every user interaction. 
 - ALWAYS use fully qualified enum name rather than the alias on the qt namespace. NEVER use the "runtime-equivalent" shorter enum accessors -- they are not handled by the static analysis tools, resulting in code that is giving false positives. 
       - BAD: `QHeaderView.Stretch`
@@ -34,6 +39,7 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
   - Import `beartype.typing` instead of `typing` for type names. 
   - Use `from beartype.typing import <Type1>, <Type2>` -- do not alias the beartype typing import
 - Provide full implementation of the requested logic, do not skip logic with "todo" comments. 
+- When writing multiple files, don't make all functions and every type in every file public, consider what must be marked as private or not. 
 - When printing logs from the script, use logging module instead of `print()`
 - Use `loguru` for logging Format log messages using f-strings, NEVER format the log messages using `%s`. Do not add special methods or logic for configuring loguru logger. 
 - When writing functions returning complex data (nested dictionaries, dictionaries nested in arrays, complex tuples), consider using data classes. 
@@ -48,6 +54,21 @@ Use double quotes for strings, use type annotations. Use pathlib library for wor
   - NEVER write functions returning free-form `dict`, NEVER write functions returning typed tuples with four different elements or more. In both cases, define a dataclass with local name based on off the function `_SetupResultType` and the specific fields. Add documentation to the object fields.
 - use `plumbum` for running commands
 - If the import/runtime error is caused by the name conflict (file name is already reserved or something like that), do not attempt to write degenerate hacks around imports, tell that there is a name conflict. 
+
+## `betterproto2` usage
+
+- Betterproto generates python dataclasses from the types
+  - to append the item to the repeated field, don't call `.add()` to create a new object Instead, do `value = ProtobufType()` to create an object, and then `parent.list_field.append(value)`. 
+  - `betterproto2` map fields do not create message values on lookup
+  - do not ask for the generated python definitions if the protobuf is already provided
+- `Any` fields are not initialized by default, the value might be `None` by default. 
+- `Any` method is `.pack`, not `.Pack`. The method returns a packed instance, it does not mutate the value in-place. The correct usage is `Any.pack(message)`
+- use `betterproto2`, not legacy `betterproto` version
+- the library does not have built-in `Any` types, the code is generated in `<main gen dir>.google.protobuf`
+- Betterproto updates the type names to the `PascalCase`, including the abbreviations like `VertexIDVec -> VertexIdVec`. 
+  - field names to snake case
+  - message and enum names to pascal case
+- `ParseFromString`, `from_json` don't mutate values in-place, they return a new instance of the object. The correct approach is to `value = ProtoType.ParseFromString()`
 
 # C++ code style rules
 

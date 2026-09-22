@@ -169,6 +169,7 @@ You can insert or kill the name of the selected font."
 (load! "lang-latex.el")
 (load! "lang-drawio.el")
 (load! "lang-inkscape.el")
+(load! "lang-snippets.el")
 
 (setq major-mode-remap-alist
       '((c-mode . c-ts-mode)

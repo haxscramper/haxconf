@@ -233,7 +233,8 @@ being called."
   (org-expiry-insert-created))
 
 
-(defun hax/org-insert-subtree-offset (level-offset)
+(cl-defun hax/org-insert-subtree-offset
+    (level-offset &optional (go-to-subtree-end t))
   (let* ((current-level
           (or (org-current-level)
               (save-excursion
@@ -243,13 +244,18 @@ being called."
          (target-level
           (hax/clamp (+ current-level level-offset) 1 nil))
          (target-buffer (current-buffer))
+         (target-position
+          (save-excursion
+            (when (and go-to-subtree-end
+                       (org-back-to-heading t))
+              (org-end-of-subtree t))
+            (line-end-position)))
          (line-is-empty
-          (= (line-beginning-position) (line-end-position)))
+          (save-excursion
+            (goto-char target-position)
+            (= (line-beginning-position) (line-end-position))))
          (target-marker
-          (copy-marker
-           (if line-is-empty
-               (line-beginning-position)
-             (line-end-position))))
+          (copy-marker target-position))
          (template
           (concat
            (unless line-is-empty "\n")
