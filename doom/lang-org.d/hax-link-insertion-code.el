@@ -155,7 +155,7 @@
                                         (directory-file-name root)))
                                file-choices nil t)))
                         (expand-file-name picked-file root)))))
-        (quit nil))))))
+            (quit nil))))))
 
 (defun hax/code-link-resolve-active-index ()
   (interactive)
@@ -255,74 +255,111 @@ A non-empty line is defined as a line containing at least one non-whitespace cha
   (goto-char (point-max))
   (when (re-search-backward "\\S-" nil t) (end-of-line)))
 
-(defun hax/log-context-to-scratch ()
-  "Capture current context and append it to the *scratch* buffer.
-
-If nothing is selected, use the full current line.
-If a single-line range is selected, use the selected text inline.
-If a multi-line range is selected, insert it as an Org source block."
-  (interactive)
+(defun hax/--context-log-data ()
+  "Collect the current source context and its metadata."
   (let* ((has-selection (use-region-p))
          (region-beg (when has-selection (region-beginning)))
          (region-end (when has-selection (region-end)))
          (selected-text
           (when has-selection
             (buffer-substring-no-properties region-beg region-end)))
+         (leading-newline-length
+          (if (and selected-text
+                   (string-match "\\`[\n\r]+" selected-text))
+              (match-end 0)
+            0))
+         (normalized-selection
+          (when selected-text
+            (string-trim selected-text "[\n\r]+" "[\n\r]+")))
          (multiline-selection
-          (and selected-text (string-match-p "\n" selected-text)))
-         (line-text
-          (string-trim-left
-           (buffer-substring-no-properties
-            (line-beginning-position) (line-end-position))))
+          (and normalized-selection
+               (string-match-p "[\n\r]" normalized-selection)))
          (context-text
-          (cond
-           ((not has-selection) line-text)
-           (multiline-selection selected-text)
-           (t selected-text)))
+          (if has-selection
+              normalized-selection
+            (string-trim-left
+             (buffer-substring-no-properties
+              (line-beginning-position)
+              (line-end-position)))))
+         (content-beg
+          (when region-beg
+            (+ region-beg leading-newline-length)))
          (lang (hax/--get-language))
-         (fname (let* ((full-path (or (buffer-file-name) "unnamed-buffer"))
-                       (dir (file-name-nondirectory
-                             (directory-file-name (file-name-directory full-path))))
-                       (file (file-name-nondirectory full-path)))
-                  (concat dir "/" file)))
-         (fline (if has-selection
-                    (line-number-at-pos region-beg)
-                  (line-number-at-pos)))
-         (full-sha (condition-case nil
-                       (if (fboundp 'magit-rev-parse)
-                           (magit-rev-parse "HEAD")
-                         (vc-git-working-revision (buffer-file-name)))
-                     (error nil)))
+         (full-path (buffer-file-name))
+         (fname
+          (if full-path
+              (let ((dir
+                     (file-name-nondirectory
+                      (directory-file-name
+                       (file-name-directory full-path))))
+                    (file (file-name-nondirectory full-path)))
+                (concat dir "/" file))
+            "unnamed-buffer"))
+         (fline
+          (if has-selection
+              (line-number-at-pos content-beg)
+            (line-number-at-pos)))
+         (full-sha
+          (condition-case nil
+              (if (fboundp 'magit-rev-parse)
+                  (magit-rev-parse "HEAD")
+                (vc-git-working-revision full-path))
+            (error nil)))
          (sha (if full-sha (substring full-sha 0 8) "N/A"))
-         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M:%S %Z]"))
-         (state-dir (expand-file-name "~/.local/state/hax/"))
-         (org-file (expand-file-name "scratch.org" state-dir))
-         (org-buffer (progn
-                       (make-directory state-dir t)
-                       (find-file-noselect org-file))))
+         (timestamp (format-time-string "[%Y-%m-%d %a %H:%M:%S %Z]")))
+    (list :text context-text
+          :multiline multiline-selection
+          :language lang
+          :filename fname
+          :line fline
+          :sha sha
+          :timestamp timestamp)))
 
+(defun hax/--format-context-log-entry (context)
+  "Format CONTEXT as an Org log entry."
+  (let ((text (plist-get context :text))
+        (multiline (plist-get context :multiline))
+        (lang (plist-get context :language))
+        (fname (plist-get context :filename))
+        (fline (plist-get context :line))
+        (sha (plist-get context :sha))
+        (timestamp (plist-get context :timestamp)))
+    (if multiline
+        (format
+         "- %s\n  #+caption: =%s:%s= at ~%s~\n  #+begin_src %s\n%s\n  #+end_src"
+         timestamp fname fline sha lang text)
+      (format
+       "- %s src_%s{%s} in =%s:%s= at ~%s~"
+       timestamp lang text fname fline sha))))
+
+(defun hax/--append-context-to-scratch (entry)
+  "Append formatted context ENTRY to the scratch Org file."
+  (let* ((state-dir (expand-file-name "~/.local/state/hax/"))
+         (org-file (expand-file-name "scratch.org" state-dir))
+         (org-buffer
+          (progn
+            (make-directory state-dir t)
+            (find-file-noselect org-file))))
     (with-current-buffer org-buffer
       (goto-char (point-max))
-      (if multiline-selection
-          (progn
-            (insert (format "- %s\n" timestamp))
-            (insert (format "  #+caption: =%s:%s= at ~%s~\n" fname fline sha))
-            (insert (format "  #+begin_src %s\n" lang))
-            (insert context-text)
-            (unless (string-suffix-p "\n" context-text)
-              (insert "\n"))
-            (insert "  #+end_src\n"))
-        (insert
-         (format "- %s src_%s{%s} in =%s:%s= at ~%s~\n"
-                 timestamp lang context-text fname fline sha)))
-      (goto-char (point-max))
-      (let ((line (buffer-substring-no-properties
-                   (line-beginning-position) (line-end-position))))
-        (unless (string= line "  - ")
-          (delete-region (line-beginning-position) (line-end-position))
-          (insert "  - ")))
-      (evil-insert 0)
-      (hax/goto-end-of-last-non-empty-line)
-      (save-buffer))
-
+      (unless (or (= (point-min) (point-max))
+                  (bolp))
+        (insert "\n"))
+      (insert entry "\n  - ")
+      (save-buffer)
+      (evil-insert 0))
     (pop-to-buffer org-buffer)))
+
+(defun hax/copy-context-log-entry ()
+  "Copy the formatted current context to the kill ring."
+  (interactive)
+  (kill-new
+   (hax/--format-context-log-entry
+    (hax/--context-log-data))))
+
+(defun hax/log-context-to-scratch ()
+  "Format the current context and append it to the scratch Org file."
+  (interactive)
+  (hax/--append-context-to-scratch
+   (hax/--format-context-log-entry
+    (hax/--context-log-data))))

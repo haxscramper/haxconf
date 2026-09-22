@@ -316,7 +316,6 @@ def edit_svg(path: Path, existing: bool) -> Path:
     )
 
     logger.info(copy_path)
-    logger.info(copy_path.read_text())
     trim_canvas(copy_path)
     return copy_path
 

@@ -151,6 +151,7 @@
      `((:header "In progress (NEXT/WIP/PAUSED/BLOCKED)"
         :files ,(org-agenda-files)
         :query (and
+                (not (todo "DONE" "CANCELED" "FAILED" "PARTIALLY"))
                 (not (tags-local "no_agenda"))
                 (or
                  (tags-local "project##subproject")

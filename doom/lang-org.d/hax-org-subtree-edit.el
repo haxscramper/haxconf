@@ -233,28 +233,55 @@ being called."
   (org-expiry-insert-created))
 
 
-(defun hax/org-insert-subtree-offset (title level-offset)
-  (interactive "sTitle: ")
-  (insert
-   (format
-    "%s %s"
-    (s-repeat (hax/clamp (+ level-offset (org-current-level)) 1 nil)
-              "*")
-    title))
-  (org-id-get-create)
-  (org-expiry-insert-created))
+(defun hax/org-insert-subtree-offset (level-offset)
+  (let* ((current-level
+          (or (org-current-level)
+              (save-excursion
+                (when (org-back-to-heading t)
+                  (org-current-level)))
+              0))
+         (target-level
+          (hax/clamp (+ current-level level-offset) 1 nil))
+         (target-buffer (current-buffer))
+         (line-is-empty
+          (= (line-beginning-position) (line-end-position)))
+         (target-marker
+          (copy-marker
+           (if line-is-empty
+               (line-beginning-position)
+             (line-end-position))))
+         (template
+          (concat
+           (unless line-is-empty "\n")
+           (s-repeat target-level "*")
+           " %?
+  :PROPERTIES:
+  :CREATED: %U
+  :END:
+"))
+         (org-capture-templates
+          `(("h" "Insert subtree"
+             plain
+             (function
+              ,(lambda ()
+                 (set-buffer target-buffer)
+                 (goto-char target-marker)))
+             ,template
+             :empty-lines-before 0
+             :empty-lines-after 0))))
+    (org-capture nil "h")))
 
-(defun hax/org-insert-subtree-same (title)
-  (interactive "sTitle: ")
-  (hax/org-insert-subtree-offset title 0))
+(defun hax/org-insert-subtree-same ()
+  (interactive)
+  (hax/org-insert-subtree-offset 0))
 
-(defun hax/org-insert-subtree-below (title)
-  (interactive "sTitle: ")
-  (hax/org-insert-subtree-offset title 1))
+(defun hax/org-insert-subtree-below ()
+  (interactive)
+  (hax/org-insert-subtree-offset 1))
 
-(defun hax/org-insert-subtree-above (title)
-  (interactive "sTitle: ")
-  (hax/org-insert-subtree-offset title -1))
+(defun hax/org-insert-subtree-above ()
+  (interactive)
+  (hax/org-insert-subtree-offset -1))
 
 (cl-defun hax/org-insert-subtree-old-archive (&optional only-archives)
   (interactive)
