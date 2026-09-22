@@ -52,6 +52,7 @@
 #code##cpp##lib##adaptagrams
 #code##cpp##lib##boost##graph
 #code##cpp##lib##catch2
+#code##cpp##lib##cel
 #code##cpp##lib##cgraph
 #code##cpp##lib##clang
 #code##cpp##lib##gtest
@@ -59,10 +60,10 @@
 #code##cpp##lib##imgui
 #code##cpp##lib##immer
 #code##cpp##lib##kiwi
+#code##cpp##lib##lager
 #code##cpp##lib##lexy
 #code##cpp##lib##msgpack
 #code##cpp##lib##nlohmann_json
-#code##cpp##lib##lager
 #code##cpp##lib##ogdf
 #code##cpp##lib##perfetto
 #code##cpp##lib##ranges
@@ -191,6 +192,7 @@
 #design##application##use_case
 #design##brainstorm##churn
 #design##brainstorm##takeaway
+#design##brainstorm##term
 #design##constraint##compatibility
 #design##constraint##policy
 #design##constraint##resource
@@ -300,6 +302,7 @@
 #hardware##supernote
 #hardware##tab_mini_c
 #hardware##tetra
+#hardware##wacom
 #hardware##xp12
 #headspace
 #headstate
@@ -648,6 +651,7 @@
 #software##perf
 #software##plantuml
 #software##protobuf
+#software##protobuf##protovalidate
 #software##pycharm
 #software##qemu
 #software##qgis
