@@ -234,7 +234,7 @@ being called."
 
 
 (cl-defun hax/org-insert-subtree-offset
-    (level-offset &optional (go-to-subtree-end t))
+    (level-offset &optional insert-above)
   (let* ((current-level
           (or (org-current-level)
               (save-excursion
@@ -246,10 +246,13 @@ being called."
          (target-buffer (current-buffer))
          (target-position
           (save-excursion
-            (when (and go-to-subtree-end
-                       (org-back-to-heading t))
-              (org-end-of-subtree t))
-            (line-end-position)))
+            (if insert-above
+                (when (org-back-to-heading t)
+                  (beginning-of-line))
+              (when (org-back-to-heading t)
+                (org-end-of-subtree t))
+              (end-of-line))
+            (point)))
          (line-is-empty
           (save-excursion
             (goto-char target-position)
@@ -258,7 +261,7 @@ being called."
           (copy-marker target-position))
          (template
           (concat
-           (unless line-is-empty "\n")
+           (unless (or insert-above line-is-empty) "\n")
            (s-repeat target-level "*")
            " %?
   :PROPERTIES:

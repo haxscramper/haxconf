@@ -174,21 +174,30 @@
      ;; context of what you are working with.
      org-roam-ui-follow nil))
 
+  (let ((project-files
+         (directory-files-recursively hax/projects.d "\\.org\\'")))
+    (setq org-agenda-files
+          (append (list hax/main.org
+                        hax/staging.org
+                        hax/notes.org
+                        hax/repeated.org
+                        hax/projects.org
+                        hax/projects_cold.org)
+                  project-files)
+          org-refile-targets
+          (append `((nil :maxlevel . 4)
+                    (,hax/fic.org :maxlevel . 9)
+                    (,hax/main.org :maxlevel . 3)
+                    (,hax/projects.org :maxlevel . 7)
+                    (,hax/projects_cold.org :maxlevel . 7)
+                    (,hax/notes.org :maxlevel . 3)
+                    (,hax/staging.org :maxlevel . 1))
+                  (mapcar
+                   (lambda (file)
+                     `(,file :maxlevel . 7))
+                   project-files))))
+  
   (setq
-   ;; Agenda is a main todo file and inbox
-   org-agenda-files (list hax/main.org
-                          hax/staging.org
-                          hax/notes.org
-                          hax/repeated.org
-                          hax/projects.org
-                          hax/projects_cold.org)
-   org-refile-targets `((nil :maxlevel . 4)
-                        (,hax/fic.org :maxlevel . 9)
-                        (,hax/main.org :maxlevel . 3)
-                        (,hax/projects.org :maxlevel . 7)
-                        (,hax/projects_cold.org :maxlevel . 7)
-                        (,hax/notes.org :maxlevel . 3)
-                        (,hax/staging.org :maxlevel . 1))
    ;; Yes, you can in fact consider the entry completed with some of the
    ;; `TODO' left over, this happens, in real life not all tasks must be
    ;; closed with 100% accuracy.
@@ -263,7 +272,7 @@
            ;; the cause, but this is a FIXME, although
            ;; with low priority.
            "WIP(w!)"            ;; Working on it
-           "NEXT(n!)"            ;; Working on it
+           "NEXT(n!)"           ;; Working on it
            "TRIAGED(T!)"        ;; Investigated the issue in some detail,
            ;; might work on it later
            "REVIEW(r!/!)"       ;; Check if this task must be done or not
@@ -275,6 +284,9 @@
            "TIMEOUT(T)"      ;; Cannot be done due to time limits
            "FAILED(f@/@)"    ;; Tried to finish the task but failed
            "CANCELED(C@/@)"
+           "RESTRUCTURED(R@/@)" ;; Sub-tasks were refiled elsewhere, now
+           ;; the task is empty -- not completed under its original definition
+           ;; but no longer relevant either. 
            "COMPLETED(c!/@)" ;; Task completed
            "PARTIALLY(P@/@)" ;; Can be considered completed
            )))
@@ -286,6 +298,7 @@
           ("BLOCKED" . "purple")
 
           ("PARTIALLY" . "goldenrod")
+          ("RESTRUCTURED" . "red")
           ("REVIEW" . "SteelBlue")
           ("FAILED" . ,(doom-color 'red))
           ("TIMEOUT" . ,(doom-color 'red))))
@@ -382,6 +395,7 @@
  hax/fic.org (f-join hax/indexed.d "fic.org")
  ;; Project configuration
  hax/projects.org (f-join hax/indexed.d "projects.org")
+ hax/projects.d (f-join hax/indexed.d "projects.d")
  hax/projects_cold.org (f-join hax/indexed.d "projects_cold.org")
  org-structure-template-alist '(;; ("f" . "formula\n")
                                 ;; ("a" . "export ascii\n")

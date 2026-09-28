@@ -3,27 +3,36 @@
 (defhydra hydra-insert-subtree (:color blue :hint nil)
   "
   Subtree insertion
-  _<up>_:    Insert subtree above
-  _<down>_:  Insert subtree down
-  _<right>_: Insert subtree same level
-  _c_:       Current clocked target
-  _s_:       Staging top-level
-  _d_:       Daily note entry
-  _i_:       Immediate todo
-  _a_:       Capture under active subtree
-  _p_:       Under project subtree
+  _<up>_:       Insert parent-level below
+  _<down>_:     Insert child-level below
+  _<right>_:    Insert same-level below
+  _S-<up>_:     Insert parent-level above
+  _S-<down>_:   Insert child-level above
+  _S-<right>_:  Insert same-level above
+  _c_:          Current clocked target
+  _s_:          Staging top-level
+  _d_:          Daily note entry
+  _i_:          Immediate todo
+  _a_:          Capture under active subtree
+  _p_:          Under project subtree
   "
-  ("<up>" hax/org-insert-subtree-above)
-  ("<down>" hax/org-insert-subtree-below)
-  ("<right>" hax/org-insert-subtree-same)
+  ("<up>" (hax/org-insert-subtree-offset -1))
+  ("<down>" (hax/org-insert-subtree-offset 1))
+  ("<right>" (hax/org-insert-subtree-offset 0))
+  ("S-<up>" (hax/org-insert-subtree-offset -1 t))
+  ("S-<down>" (hax/org-insert-subtree-offset 1 t))
+  ("S-<right>" (hax/org-insert-subtree-offset 0 t))
   ("c" (org-capture nil "c"))
   ("s" (org-capture nil "S"))
   ("d" (org-capture nil "d"))
   ("i" (org-capture nil "i"))
-  ("a" (hax/insert-capture-under-subtree :entries (hax/org-collect-active-entries)))
-  ("p" (hax/insert-capture-under-subtree :entries
-                                         (let ((org-agenda-files (list (expand-file-name hax/projects.org))))
-                                           (hax/org-collect-ql-entries '(heading)))))
+  ("a" (hax/insert-capture-under-subtree
+        :entries (hax/org-collect-active-entries)))
+  ("p" (hax/insert-capture-under-subtree
+        :entries
+        (let ((org-agenda-files
+               (list (expand-file-name hax/projects.org))))
+          (hax/org-collect-ql-entries '(heading)))))
   ("q" nil "cancel"))
 
 (defhydra hydra-insert-link-to-subtree (:color blue :hint nil)
