@@ -49,6 +49,7 @@
 #code##cpp##coroutines
 #code##cpp##inheritance
 #code##cpp##issue
+#code##cpp##lib##abseil
 #code##cpp##lib##adaptagrams
 #code##cpp##lib##boost##graph
 #code##cpp##lib##catch2
@@ -462,6 +463,7 @@
 #project##fsm-build
 #project##haxconf
 #project##haxdex
+#project##haxdex##haxdex_cpp_refl_read
 #project##haxdoc
 #project##haxorg
 #project##haxorg##babel
@@ -472,6 +474,9 @@
 #project##haxorg##editor
 #project##haxorg##export
 #project##haxorg##gui
+#project##haxorg##haxorg_conan_base
+#project##haxorg##haxorg_cpp_c_wrap
+#project##haxorg##haxorg_cpp_org_lib
 #project##haxorg##lang
 #project##haxorg##lang##document
 #project##haxorg##lang##subtree
@@ -483,6 +488,11 @@
 #project##haxsim
 #project##hcparse
 #project##hmisc
+#project##hstd
+#project##hstd##hstd_cpp_diagram
+#project##hstd##hstd_cpp_diagram_lib
+#project##hstd##hstd_cpp_lib
+#project##hstd##hstd_cpp_text_layout
 #project##htsparse
 #project##index
 #project##keyboard

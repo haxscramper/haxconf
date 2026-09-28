@@ -40,3 +40,6 @@ docker rm (docker ps --filter status=exited -q)
 
 # Docker remove all unused images (not associated with container) that are more than one week old
 docker image prune --all --filter "until=168h"
+
+# Save current directory listing as a files.csv
+e:ls -1p | grep -v '/$' | mlr --ocsv --quote-all filter '$["1"] != "files.csv"' then put '$["1"] = ENV["PWD"] . "/" . $["1"]' then rename '1,path' > files.csv

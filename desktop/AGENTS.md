@@ -34,6 +34,7 @@ wh
 Use double quotes for strings, use type annotations. Use pathlib library for working with files.
 
 - Do not write type definitions unless explicitly required to for the answer. 
+- Do not write manual string interpolation for HTML, graphviz, similar text-based formats. Use appropriate library with corresponding data model, don't write ad-hoc garbage if there is a package for the same task already. 
 - Provide code only for the requested functionality. 
 - Use type annotations. Use `beartype` for the function and class annotations and typing. 
   - Import `beartype.typing` instead of `typing` for type names. 

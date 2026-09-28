@@ -115,7 +115,7 @@ set alias:arg-replacer = '<++>'
 alias:new ls exa --sort type
 alias:new lsl exa --long --header --git --sort type
 alias:new lsa exa --all --long --header --git --sort type
-alias:new lst exa --tree
+alias:new lst exa --tree --git-ignore
 alias:new lsta exa --tree --long --header --sort type --git --all
 alias:new lstl exa --tree --sort type --git --all
 alias:new cp e:cp -r
@@ -140,6 +140,7 @@ set edit:abbr['gil ']  = 'git log --graph --oneline --decorate -n20 '
 set edit:abbr['gia ']  = 'git add '
 set edit:abbr['gid ']  = 'git diff '
 set edit:abbr['gids ']  = 'git diff --staged '
+set edit:abbr['gidss ']  = 'git diff --staged --stat'
 set edit:abbr['gipm ']  = 'git push --atomic origin master '
 set edit:abbr['xcp '] = 'xclip -sel cli '
 set edit:abbr['xcpi '] = 'xclip -sel cli -t image/png -i '
@@ -488,7 +489,7 @@ fn none-of {|list pred|
 }
 
 eval (starship init elvish)
-# eval (carapace _carapace|slurp)
+eval (carapace _carapace | slurp)
 try {
   # On Ubuntu zoxide installation is so ancient it
   # does not have support for elvish shell

@@ -52,3 +52,4 @@ $HOME/.asdf/bin
 $HOME/software/vcpkg
 $HOME/.opencode/bin
 $HOME/.bun/bin
+/opt/rocm/bin/

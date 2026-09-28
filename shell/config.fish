@@ -23,8 +23,9 @@ end
 
 set -xg LD_LIBRARY_PATH /usr/local/lib/
 
-alias navi="navi --dir ~/.config/navi-main"
-alias naviadd="nvim (find $HAX_CONFIG_DIR/navi | fzf)"
+navi widget fish | source
+# alias navi="navi --dir ~/.config/navi-main"
+# alias naviadd="nvim (find $HAX_CONFIG_DIR/navi | fzf)"
 
 ##= Common utilities
 alias ls="exa --sort type"
