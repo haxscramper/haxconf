@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://carapace.sh/schemas/command.json
+name: conan
+description: Conan C++ package manager
+
+flags:
+  -h, --help: Show help
+
+commands:
+  - name: install
+    description: Install dependencies
+    completion:
+      positionalany:
+        - "$files"
+        - >-
+          $(conan list '*' --format=json | jq -r
+          '[to_entries[] | .value | keys[]? | select(contains("/"))] | unique[]')
+
+  - name: list
+    description: List recipes and packages
+    flags:
+      -r, --remote=: Remote to search
+      --format=: Output format
+    completion:
+      positionalany:
+        - >-
+          $(conan list '*' --format=json | jq -r
+          '[to_entries[] | .value | keys[]? | select(contains("/"))] as $refs
+          | ($refs + [$refs[] | split("/")[0] + "/*"]) | unique[]')
+
+  - name: remove
+    description: Remove recipes or packages
+    flags:
+      -c, --confirm: Remove without confirmation
+      -p, --package-query=: Filter packages by settings or options
+      -r, --remote=: Remote to remove from
+      --dry-run: Show what would be removed
+    completion:
+      positionalany:
+        - >-
+          $(conan list '*' --format=json | jq -r
+          '[to_entries[] | .value | keys[]? | select(contains("/"))] as $refs
+          | ($refs + [$refs[] | split("/")[0] + "/*"]) | unique[]')
+
+  - name: upload
+    description: Upload recipes or packages
+    flags:
+      -r, --remote=: Remote to upload to
+      -c, --confirm: Upload without confirmation
+    completion:
+      positionalany:
+        - >-
+          $(conan list '*' --format=json | jq -r
+          '[to_entries[] | .value | keys[]? | select(contains("/"))] as $refs
+          | ($refs + [$refs[] | split("/")[0] + "/*"]) | unique[]')
+
+  - name: download
+    description: Download recipes or packages
+    flags:
+      -r, --remote=: Remote to download from
+    completion:
+      positionalany:
+        - >-
+          $(conan list '*' --format=json | jq -r
+          '[to_entries[] | .value | keys[]? | select(contains("/"))] as $refs
+          | ($refs + [$refs[] | split("/")[0] + "/*"]) | unique[]')
+
+  - name: cache
+    description: Manage the local cache
+    commands:
+      - name: path
+        description: Print the path to a recipe or package in the cache
+        completion:
+          positionalany:
+            - >-
+              $(conan list '*' --format=json | jq -r
+              '[to_entries[] | .value | keys[]? | select(contains("/"))] | unique[]')
+
+  - name: config
+    description: Manage Conan configuration
+
+  - name: create
+    description: Build and package a recipe
+
+  - name: export
+    description: Export a recipe
+
+  - name: export-pkg
+    description: Export a package
+
+  - name: graph
+    description: Manage dependency graphs
+
+  - name: lock
+    description: Manage lockfiles
+
+  - name: profile
+    description: Manage profiles
+
+  - name: remote
+    description: Manage remotes
+
+  - name: version
+    description: Show the Conan version
